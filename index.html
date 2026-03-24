@@ -4449,8 +4449,8 @@ function navScrollTo(id) {
     var adminPw = 'admin@123';
     try { adminPw = localStorage.getItem('cars24_admin_pass') || 'admin@123'; } catch(e){}
 
-    var creds = [];
-    try { var s=localStorage.getItem('cars24_partner_creds'); creds=s?JSON.parse(s):(window.PARTNER_CREDS||[]); } catch(e){ creds=window.PARTNER_CREDS||[]; }
+    // Always read fresh — getLatestCreds() reads localStorage and syncs all refs
+    var creds = (typeof getLatestCreds==='function') ? getLatestCreds() : (window.PARTNER_CREDS||[]);
 
     // Partner login reads EXCLUSIVELY from PARTNER_SHEET (partner tab gid=0)
     // NEVER falls back to admin data store — prevents admin data leaking to partners
@@ -4577,16 +4577,35 @@ function loadCreds(){
   }catch(e){}
   return window._PARTNER_CREDS_HARDCODED || [];
 }
+
+// SINGLE SOURCE OF TRUTH — always reads fresh from localStorage
+// Use this everywhere instead of the PARTNER_CREDS var
+function getLatestCreds(){
+  try{
+    var s = localStorage.getItem('cars24_partner_creds');
+    if(s){
+      var fresh = JSON.parse(s);
+      // Keep all references in sync
+      PARTNER_CREDS = fresh;
+      window.PARTNER_CREDS = fresh;
+      return fresh;
+    }
+  }catch(e){}
+  return PARTNER_CREDS || window.PARTNER_CREDS || [];
+}
 function saveCreds(arr){
   try{
-    // Keep all references in sync — var, window., and re-read from JSON to avoid
-    // reference aliasing issues where mutations don't propagate across scopes
+    // Serialise to JSON string — this is the canonical representation
     var serialised = JSON.stringify(arr);
+    // 1. Write to localStorage FIRST (triggers C24Sync intercept → push to Drive)
+    localStorage.setItem('cars24_partner_creds', serialised);
+    // 2. Re-parse so all references point to same fresh object (no aliasing)
     var fresh = JSON.parse(serialised);
-    PARTNER_CREDS        = fresh;   // update the var binding directly
-    window.PARTNER_CREDS = fresh;   // update window reference
-    localStorage.setItem('cars24_partner_creds', serialised); // triggers C24Sync push
+    PARTNER_CREDS        = fresh;
+    window.PARTNER_CREDS = fresh;
+    // 3. Re-render credential table on admin side immediately
     if(typeof renderCredTable==='function') setTimeout(renderCredTable, 50);
+    console.log('[saveCreds] saved', arr.length, 'creds → localStorage + sync push triggered');
   }catch(e){ console.warn('[saveCreds] error:', e); }
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
@@ -5014,7 +5033,9 @@ function doLogin(){
   } else {
     const u=document.getElementById('p-username').value.trim().toLowerCase();
     const p=document.getElementById('p-pass').value.trim();
-    const cred=PARTNER_CREDS.find(c=>c.username.toLowerCase()===u);
+    // Always read fresh from localStorage — never use stale in-memory PARTNER_CREDS var
+    const liveCreds = getLatestCreds();
+    const cred=liveCreds.find(c=>(c.username||'').toLowerCase()===u);
     if(!cred){err.textContent='❌ Username not found.';err.classList.add('show');return;}
     if(cred.status==='Not Active'){err.textContent='❌ This partner account is inactive. Contact admin.';err.classList.add('show');return;}
     if(cred.password!==p){err.textContent='❌ Incorrect password.';err.classList.add('show');return;}
@@ -6095,23 +6116,58 @@ function buildVas(){
 // PARTNER SIDEBAR LOADER
 // ════════════════════════════════════════════════
 function loadPartnerSidebar(){
-  const p=currentPartner;
-  if(!p)return;
-  document.getElementById('p-card-name').textContent=p.name;
-  const totL=MONTHS.reduce((s,m)=>s+(p.leads[m]||0),0);
-  const totI=MONTHS.reduce((s,m)=>s+(p.insps[m]||0),0);
-  const totP=MONTHS.reduce((s,m)=>s+(p.payout[m]||0),0);
-  document.getElementById('p-card-leads').textContent=fmtN(totL);
-  document.getElementById('p-card-insps').textContent=fmtN(totI);
-  document.getElementById('p-card-payout').textContent=fmtL(totP)||'—';
+  var p = currentPartner;
+  if(!p) return;
+
+  // Always refresh currentPartner from the latest PARTNER_SHEET data
+  // (PARTNER_SHEET is populated by GSheet sync which runs after login)
+  try{
+    var ps = {};
+    try{ var _psd=localStorage.getItem('cars24_partner_sheet_data'); ps=_psd?JSON.parse(_psd):(window.PARTNER_SHEET||{}); }catch(e){ ps=window.PARTNER_SHEET||{}; }
+    var psArr = Object.values(ps);
+    var pName = (p.name||p.display||'').toLowerCase().trim();
+    var fresh = psArr.find(function(pt){
+      if(!pt||!pt.name) return false;
+      var ptN = pt.name.toLowerCase().trim();
+      return ptN === pName ||
+             ptN.replace(/\s+/g,'') === pName.replace(/\s+/g,'') ||
+             (p.username && ptN.replace(/\s+/g,'').slice(0,10) === (p.username||'').toLowerCase().slice(0,10));
+    });
+    if(fresh && Object.keys(fresh.leads||{}).length > 0){
+      // Merge fresh data into currentPartner, preserving login fields
+      currentPartner = Object.assign({}, p, fresh, {
+        username: p.username || fresh.username,
+        display:  p.display  || fresh.display || fresh.name,
+        password: p.password // never overwrite password from sheet data
+      });
+      p = currentPartner;
+    }
+  }catch(e){}
+
+  var nameEl   = document.getElementById('p-card-name');
+  var leadsEl  = document.getElementById('p-card-leads');
+  var inspsEl  = document.getElementById('p-card-insps');
+  var payoutEl = document.getElementById('p-card-payout');
+  if(!nameEl) return;
+
+  var totL = MONTHS.reduce(function(s,m){ return s+(p.leads&&p.leads[m]||0); },0);
+  var totI = MONTHS.reduce(function(s,m){ return s+(p.insps&&p.insps[m]||0); },0);
+  var totP = MONTHS.reduce(function(s,m){ return s+(p.payout&&p.payout[m]||0); },0);
+
+  nameEl.textContent   = p.name||p.display||'Partner';
+  if(leadsEl)  leadsEl.textContent  = totL > 0 ? fmtN(totL) : '0';
+  if(inspsEl)  inspsEl.textContent  = totI > 0 ? fmtN(totI) : '0';
+  if(payoutEl) payoutEl.textContent = totP > 0 ? fmtL(totP) : '₹0';
 }
 
 // ════════════════════════════════════════════════
 // PARTNER OVERVIEW
 // ════════════════════════════════════════════════
 function buildPartnerOverview(){
+  // Refresh sidebar cards every time overview rebuilds (e.g. after sync pull)
+  try{ loadPartnerSidebar(); }catch(e){}
   const p=currentPartner; if(!p)return;
-  const totL=MONTHS.reduce((s,m)=>s+(p.leads[m]||0),0);
+  const totL=MONTHS.reduce((s,m)=>s+(p.leads&&p.leads[m]||0),0);
   const totA=MONTHS.reduce((s,m)=>s+(p.appts[m]||0),0);
   const totI=MONTHS.reduce((s,m)=>s+(p.insps[m]||0),0);
   const totS=MONTHS.reduce((s,m)=>s+(p.stocks[m]||0),0);
@@ -6343,6 +6399,8 @@ function ensureCampaignIds(){
 }
 
 function renderCredTable(){
+  // Always sync from localStorage before rendering
+  if(typeof getLatestCreds==='function') getLatestCreds();
   ensureCampaignIds();
   const q=(document.getElementById('cred-search')||{value:''}).value.toLowerCase();
   const sf=(document.getElementById('cred-filter-status')||{value:''}).value;
@@ -8813,30 +8871,36 @@ function changePartnerPassword(){
   if(nw.length < 6){ showMsg('⚠ New password must be at least 6 characters.', false); return; }
   if(nw !== cf){ showMsg('⚠ Passwords do not match.', false); return; }
 
-  // Always re-read credentials fresh from localStorage to avoid stale in-memory reference
-  var liveCreds = [];
-  try{ var _lc=localStorage.getItem('cars24_partner_creds'); liveCreds=_lc?JSON.parse(_lc):(window.PARTNER_CREDS||[]); }catch(e){ liveCreds=window.PARTNER_CREDS||[]; }
+  // Read absolute latest from localStorage
+  var liveCreds = (typeof getLatestCreds==='function') ? getLatestCreds() : [];
 
+  // Find by username first, then display name, then name
   var _pu = (currentPartner.username||'').toLowerCase().trim();
   var _pd = (currentPartner.display||currentPartner.name||'').toLowerCase().trim();
   var credIdx = -1;
-  liveCreds.forEach(function(c, i){
-    var cu = (c.username||'').toLowerCase().trim();
-    var cd = (c.display||'').toLowerCase().trim();
-    if((_pu && (cu===_pu||cd===_pu)) || (_pd && (cu===_pd||cd===_pd))) credIdx = i;
-  });
-  // Fallback: match by current password value
+  for(var _i=0; _i<liveCreds.length; _i++){
+    var _cu = (liveCreds[_i].username||'').toLowerCase().trim();
+    var _cd = (liveCreds[_i].display||'').toLowerCase().trim();
+    if((_pu && (_cu===_pu || _cd===_pu)) || (_pd && (_cu===_pd || _cd===_pd))){
+      credIdx = _i; break;
+    }
+  }
+  // Last resort: match by current password
   if(credIdx === -1){
-    liveCreds.forEach(function(c, i){ if(c.password===cur) credIdx = i; });
+    for(var _j=0; _j<liveCreds.length; _j++){
+      if(liveCreds[_j].password === cur){ credIdx = _j; break; }
+    }
   }
   if(credIdx === -1){ showMsg('⚠ Credential record not found. Contact admin.', false); return; }
   if(liveCreds[credIdx].password !== cur){ showMsg('⚠ Current password is incorrect.', false); return; }
 
-  // Apply change directly on the live array
+  // Mutate the live array and save — saveCreds writes to localStorage + triggers sync push
   liveCreds[credIdx].password = nw;
-  saveCreds(liveCreds);  // saves + syncs + re-renders
-  // Also update currentPartner session so next login uses new password
+  saveCreds(liveCreds);
+
+  // Update current session so partner doesn't get locked out
   if(currentPartner) currentPartner.password = nw;
+  console.log('[C24] Partner password changed for:', liveCreds[credIdx].display, '→ sync push triggered');
   _auditLog('Partner password changed', 'Partner: '+currentPartner.display+' ('+currentPartner.username+')');
   document.getElementById('p-chg-cur').value='';
   document.getElementById('p-chg-new').value='';
@@ -10862,7 +10926,7 @@ window.populatePartnerUTMCard = function(){
   if(!window.currentPartner) return;
   var pName = window.currentPartner.name;
   var creds = [];
-  try{ var s=localStorage.getItem('cars24_partner_creds'); creds=s?JSON.parse(s):(window.PARTNER_CREDS||[]); }catch(e){ creds=window.PARTNER_CREDS||[]; }
+  creds = (typeof getLatestCreds==='function') ? getLatestCreds() : (window.PARTNER_CREDS||[]);
   var cred = creds.find(function(c){ return c.display===pName || (c.display||'').toLowerCase()===pName.toLowerCase(); });
   var cid = cred ? (cred.campaign_id||'') : '';
   if(!cid && typeof window.genCampaignId==='function') cid = window.genCampaignId(pName);
@@ -16574,7 +16638,8 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
       }
     });
 
-    try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS = creds; }catch(e){}
+    if(typeof saveCreds==='function') saveCreds(creds);
+    else try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS = creds; }catch(e){}
     if(typeof renderCredTable==='function') renderCredTable();
     if(typeof _auditLog==='function') _auditLog('Bulk credential upload', added+' added, '+skipped+' skipped');
 
@@ -16766,20 +16831,22 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
         if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
       }
     } else {
-      // Partner credential update
-      var creds = [];
-      try{ var cs=localStorage.getItem('cars24_partner_creds'); creds=cs?JSON.parse(cs):[]; }catch(e){}
+      // Partner credential update — use getLatestCreds + saveCreds for proper sync
+      var creds = (typeof getLatestCreds==='function') ? getLatestCreds() : [];
       var _tn = (targetName||'').toLowerCase().trim();
-      var cred = creds.find(function(c){
-        return (c.display||'').toLowerCase().trim()===_tn ||
-               (c.username||'').toLowerCase().trim()===_tn;
-      });
-      if(!cred){ _showMsg('Partner credential not found.', false); return; }
-      cred.password = pwNew;
-      cred.lastPwChange = new Date().toISOString();
-      try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS=creds; }catch(e){}
+      var credIdx2 = -1;
+      for(var _vi2=0; _vi2<creds.length; _vi2++){
+        if((creds[_vi2].display||'').toLowerCase().trim()===_tn || (creds[_vi2].username||'').toLowerCase().trim()===_tn){
+          credIdx2 = _vi2; break;
+        }
+      }
+      if(credIdx2 === -1){ _showMsg('Partner credential not found.', false); return; }
+      creds[credIdx2].password = pwNew;
+      creds[credIdx2].lastPwChange = new Date().toISOString();
+      // saveCreds: writes to localStorage + triggers C24Sync push + re-renders admin table
+      if(typeof saveCreds==='function') saveCreds(creds);
+      else try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS=creds; }catch(e){}
       if(typeof _auditLog==='function') _auditLog('Partner password changed', 'Partner: '+targetName);
-      if(typeof renderCredTable==='function') setTimeout(renderCredTable, 100);
     }
 
     _showMsg('✓ Password changed successfully!', true);
@@ -17607,11 +17674,11 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     },
     'cars24_partner_sheet_data': {
       admin:   ['updateDashboard'],
-      partner: ['buildPartnerOverview', 'buildSellerChannels', 'buildBuyerView', 'buildVasView', 'buildPartnerTargets']
+      partner: ['loadPartnerSidebar', 'buildPartnerOverview', 'buildSellerChannels', 'buildBuyerView', 'buildVasView', 'buildPartnerTargets']
     },
     'cars24_partners_data': {
       admin:   ['updateDashboard', 'buildTargets'],
-      partner: ['buildPartnerOverview']
+      partner: ['loadPartnerSidebar', 'buildPartnerOverview']
     },
     'cars24_admin_view_data': {
       admin:   ['updateDashboard', 'renderAdminBuyerView', 'renderVasView'],
@@ -17803,7 +17870,11 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   function _reloadGlobals(keys){
     var all = !keys || keys.length === 0;
     function _has(k){ return all || keys.indexOf(k) !== -1; }
-    try{ if(_has('cars24_partner_creds')){ var pc=localStorage.getItem('cars24_partner_creds'); if(pc){ window.PARTNER_CREDS=JSON.parse(pc); if(typeof PARTNER_CREDS!=='undefined') try{ PARTNER_CREDS=window.PARTNER_CREDS; }catch(e){} }}}catch(e){}
+    try{ if(_has('cars24_partner_creds')){ 
+      // getLatestCreds() reads localStorage and syncs PARTNER_CREDS var + window ref
+      if(typeof getLatestCreds==='function') getLatestCreds();
+      else{ var pc=localStorage.getItem('cars24_partner_creds'); if(pc){ window.PARTNER_CREDS=JSON.parse(pc); try{ PARTNER_CREDS=window.PARTNER_CREDS; }catch(e){} }}
+    }}catch(e){}
     try{ if(_has('cars24_partner_sheet_data')){ var psd=localStorage.getItem('cars24_partner_sheet_data'); if(psd) window.PARTNER_SHEET=JSON.parse(psd); }}catch(e){}
     try{ if(_has('cars24_partners_data')){ var pd=localStorage.getItem('cars24_partners_data'); if(pd){ window.PARTNERS=JSON.parse(pd); if(typeof window.rebuildMonthMeta==='function') window.rebuildMonthMeta(); }}}catch(e){}
     try{ if(_has('cars24_admin_accounts')){ var aa=localStorage.getItem('cars24_admin_accounts'); if(aa) window._adminAccounts=JSON.parse(aa); }}catch(e){}
