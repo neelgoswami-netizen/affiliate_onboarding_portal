@@ -17668,64 +17668,129 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   function _pushToRelay(key, value){
     if(!RELAY_URL) return;
     var payload = JSON.stringify({ action:'saveConfig', configKey:key, configValue: JSON.stringify(value) });
-    fetch(RELAY_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload, redirect:'follow', mode:'no-cors' })
-      .catch(function(e){ console.warn('[C24Sync] Push failed for', key, e); });
+    // POST with no-cors (Apps Script POST doesn't return readable response,
+    // but the write still executes server-side — this is intentional)
+    fetch(RELAY_URL, {
+      method  : 'POST',
+      headers : { 'Content-Type': 'text/plain;charset=utf-8' },
+      body    : payload,
+      redirect: 'follow',
+      mode    : 'no-cors'   // opaque response — write succeeds silently
+    }).catch(function(e){ console.warn('[C24Sync] Push failed for', key, e); });
   }
 
-  function _pullFromRelay(onDone){
-    if(!RELAY_URL){ if(onDone) onDone(false, []); return; }
-    _updateSyncIndicator('syncing');
-    var cbName = '_c24Cb' + Date.now();
-    var tid = setTimeout(function(){
-      try{ delete window[cbName]; }catch(e){}
-      var s=document.getElementById('_c24Script'); if(s) s.parentNode.removeChild(s);
+  // ── Apply remote data received from relay ───────────────────────
+  function _applyRemoteData(data, onDone){
+    if(!data || data.error){
+      console.warn('[C24Sync] Relay error:', data && data.error);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
-    }, 8000);
+      return;
+    }
+    var changedKeys = [];
+    SYNC_KEYS.forEach(function(key){
+      if(data[key] === undefined || data[key] === null) return;
+      try{
+        var remoteStr = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
+        var localStr  = localStorage.getItem(key);
+        var remoteCs  = _checksum(remoteStr);
+        if(remoteCs !== _lastChecksums[key]){
+          _lastChecksums[key] = remoteCs;
+          if(remoteStr !== localStr){
+            _origSetItem(key, remoteStr);
+            changedKeys.push(key);
+          }
+        }
+      }catch(e){}
+    });
+    if(changedKeys.length){
+      _reloadGlobals(changedKeys);
+      changedKeys.forEach(function(k){ _renderForKey(k); });
+      _showSyncToast(changedKeys);
+      console.log('[C24Sync] Remote changes applied:', changedKeys);
+    }
+    _updateSyncIndicator('live');
+    if(onDone) onDone(true, changedKeys);
+  }
+
+  // ── Pull config from relay ───────────────────────────────────────
+  // Apps Script GET: script.google.com/macros/s/.../exec
+  //   → 302 redirect to script.googleusercontent.com
+  //   → returns JSON (no CORS header on the redirect response)
+  //
+  // Strategy: try fetch with mode:'cors' + credentials:'omit' first
+  // (works in Chrome/Edge where googleusercontent sends CORS headers).
+  // If that fails (Firefox, Safari strict mode), fall back to JSONP
+  // which bypasses CORS entirely via <script> tag.
+  // Each JSONP call gets a unique script tag ID to avoid ID collisions.
+
+  var _jsonpSeq = 0; // unique counter per call
+
+  function _pullViaFetch(onDone){
+    var url = RELAY_URL + '?action=getConfig&t=' + Date.now();
+    fetch(url, { method:'GET', redirect:'follow', mode:'cors', credentials:'omit' })
+      .then(function(resp){
+        if(!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+      })
+      .then(function(data){ _applyRemoteData(data, onDone); })
+      .catch(function(err){
+        console.warn('[C24Sync] fetch CORS blocked (' + err.message + ') — using JSONP');
+        _pullViaJsonp(onDone);
+      });
+  }
+
+  function _pullViaJsonp(onDone){
+    var seq    = ++_jsonpSeq;
+    var cbName = '_c24Cb_' + Date.now() + '_' + seq;
+    var tagId  = '_c24Script_' + seq;
+
+    // Clean up any previous stale tags
+    document.querySelectorAll('script[id^="_c24Script_"]').forEach(function(s){
+      if(s.parentNode) s.parentNode.removeChild(s);
+    });
+
+    var tid = setTimeout(function(){
+      try{ delete window[cbName]; }catch(e){}
+      var s = document.getElementById(tagId);
+      if(s && s.parentNode) s.parentNode.removeChild(s);
+      console.warn('[C24Sync] JSONP timed out (seq ' + seq + ')');
+      _updateSyncIndicator('offline');
+      if(onDone) onDone(false, []);
+    }, 10000);
 
     window[cbName] = function(data){
       clearTimeout(tid);
       try{ delete window[cbName]; }catch(e){}
-      var s=document.getElementById('_c24Script'); if(s) s.parentNode.removeChild(s);
-      if(!data || data.error){ _updateSyncIndicator('offline'); if(onDone) onDone(false,[]); return; }
-
-      var changedKeys = [];
-      SYNC_KEYS.forEach(function(key){
-        if(data[key] === undefined || data[key] === null) return;
-        try{
-          var remoteStr = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
-          var localStr  = localStorage.getItem(key);
-          var remoteCs  = _checksum(remoteStr);
-          if(remoteCs !== _lastChecksums[key]){
-            _lastChecksums[key] = remoteCs;
-            if(remoteStr !== localStr){
-              _origSetItem(key, remoteStr);  // write without triggering push loop
-              changedKeys.push(key);
-            }
-          }
-        }catch(e){}
-      });
-
-      if(changedKeys.length){
-        _reloadGlobals(changedKeys);
-        changedKeys.forEach(function(k){ _renderForKey(k); });
-        _showSyncToast(changedKeys);
-        console.log('[C24Sync] Remote changes applied:', changedKeys);
-      }
-      _updateSyncIndicator('live');
-      if(onDone) onDone(true, changedKeys);
+      var s = document.getElementById(tagId);
+      if(s && s.parentNode) s.parentNode.removeChild(s);
+      _applyRemoteData(data, onDone);
     };
 
-    var sc = document.createElement('script');
-    sc.id  = '_c24Script';
-    sc.src = RELAY_URL+'?action=getConfig&keys='+SYNC_KEYS.join(',')+'&cb='+cbName+'&t='+Date.now();
+    var sc  = document.createElement('script');
+    sc.id   = tagId;
+    sc.async = true;
+    sc.src  = RELAY_URL + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
     sc.onerror = function(){
       clearTimeout(tid);
-      try{delete window[cbName];}catch(e){}
+      try{ delete window[cbName]; }catch(e){}
+      console.warn('[C24Sync] JSONP script load error (seq ' + seq + ')');
       _updateSyncIndicator('offline');
-      if(onDone) onDone(false,[]);
+      if(onDone) onDone(false, []);
     };
     document.head.appendChild(sc);
+  }
+
+  // ── Main pull entry point ─────────────────────────────────────────
+  function _pullFromRelay(onDone){
+    if(!RELAY_URL){ if(onDone) onDone(false, []); return; }
+    _updateSyncIndicator('syncing');
+    // Try fetch first (cleaner), JSONP as automatic fallback
+    if(typeof fetch !== 'undefined'){
+      _pullViaFetch(onDone);
+    } else {
+      _pullViaJsonp(onDone);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -17973,8 +18038,29 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     }, 600);
   };
 
-  // Public API
+  // ── Public API + diagnostics ─────────────────────────────────────
   window.c24SyncPull  = function(cb){ _pullFromRelay(cb); };
+  window.c24SyncDiag  = function(){
+    console.group('[C24Sync] Diagnostics');
+    console.log('Relay URL :', RELAY_URL || '⚠️ NOT SET');
+    console.log('Role      :', window.currentRole || 'not logged in');
+    console.log('Partner   :', window.currentPartner ? window.currentPartner.name : '—');
+    // Test raw fetch
+    if(RELAY_URL){
+      console.log('Testing fetch (cors)…');
+      fetch(RELAY_URL + '?action=ping&t=' + Date.now(), { mode:'cors', credentials:'omit', redirect:'follow' })
+        .then(function(r){ return r.text().then(function(t){ console.log('✅ fetch OK — status:', r.status, '| body:', t.slice(0,120)); }); })
+        .catch(function(e){ console.warn('❌ fetch failed:', e.message, '— JSONP will be used instead'); });
+      // Also test JSONP directly
+      var cb = '_c24DiagCb' + Date.now();
+      window[cb] = function(d){ console.log('✅ JSONP OK — keys in config:', Object.keys(d||{}).length); delete window[cb]; };
+      var s = document.createElement('script');
+      s.src = RELAY_URL + '?action=ping&cb=' + cb + '&t=' + Date.now();
+      s.onerror = function(){ console.warn('❌ JSONP also failed — check relay URL and deployment'); delete window[cb]; };
+      document.head.appendChild(s);
+    }
+    console.groupEnd();
+  };
   window.c24SyncPush  = function(key){ var v=localStorage.getItem(key); if(v) _pushToRelay(key, v); };
   window.c24SyncPushAll = function(){
     SYNC_KEYS.forEach(function(k){
