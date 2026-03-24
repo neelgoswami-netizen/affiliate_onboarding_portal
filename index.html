@@ -4756,6 +4756,21 @@ function rebuildMonthMeta(){
   }
 }
 
+// ─── _shortLabel — abbreviate "May 2025" → "May'25", "Jan 2026" → "Jan'26" ───
+function _shortLabel(label){
+  if(!label) return '';
+  // Already short (e.g. "May", "Mar") — return as-is
+  if(label.length <= 5) return label;
+  // Match "Mon YYYY" e.g. "May 2025"
+  var m = label.match(/^([A-Za-z]{3})\s+(\d{4})$/);
+  if(m) return m[1]+"'"+m[2].slice(2);
+  // Match "YYYY-MM" e.g. "2025-05"
+  var m2 = label.match(/^(\d{4})-(\d{2})$/);
+  if(m2){ var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return (months[parseInt(m2[2])-1]||m2[2])+"'"+m2[1].slice(2); }
+  // Fallback — truncate to 6 chars
+  return label.slice(0,6);
+}
+
 // ─── UI rebuild helpers (safe – only run when DOM elements exist) ───
 
 function _rebuildRangeButtons(){
@@ -4972,8 +4987,9 @@ function handlePartnerKey(e){
 }
 
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.partner-search-wrap'))
-    document.getElementById('partner-dropdown').classList.remove('show');
+  var dd = document.getElementById('partner-dropdown');
+  if(dd && !e.target.closest('.partner-search-wrap'))
+    dd.classList.remove('show');
 });
 
 function doLogin(){
