@@ -16455,16 +16455,27 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
     if(pwNew !== pwConf){ _showMsg('Passwords do not match.', false); return; }
 
     if(targetType === 'admin'){
-      // Validate old password from ADMIN_ACCOUNTS
-      var accts = [];
-      try{ var s=localStorage.getItem('cars24_admin_accounts'); accts=s?JSON.parse(s):[]; }catch(e){}
-      var acct = accts.find(function(a){ return a.username===targetName || a.displayName===targetName; });
-      if(!acct){ _showMsg('Admin account not found.', false); return; }
-      if(acct.password !== pwCur){ _showMsg('Current password is incorrect.', false); return; }
-      acct.password = pwNew;
-      acct.lastPwChange = new Date().toISOString();
-      try{ localStorage.setItem('cars24_admin_accounts', JSON.stringify(accts)); }catch(e){}
-      if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
+      // ── Check master admin first (username === 'admin', stored in cars24_admin_pass) ──
+      var masterUser = 'admin';
+      var isMaster = targetName.toLowerCase() === masterUser;
+      if(isMaster){
+        var masterPw = 'admin@123';
+        try{ masterPw = localStorage.getItem('cars24_admin_pass') || 'admin@123'; }catch(e){}
+        if(pwCur !== masterPw){ _showMsg('Current password is incorrect.', false); return; }
+        try{ localStorage.setItem('cars24_admin_pass', pwNew); }catch(e){}
+        if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
+      } else {
+        // ── Secondary admin accounts stored in cars24_admin_accounts ──
+        var accts = [];
+        try{ var s=localStorage.getItem('cars24_admin_accounts'); accts=s?JSON.parse(s):[]; }catch(e){}
+        var acct = accts.find(function(a){ return (a.username||'').toLowerCase()===(targetName||'').toLowerCase() || (a.displayName||'').toLowerCase()===(targetName||'').toLowerCase(); });
+        if(!acct){ _showMsg('Admin account not found.', false); return; }
+        if(acct.password !== pwCur){ _showMsg('Current password is incorrect.', false); return; }
+        acct.password = pwNew;
+        acct.lastPwChange = new Date().toISOString();
+        try{ localStorage.setItem('cars24_admin_accounts', JSON.stringify(accts)); }catch(e){}
+        if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
+      }
     } else {
       // Partner credential update
       var creds = [];
@@ -16880,14 +16891,13 @@ window.renderInvoiceTableAdmin = function(){
   var q = (document.getElementById('inv-search-admin')||{value:''}).value.toLowerCase();
   var tbl = document.getElementById('inv-tbl-admin'); if(!tbl) return;
   var mo = window._invMonthAdmin || (window.MONTHS&&window.MONTHS[window.MONTHS.length-1])||'';
-  // Show ALL invoices when month filter not yet set, otherwise filter by month
   var rows = invs.filter(function(i){
     var monthMatch = !mo || i.month===mo;
     var searchMatch = !q || (i.partner&&i.partner.toLowerCase().includes(q)) || (i.invNo&&i.invNo.toLowerCase().includes(q));
     return monthMatch && searchMatch;
   });
   if(!rows.length){
-    tbl.innerHTML='<tr><td colspan="9" class="empty">No invoices for this month.</td></tr>';
+    tbl.innerHTML='<tr><td colspan="10" class="empty">No invoices for this month.</td></tr>';
     return;
   }
   tbl.innerHTML = rows.map(function(inv,idx){
@@ -16913,11 +16923,242 @@ window.renderInvoiceTableAdmin = function(){
       +'<td style="text-align:center;">'
       +'<button onclick="approveInvoice('+inv.id+',\'Approved\')" style="padding:3px 10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;margin-right:4px;">✓</button>'
       +'<button onclick="approveInvoice('+inv.id+',\'Rejected\')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✗</button>'
+      +'</td>'
+      +'<td style="text-align:center;">'
+      +'<button onclick="window._adminDeleteInvoice('+inv.id+')" title="Delete this invoice" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;cursor:pointer;">🗑</button>'
       +'</td></tr>';
   }).join('');
 };
 
-console.log('[Cars24] Drive upload + expand fix + partner isolation applied');
+// ── Admin: delete a single invoice ────────────────────────────────────────
+window._adminDeleteInvoice = function(id){
+  if(!confirm('Delete this invoice? This cannot be undone.')) return;
+  var invs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+  var target = invs.find(function(i){ return i.id===id; });
+  var label = target ? (target.partner+' · '+(target.invNo||'')+(target.fullMonth?' · '+target.fullMonth:'')) : String(id);
+  var remaining = invs.filter(function(i){ return i.id!==id; });
+  if(typeof window.saveInvoices==='function') window.saveInvoices(remaining);
+  if(typeof window._auditLog==='function') window._auditLog('Invoice deleted by admin', label);
+  if(typeof window.renderInvoiceTableAdmin==='function') window.renderInvoiceTableAdmin();
+  if(typeof window.showImportToast==='function') window.showImportToast('🗑 Invoice deleted: '+label);
+};
+
+// ── Admin: delete a single payment proof (with audit log) ─────────────────
+var _origDeleteProof = window.deleteProof;
+window.deleteProof = function(id){
+  if(!confirm('Delete this payment proof? This cannot be undone.')) return;
+  var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
+  var target = proofs.find(function(p){ return p.id===id; });
+  var label = target ? (target.partner+' · UTR:'+(target.utr||'')+(target.fullMonth?' · '+target.fullMonth:'')) : String(id);
+  var remaining = proofs.filter(function(p){ return p.id!==id; });
+  if(typeof window.saveProofs==='function') window.saveProofs(remaining);
+  if(typeof window._auditLog==='function') window._auditLog('Payment proof deleted by admin', label);
+  if(typeof window.renderProofTable==='function') window.renderProofTable();
+  if(typeof window.showImportToast==='function') window.showImportToast('🗑 Proof deleted: '+label);
+};
+
+// ── Admin: bulk-clear modal (invoices + proofs, filterable by partner) ────
+window._adminOpenDataClearModal = function(){
+  var existing = document.getElementById('admin-data-clear-modal');
+  if(existing) existing.remove();
+
+  // Gather unique partners from both stores
+  var invs   = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+  var proofs = (typeof window.getProofs==='function')   ? window.getProofs()   : [];
+  var partnerSet = {};
+  invs.forEach(function(i){ if(i.partner) partnerSet[i.partner]=true; });
+  proofs.forEach(function(p){ if(p.partner) partnerSet[p.partner]=true; });
+  var partners = Object.keys(partnerSet).sort();
+
+  var partnerOpts = '<option value="">— All Partners —</option>'
+    + partners.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+
+  var ov = document.createElement('div');
+  ov.id = 'admin-data-clear-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100010;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+  ov.innerHTML = `
+    <div style="background:var(--card,#0e1420);border:1.5px solid var(--muted,#1e2a3a);border-radius:16px;width:min(500px,96vw);padding:28px;position:relative;max-height:90vh;overflow-y:auto;">
+      <button onclick="document.getElementById('admin-data-clear-modal').remove()"
+        style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--sub);font-size:18px;cursor:pointer;">✕</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:4px;">🗑 CLEAR PARTNER DATA</div>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:20px;">Remove test or unwanted submissions from partner side. All deletions are logged to Audit Log.</div>
+
+      <!-- Filter row -->
+      <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--sub);margin-bottom:5px;">Partner</label>
+          <select id="dcm-partner" style="width:100%;padding:9px 12px;border:1.5px solid var(--muted);border-radius:8px;font-size:13px;background:var(--card2,#131b28);color:var(--text);outline:none;" onchange="window._dcmRefresh()">${partnerOpts}</select>
+        </div>
+        <div style="flex:1;min-width:130px;">
+          <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--sub);margin-bottom:5px;">Month</label>
+          <select id="dcm-month" style="width:100%;padding:9px 12px;border:1.5px solid var(--muted);border-radius:8px;font-size:13px;background:var(--card2,#131b28);color:var(--text);outline:none;" onchange="window._dcmRefresh()">
+            <option value="">— All Months —</option>
+            ${(window.MONTHS||[]).map(function(m){ return '<option value="'+m+'">'+(window.MLABEL&&window.MLABEL[m]?window.MLABEL[m]:m)+'</option>'; }).join('')}
+          </select>
+        </div>
+      </div>
+
+      <!-- Summary counts -->
+      <div id="dcm-summary" style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;"></div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="window._dcmDeleteFiltered('invoices')"
+          style="padding:11px 18px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:9px;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;text-align:left;transition:background .2s;"
+          onmouseover="this.style.background='rgba(239,68,68,.18)'" onmouseout="this.style.background='rgba(239,68,68,.1)'">
+          🧾 Delete Matching Invoices &nbsp;<span id="dcm-inv-count" style="font-size:11px;opacity:.7;"></span>
+        </button>
+        <button onclick="window._dcmDeleteFiltered('proofs')"
+          style="padding:11px 18px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:9px;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;text-align:left;transition:background .2s;"
+          onmouseover="this.style.background='rgba(239,68,68,.18)'" onmouseout="this.style.background='rgba(239,68,68,.1)'">
+          ✅ Delete Matching Payment Proofs &nbsp;<span id="dcm-proof-count" style="font-size:11px;opacity:.7;"></span>
+        </button>
+        <button onclick="window._dcmDeleteFiltered('both')"
+          style="padding:11px 18px;background:rgba(239,68,68,.15);border:1.5px solid rgba(239,68,68,.4);border-radius:9px;color:#ef4444;font-size:13px;font-weight:800;cursor:pointer;text-align:left;transition:background .2s;"
+          onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.15)'">
+          💣 Delete Both (Invoices + Proofs) &nbsp;<span id="dcm-both-count" style="font-size:11px;opacity:.7;"></span>
+        </button>
+      </div>
+
+      <div id="dcm-msg" style="font-size:12px;margin-top:14px;display:none;padding:9px 14px;border-radius:8px;"></div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  window._dcmRefresh();
+};
+
+window._dcmRefresh = function(){
+  var partner = (document.getElementById('dcm-partner')||{value:''}).value;
+  var month   = (document.getElementById('dcm-month')||{value:''}).value;
+  var invs    = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+  var proofs  = (typeof window.getProofs==='function')   ? window.getProofs()   : [];
+
+  function match(r){
+    return (!partner || r.partner===partner) && (!month || r.month===month);
+  }
+  var mInvs   = invs.filter(match).length;
+  var mProofs = proofs.filter(match).length;
+
+  var ic = document.getElementById('dcm-inv-count');
+  var pc = document.getElementById('dcm-proof-count');
+  var bc = document.getElementById('dcm-both-count');
+  if(ic) ic.textContent = '('+mInvs+' records)';
+  if(pc) pc.textContent = '('+mProofs+' records)';
+  if(bc) bc.textContent = '('+(mInvs+mProofs)+' records)';
+
+  var sm = document.getElementById('dcm-summary');
+  if(sm){
+    sm.innerHTML = [
+      {label:'Invoices',count:mInvs,color:'#f59e0b'},
+      {label:'Proofs',count:mProofs,color:'#3b82f6'}
+    ].map(function(s){
+      return '<div style="flex:1;min-width:100px;background:var(--card2,#131b28);border:1px solid var(--muted);border-radius:9px;padding:10px 14px;text-align:center;">'
+        +'<div style="font-size:22px;font-weight:800;color:'+s.color+'">'+s.count+'</div>'
+        +'<div style="font-size:11px;color:var(--sub);margin-top:2px;">'+s.label+'</div>'
+        +'</div>';
+    }).join('');
+  }
+};
+
+window._dcmDeleteFiltered = function(type){
+  var partner = (document.getElementById('dcm-partner')||{value:''}).value;
+  var month   = (document.getElementById('dcm-month')||{value:''}).value;
+  var msgEl   = document.getElementById('dcm-msg');
+
+  function match(r){ return (!partner || r.partner===partner) && (!month || r.month===month); }
+
+  var label = (partner||'All partners') + (month ? ' · '+(window.MLABEL&&window.MLABEL[month]?window.MLABEL[month]:month) : ' · All months');
+  var invCount = 0, proofCount = 0;
+
+  var confirmMsg = 'Delete ';
+  if(type==='invoices') confirmMsg += 'invoices';
+  else if(type==='proofs') confirmMsg += 'payment proofs';
+  else confirmMsg += 'invoices + payment proofs';
+  confirmMsg += ' for: '+label+'?\n\nThis cannot be undone.';
+
+  if(!confirm(confirmMsg)) return;
+
+  if(type==='invoices'||type==='both'){
+    var invs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+    invCount = invs.filter(match).length;
+    if(typeof window.saveInvoices==='function') window.saveInvoices(invs.filter(function(r){ return !match(r); }));
+    if(invCount) window._auditLog && window._auditLog('Bulk invoices deleted by admin', invCount+' records · '+label);
+  }
+  if(type==='proofs'||type==='both'){
+    var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
+    proofCount = proofs.filter(match).length;
+    if(typeof window.saveProofs==='function') window.saveProofs(proofs.filter(function(r){ return !match(r); }));
+    if(proofCount) window._auditLog && window._auditLog('Bulk proofs deleted by admin', proofCount+' records · '+label);
+  }
+
+  // Refresh live tables
+  if(typeof window.renderInvoiceTableAdmin==='function') window.renderInvoiceTableAdmin();
+  if(typeof window.renderProofTable==='function') window.renderProofTable();
+  window._dcmRefresh();
+
+  var total = invCount + proofCount;
+  if(msgEl){
+    msgEl.style.display='';
+    msgEl.style.background='rgba(16,185,129,.1)';
+    msgEl.style.border='1px solid rgba(16,185,129,.25)';
+    msgEl.style.color='#10b981';
+    msgEl.textContent='✓ Deleted '+total+' record'+(total!==1?'s':'')+' ('+invCount+' invoice'+(invCount!==1?'s':'')+', '+proofCount+' proof'+(proofCount!==1?'s':'')+')';
+  }
+  if(typeof window.showImportToast==='function') window.showImportToast('🗑 Deleted '+total+' partner record'+(total!==1?'s':'')+' · '+label);
+};
+
+// ── Inject "Clear Data" button into Invoice Manager toolbar ──────────────
+(function _injectClearDataBtn(){
+  function _doInject(){
+    var invoiceView = document.getElementById('view-invoices');
+    if(!invoiceView || document.getElementById('admin-clear-data-btn')) return;
+    // Find the toolbar row (first .rf inside the view)
+    var toolbar = invoiceView.querySelector('.rf');
+    if(!toolbar) return;
+    var btn = document.createElement('button');
+    btn.id = 'admin-clear-data-btn';
+    btn.innerHTML = '🗑 Clear Data';
+    btn.title = 'Remove test/unwanted partner submissions';
+    btn.style.cssText = 'padding:7px 16px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;font-weight:700;color:#ef4444;cursor:pointer;margin-left:8px;transition:background .2s;';
+    btn.onmouseover = function(){ this.style.background='rgba(239,68,68,.2)'; };
+    btn.onmouseout  = function(){ this.style.background='rgba(239,68,68,.1)'; };
+    btn.onclick = function(){ window._adminOpenDataClearModal(); };
+    toolbar.appendChild(btn);
+  }
+  // Try immediately and also after portal opens
+  setTimeout(_doInject, 500);
+  var _origTV2 = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTV2==='function') _origTV2(id);
+    if(id==='invoices') setTimeout(_doInject, 200);
+  };
+  // Also patch showV
+  var _origSV2 = window.showV;
+  window.showV = function(id, el){
+    if(typeof _origSV2==='function') _origSV2(id, el);
+    if(id==='invoices') setTimeout(_doInject, 200);
+  };
+})();
+
+// ── Also add delete column header to invoice table ────────────────────────
+(function _patchInvTableHeader(){
+  function _doHeader(){
+    var thead = document.querySelector('#inv-tbl-admin')?.closest('table')?.querySelector('thead tr');
+    if(!thead || thead.querySelectorAll('th').length >= 10) return;
+    var th = document.createElement('th');
+    th.style.cssText = 'text-align:center;';
+    th.textContent = 'Del';
+    thead.appendChild(th);
+  }
+  setTimeout(_doHeader, 600);
+  var _origTV3 = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTV3==='function') _origTV3(id);
+    if(id==='invoices') setTimeout(_doHeader, 250);
+  };
+})();
+
+console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data deletion applied');
 })();
 </script>
 
