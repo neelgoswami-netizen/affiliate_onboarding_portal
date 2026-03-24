@@ -6769,19 +6769,26 @@ function buildAnnouncementsPartner(){
 
 function _updateAnnBadge(count){
   // Update sidebar nav item badge for partner
-  var navItem=document.querySelector('#partner-sidebar .ni[onclick*="p-announcements"]');
-  if(!navItem) return;
-  var existing=navItem.querySelector('.ann-badge');
-  if(count>0){
-    if(!existing){
-      existing=document.createElement('span');
-      existing.className='ann-badge';
-      existing.style.cssText='display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 5px;margin-left:auto;';
-      navItem.appendChild(existing);
+  function _apply(){
+    var navItem=document.querySelector('#partner-sidebar .ni[onclick*="p-announcements"]');
+    if(!navItem) return false;
+    var existing=navItem.querySelector('.ann-badge');
+    if(count>0){
+      if(!existing){
+        existing=document.createElement('span');
+        existing.className='ann-badge';
+        existing.style.cssText='display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;min-width:18px;height:18px;padding:0 5px;margin-left:auto;';
+        navItem.appendChild(existing);
+      }
+      existing.textContent=count>9?'9+':count;
+    } else {
+      if(existing) existing.remove();
     }
-    existing.textContent=count>9?'9+':count;
-  } else {
-    if(existing) existing.remove();
+    return true;
+  }
+  // Try immediately; if sidebar not rendered yet, retry once after 1s
+  if(!_apply()){
+    setTimeout(function(){ _apply(); }, 1000);
   }
 }
 
@@ -14554,6 +14561,20 @@ window.showPortal = function(role, user, partner) {
       try{ window.buildPartnerOverview(); }catch(e){}
       try{ window.populatePartnerUTMCard && window.populatePartnerUTMCard(); }catch(e){}
       try{ window._checkAndShowAnnBadge && window._checkAndShowAnnBadge(); }catch(e){}
+      // ── Fix: re-check badge after sync pull completes (resolves race condition) ──
+      // On a fresh device localStorage is empty at login; the sync pull takes 1-4s.
+      // We retry the badge check at 3s and 8s so it always shows even when sync is slow.
+      setTimeout(function(){
+        try{ if(typeof window._checkAndShowAnnBadge==='function') window._checkAndShowAnnBadge(); }catch(e){}
+        try{ if(typeof window.buildAnnouncementsPartner==='function'){
+          // Only refresh if the announcements panel is currently open
+          var annView = document.getElementById('view-p-announcements');
+          if(annView && annView.classList.contains('active')) window.buildAnnouncementsPartner();
+        }}catch(e){}
+      }, 3000);
+      setTimeout(function(){
+        try{ if(typeof window._checkAndShowAnnBadge==='function') window._checkAndShowAnnBadge(); }catch(e){}
+      }, 8500);
     }, 100);
   }
 };
@@ -17752,6 +17773,15 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
           ].forEach(function(fn){
             if(typeof window[fn]==='function') try{window[fn]();}catch(e){}
           });
+          // ── Fix: refresh announcements + badge after initial sync pull ──
+          // (partner's localStorage was empty at login; sync now has the data)
+          if(window.currentRole === 'partner'){
+            try{ if(typeof window.buildAnnouncementsPartner==='function') window.buildAnnouncementsPartner(); }catch(e){}
+            try{ if(typeof window._checkAndShowAnnBadge==='function')     window._checkAndShowAnnBadge(); }catch(e){}
+          }
+          if(window.currentRole === 'admin'){
+            try{ if(typeof window.buildAnnouncementsAdmin==='function') window.buildAnnouncementsAdmin(); }catch(e){}
+          }
         }
       }
     });
