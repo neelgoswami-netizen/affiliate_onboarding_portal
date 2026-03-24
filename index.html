@@ -4565,9 +4565,11 @@ function navScrollTo(id) {
     if(!partner){
       partner={name:cred.display,display:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}};
     }
-    // Attach username to partner object for unambiguous lookup later
+    // Attach ALL credential fields to partner for unambiguous sync lookup
     partner.username = cred.username;
     partner.display  = cred.display;
+    partner.password = cred.password; // needed for password change
+    partner.credName = cred.display;  // preserve original cred display name
     showPortal('partner', cred.display, partner);
   };
 })();
@@ -4675,26 +4677,32 @@ function saveCreds(arr){
   try{
     var serialised = JSON.stringify(arr);
 
-    // 1. Write via intercepted localStorage.setItem → triggers C24Sync push to Drive
+    // 1. Write → C24Sync intercept fires → BroadcastChannel + debounced push
     localStorage.setItem('cars24_partner_creds', serialised);
 
-    // 2. Keep all in-memory references in sync (no aliasing)
+    // 2. Keep ALL in-memory references in sync
     var fresh = JSON.parse(serialised);
     PARTNER_CREDS        = fresh;
     window.PARTNER_CREDS = fresh;
 
-    // 3. Re-render credential table immediately (admin side)
-    if(typeof renderCredTable === 'function') setTimeout(renderCredTable, 50);
+    // 3. Re-render credential table immediately on this device
+    if(typeof window.renderCredTable === 'function') setTimeout(window.renderCredTable, 50);
 
-    // 4. Force immediate push to Drive relay — don't wait for debounce
-    //    This ensures password changes appear on admin side within seconds
+    // 4. Immediate push to Drive relay (bypasses 800ms debounce)
     setTimeout(function(){
       try{
-        if(window.c24SyncPush) window.c24SyncPush('cars24_partner_creds');
+        var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl)||'';
+        if(!relay) return;
+        fetch(relay, {
+          method:'POST',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'saveConfig', configKey:'cars24_partner_creds', configValue:serialised}),
+          mode:'no-cors', redirect:'follow'
+        }).catch(function(){});
       }catch(e){}
-    }, 200);
+    }, 100);
 
-    console.log('[saveCreds] saved', arr.length, 'creds → localStorage + immediate push queued');
+    console.log('[saveCreds] saved', arr.length, 'creds, pushed to relay');
   }catch(e){ console.warn('[saveCreds] error:', e); }
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
@@ -5044,6 +5052,64 @@ var CH={}, chartType='bar', dodMetric='leads', dodDays=30, wowM='leads', sdcM='l
 var curRange='all', curStatus='', curSearch='', sortCol='leads';
 var funnelR='all', mtdCur, mtdPrev;
 var currentUser=null, currentRole=null, currentPartner=null;
+
+// Sync currentPartner from latest PARTNER_SHEET — call before any partner render
+// Updates BOTH the local var and window.currentPartner
+function _syncCurrentPartner(){
+  if(!currentPartner && !window.currentPartner) return;
+  var cp = currentPartner || window.currentPartner;
+  // Build all possible name variants to match against PARTNER_SHEET keys
+  var pName    = (cp.name||cp.display||cp.credName||'').toLowerCase().trim();
+  var pDisplay = (cp.display||cp.credName||'').toLowerCase().trim();
+  var pUser    = (cp.username||'').toLowerCase().trim();
+  if(!pName && !pDisplay && !pUser) return;
+
+  // Try PARTNER_SHEET first (most up-to-date after GSheet sync)
+  try{
+    var ps = window.PARTNER_SHEET || {};
+    var keys = Object.keys(ps);
+    var freshPS = null;
+    for(var i=0;i<keys.length;i++){
+      var entry = ps[keys[i]];
+      if(!entry||!entry.name) continue;
+      var entryName = entry.name.toLowerCase().trim();
+      var entryClean = entryName.replace(/\s+/g,'');
+      if(entryName === pName || entryName === pDisplay ||
+         entryClean === pName.replace(/\s+/g,'') ||
+         entryClean === pDisplay.replace(/\s+/g,'') ||
+         (pUser && entryClean.slice(0,12) === pUser.slice(0,12)) ||
+         (pUser && entryName.includes(pUser)) ||
+         (pDisplay && entryName.includes(pDisplay.split(' ')[0])) ){
+        freshPS = entry; break;
+      }
+    }
+    if(freshPS && Object.keys(freshPS.leads||{}).length > 0){
+      var merged = Object.assign({}, cp, freshPS, {
+        username: cp.username || freshPS.username,
+        display:  cp.display  || freshPS.display || freshPS.name,
+        password: cp.password // never overwrite password
+      });
+      currentPartner = merged;        // update local var
+      window.currentPartner = merged; // update window ref
+      return;
+    }
+  }catch(e){}
+
+  // Fallback: try PARTNERS array
+  try{
+    var partners = window.PARTNERS || [];
+    for(var j=0;j<partners.length;j++){
+      var pt = partners[j];
+      if(!pt||!pt.name) continue;
+      if(pt.name.toLowerCase().trim() === pName){
+        var merged2 = Object.assign({}, cp, pt);
+        currentPartner = merged2;
+        window.currentPartner = merged2;
+        return;
+      }
+    }
+  }catch(e){}
+}
 var pChartType='bar', pfRange='all', pTrendPair='', selMonth=null;
 
 // ════════════════════════════════════════════════
@@ -5145,6 +5211,8 @@ function doLogin(){
       // Attach credential identifiers to partner object for unambiguous later lookup
       partner.username = cred.username;
       partner.display  = cred.display;
+      partner.password = cred.password;
+      partner.credName = cred.display;
     }
     currentUser=cred.display; currentRole='partner'; currentPartner=partner;
     launchApp();
@@ -5199,7 +5267,7 @@ function triggerView(id){
   if(id==='seller-channels'){initSellerChannels();}
   if(id==='buyer'){buildBuyerMonthBtns();renderBuyerTable();}
   if(id==='vas'){ seedVhrStore(); buildVasCurrent(); }
-  if(id==='credentials'){ renderCredTable(); try{ renderAdminAccountsInCredView(); }catch(e){} }
+  if(id==='credentials'){ if(typeof getLatestCreds==='function') getLatestCreds(); if(typeof window.renderCredTable==='function') window.renderCredTable(); else renderCredTable(); try{ renderAdminAccountsInCredView(); }catch(e){} }
   if(id==='announcements')buildAnnouncementsAdmin();
   if(id==='payouts'){buildPayoutMonthBtns();renderPayoutTable();}
   if(id==='invoices'){buildInvMonthBtnsAdmin();renderInvoiceTableAdmin();}
@@ -6205,6 +6273,8 @@ function buildVas(){
 // PARTNER SIDEBAR LOADER
 // ════════════════════════════════════════════════
 function loadPartnerSidebar(){
+  // Sync currentPartner from PARTNER_SHEET before reading
+  try{ if(typeof _syncCurrentPartner==='function') _syncCurrentPartner(); }catch(e){}
   var p = currentPartner;
   if(!p) return;
 
@@ -6253,7 +6323,9 @@ function loadPartnerSidebar(){
 // PARTNER OVERVIEW
 // ════════════════════════════════════════════════
 function buildPartnerOverview(){
-  // Refresh sidebar cards every time overview rebuilds (e.g. after sync pull)
+  // Always sync currentPartner from latest PARTNER_SHEET before rendering
+  try{ if(typeof _syncCurrentPartner==='function') _syncCurrentPartner(); }catch(e){}
+  // Refresh sidebar cards
   try{ loadPartnerSidebar(); }catch(e){}
   const p=currentPartner; if(!p)return;
   const totL=MONTHS.reduce((s,m)=>s+(p.leads&&p.leads[m]||0),0);
@@ -14788,6 +14860,8 @@ window.showPortal = function(role, user, partner) {
       // Always pull from Drive first so partner sees live data,
       // not stale localStorage from a previous session.
       function _renderPartnerDashboard(){
+        // Sync currentPartner FIRST — ensures local var has latest PARTNER_SHEET data
+        try{ if(typeof _syncCurrentPartner==='function') _syncCurrentPartner(); }catch(e){}
         try{ window.loadPartnerSidebar && window.loadPartnerSidebar(); }catch(e){}
         try{ window.buildPartnerOverview(); }catch(e){}
         try{ window.populatePartnerUTMCard && window.populatePartnerUTMCard(); }catch(e){}
@@ -18201,26 +18275,9 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     }
 
     // ── Refresh currentPartner from freshly loaded PARTNER_SHEET ────
-    if(window.currentRole==='partner' && window.currentPartner){
+    if(window.currentRole==='partner'){
       try{
-        var pName = (window.currentPartner.name||window.currentPartner.display||'').toLowerCase().trim();
-        // Try PARTNER_SHEET first (most accurate for partner view)
-        var freshPS = window.PARTNER_SHEET && Object.values(window.PARTNER_SHEET).find(function(p){
-          return p && (p.name||'').toLowerCase().trim()===pName;
-        });
-        if(freshPS && Object.keys(freshPS.leads||{}).length > 0){
-          window.currentPartner = Object.assign({}, window.currentPartner, freshPS, {
-            username: window.currentPartner.username,
-            display:  window.currentPartner.display,
-            password: window.currentPartner.password
-          });
-        } else if(window.PARTNERS){
-          // Fall back to PARTNERS array
-          var freshP = window.PARTNERS.find(function(p){
-            return p && (p.name||'').toLowerCase().trim()===pName;
-          });
-          if(freshP) window.currentPartner = Object.assign({}, window.currentPartner, freshP);
-        }
+        if(typeof _syncCurrentPartner==='function') _syncCurrentPartner();
       }catch(e){}
     }
   }
