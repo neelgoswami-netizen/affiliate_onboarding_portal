@@ -4579,13 +4579,15 @@ function loadCreds(){
 }
 function saveCreds(arr){
   try{
-    window.PARTNER_CREDS = arr;
-    localStorage.setItem('cars24_partner_creds', JSON.stringify(arr)); // triggers C24Sync push
-    // If admin is viewing credentials view, re-render immediately
-    if(typeof renderCredTable==='function'){
-      setTimeout(renderCredTable, 50);
-    }
-  }catch(e){}
+    // Keep all references in sync — var, window., and re-read from JSON to avoid
+    // reference aliasing issues where mutations don't propagate across scopes
+    var serialised = JSON.stringify(arr);
+    var fresh = JSON.parse(serialised);
+    PARTNER_CREDS        = fresh;   // update the var binding directly
+    window.PARTNER_CREDS = fresh;   // update window reference
+    localStorage.setItem('cars24_partner_creds', serialised); // triggers C24Sync push
+    if(typeof renderCredTable==='function') setTimeout(renderCredTable, 50);
+  }catch(e){ console.warn('[saveCreds] error:', e); }
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
 
@@ -8808,26 +8810,33 @@ function changePartnerPassword(){
   }
   if(!cur||!nw||!cf){ showMsg('⚠ All fields are required.', false); return; }
   if(!currentPartner){ showMsg('⚠ No partner session found. Please log in again.', false); return; }
-  // Verify current password — match on username OR display name (currentPartner
-  // may be built from PARTNER_SHEET which uses 'name' instead of 'username')
-  var _pu = (currentPartner.username||'').toLowerCase().trim();
-  var _pd = (currentPartner.display||currentPartner.name||'').toLowerCase().trim();
-  var cred = PARTNER_CREDS.find(function(c){
-    var cu = (c.username||'').toLowerCase().trim();
-    var cd = (c.display||'').toLowerCase().trim();
-    return (_pu && (cu===_pu||cd===_pu)) || (_pd && (cu===_pd||cd===_pd));
-  });
-  // Last-resort fallback: match by stored password (covers edge cases)
-  if(!cred && currentPartner.password){
-    cred = PARTNER_CREDS.find(function(c){ return c.password===currentPartner.password && (c.display||c.username); });
-  }
-  if(!cred){ showMsg('⚠ Credential record not found. Contact admin.', false); return; }
-  if(cred.password !== cur){ showMsg('⚠ Current password is incorrect.', false); return; }
   if(nw.length < 6){ showMsg('⚠ New password must be at least 6 characters.', false); return; }
   if(nw !== cf){ showMsg('⚠ Passwords do not match.', false); return; }
-  // Apply change
-  cred.password = nw;
-  saveCreds(PARTNER_CREDS);
+
+  // Always re-read credentials fresh from localStorage to avoid stale in-memory reference
+  var liveCreds = [];
+  try{ var _lc=localStorage.getItem('cars24_partner_creds'); liveCreds=_lc?JSON.parse(_lc):(window.PARTNER_CREDS||[]); }catch(e){ liveCreds=window.PARTNER_CREDS||[]; }
+
+  var _pu = (currentPartner.username||'').toLowerCase().trim();
+  var _pd = (currentPartner.display||currentPartner.name||'').toLowerCase().trim();
+  var credIdx = -1;
+  liveCreds.forEach(function(c, i){
+    var cu = (c.username||'').toLowerCase().trim();
+    var cd = (c.display||'').toLowerCase().trim();
+    if((_pu && (cu===_pu||cd===_pu)) || (_pd && (cu===_pd||cd===_pd))) credIdx = i;
+  });
+  // Fallback: match by current password value
+  if(credIdx === -1){
+    liveCreds.forEach(function(c, i){ if(c.password===cur) credIdx = i; });
+  }
+  if(credIdx === -1){ showMsg('⚠ Credential record not found. Contact admin.', false); return; }
+  if(liveCreds[credIdx].password !== cur){ showMsg('⚠ Current password is incorrect.', false); return; }
+
+  // Apply change directly on the live array
+  liveCreds[credIdx].password = nw;
+  saveCreds(liveCreds);  // saves + syncs + re-renders
+  // Also update currentPartner session so next login uses new password
+  if(currentPartner) currentPartner.password = nw;
   _auditLog('Partner password changed', 'Partner: '+currentPartner.display+' ('+currentPartner.username+')');
   document.getElementById('p-chg-cur').value='';
   document.getElementById('p-chg-new').value='';
@@ -17569,11 +17578,11 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       partner: ['buildAnnouncementsPartner', '_checkAndShowAnnBadge']
     },
     'cars24_invoices': {
-      admin:   ['renderInvoiceTableAdmin'],
+      admin:   ['renderInvoiceTableAdmin', 'buildInvMonthBtnsAdmin'],
       partner: ['buildPartnerInvoices']
     },
     'cars24_payment_proofs': {
-      admin:   ['renderProofTable'],
+      admin:   ['renderProofTable', 'buildProofMonthBtns'],
       partner: ['buildPartnerPayments']
     },
     'cars24_target_store': {
@@ -17582,7 +17591,7 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     },
     'cars24_payout_store': {
       admin:   ['renderPayoutTable'],
-      partner: ['buildPartnerOverview']
+      partner: ['buildPartnerOverview', 'buildPartnerTargets']
     },
     'cars24_partner_creds': {
       admin:   ['renderCredTable'],
@@ -17591,6 +17600,10 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     'cars24_admin_accounts': {
       admin:   ['renderCredTable'],
       partner: []
+    },
+    'cars24_announcements': {
+      admin:   ['buildAnnouncementsAdmin'],
+      partner: ['buildAnnouncementsPartner', '_checkAndShowAnnBadge']
     },
     'cars24_partner_sheet_data': {
       admin:   ['updateDashboard'],
@@ -17873,6 +17886,72 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     // Update checksum so next poll skips unchanged keys
     try{ _lastChecksums[key] = _checksum(value); }catch(e){}
   };
+
+  // ── CRITICAL: patch cars24_ls.set to use the intercepted localStorage.setItem ──
+  // cars24_ls was defined before this intercept, so it captured the original
+  // localStorage.setItem. All saves via cars24_ls (invoices, proofs, announcements,
+  // targets, payouts) would bypass sync entirely. This patch fixes that.
+  if(window.cars24_ls){
+    window.cars24_ls.set = function(k, v){
+      try{
+        localStorage.setItem(k, JSON.stringify(v)); // now goes through the intercept above
+        return true;
+      }catch(e){ return false; }
+    };
+  }
+
+  // ── Also patch the low-level _store() function used by old save paths ──────────
+  if(typeof window._store === 'function' || typeof _store === 'function'){
+    var _origStore = typeof _store === 'function' ? _store : window._store;
+    var _patchedStore = function(k, v){
+      if(v === undefined){ // it's a read
+        try{ var s=localStorage.getItem(k); return s?JSON.parse(s):null; }catch(e){ return null; }
+      }
+      // it's a write — use patched localStorage.setItem so sync fires
+      try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
+    };
+    try{ _store = _patchedStore; }catch(e){}
+    window._store = _patchedStore;
+  }
+
+  // ── Patch saveTargetStore to go through intercepted setItem ─────────────────────
+  var _origSaveTS = window.saveTargetStore;
+  window.saveTargetStore = function(obj){
+    try{ localStorage.setItem('cars24_target_store', JSON.stringify(obj)); }catch(e){}
+    // Also call original if it does extra work
+    if(typeof _origSaveTS === 'function' && _origSaveTS !== window.saveTargetStore){
+      try{ _origSaveTS(obj); }catch(e){}
+    }
+  };
+
+  // ── Patch savePayoutStore ────────────────────────────────────────────────────────
+  var _origSavePayout = window.savePayoutStore;
+  window.savePayoutStore = function(obj){
+    try{ localStorage.setItem('cars24_payout_store', JSON.stringify(obj)); }catch(e){}
+    if(typeof _origSavePayout === 'function' && _origSavePayout !== window.savePayoutStore){
+      try{ _origSavePayout(obj); }catch(e){}
+    }
+  };
+
+  // ── Patch saveAnnouncements ──────────────────────────────────────────────────────
+  var _origSaveAnn = window.saveAnnouncements;
+  window.saveAnnouncements = function(arr){
+    try{ localStorage.setItem('cars24_announcements', JSON.stringify(arr)); }catch(e){}
+    if(typeof _origSaveAnn === 'function' && _origSaveAnn !== window.saveAnnouncements){
+      try{ _origSaveAnn(arr); }catch(e){}
+    }
+  };
+
+  // ── Patch saveAdminViewStore ─────────────────────────────────────────────────────
+  var _origSaveAV = window.saveAdminViewStore;
+  window.saveAdminViewStore = function(obj){
+    try{ localStorage.setItem('cars24_admin_view_data', JSON.stringify(obj)); }catch(e){}
+    if(typeof _origSaveAV === 'function' && _origSaveAV !== window.saveAdminViewStore){
+      try{ _origSaveAV(obj); }catch(e){}
+    }
+  };
+
+  console.log('[C24Sync] All save paths patched — cars24_ls, _store, saveTargetStore, savePayoutStore, saveAnnouncements, saveAdminViewStore');
 
   // ─────────────────────────────────────────────────────────────────
   //  SYNC STATUS INDICATOR (live dot in portal header)
