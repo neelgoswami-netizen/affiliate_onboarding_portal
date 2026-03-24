@@ -8804,8 +8804,19 @@ function changePartnerPassword(){
   }
   if(!cur||!nw||!cf){ showMsg('⚠ All fields are required.', false); return; }
   if(!currentPartner){ showMsg('⚠ No partner session found. Please log in again.', false); return; }
-  // Verify current password against PARTNER_CREDS
-  var cred = PARTNER_CREDS.find(function(c){ return c.username === currentPartner.username; });
+  // Verify current password — match on username OR display name (currentPartner
+  // may be built from PARTNER_SHEET which uses 'name' instead of 'username')
+  var _pu = (currentPartner.username||'').toLowerCase().trim();
+  var _pd = (currentPartner.display||currentPartner.name||'').toLowerCase().trim();
+  var cred = PARTNER_CREDS.find(function(c){
+    var cu = (c.username||'').toLowerCase().trim();
+    var cd = (c.display||'').toLowerCase().trim();
+    return (_pu && (cu===_pu||cd===_pu)) || (_pd && (cu===_pd||cd===_pd));
+  });
+  // Last-resort fallback: match by stored password (covers edge cases)
+  if(!cred && currentPartner.password){
+    cred = PARTNER_CREDS.find(function(c){ return c.password===currentPartner.password && (c.display||c.username); });
+  }
   if(!cred){ showMsg('⚠ Credential record not found. Contact admin.', false); return; }
   if(cred.password !== cur){ showMsg('⚠ Current password is incorrect.', false); return; }
   if(nw.length < 6){ showMsg('⚠ New password must be at least 6 characters.', false); return; }
@@ -16745,7 +16756,11 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
       // Partner credential update
       var creds = [];
       try{ var cs=localStorage.getItem('cars24_partner_creds'); creds=cs?JSON.parse(cs):[]; }catch(e){}
-      var cred = creds.find(function(c){ return c.display===targetName || c.username===targetName; });
+      var _tn = (targetName||'').toLowerCase().trim();
+      var cred = creds.find(function(c){
+        return (c.display||'').toLowerCase().trim()===_tn ||
+               (c.username||'').toLowerCase().trim()===_tn;
+      });
       if(!cred){ _showMsg('Partner credential not found.', false); return; }
       cred.password = pwNew;
       cred.lastPwChange = new Date().toISOString();
