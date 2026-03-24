@@ -393,10 +393,10 @@ input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px rgba(61,53
 .hdr{background:var(--hd);height:56px;display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:200;flex-shrink:0;box-shadow:0 2px 16px rgba(79,70,229,.35)}
 .logo{height:36px;object-fit:contain;flex-shrink:0}
 .lsep{width:1px;height:22px;background:rgba(255,255,255,.28)}
-.htit{color:#fff;font-weight:600;font-size:14px;white-space:nowrap}
-.hsp{flex:1}
-.hacts{display:flex;align-items:center;gap:6px}
-.hb{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;font-family:'DM Sans',sans-serif;transition:background .15s;white-space:nowrap}
+.htit{color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.hsp{flex:1;min-width:0}
+.hacts{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hb{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;font-family:'DM Sans',sans-serif;transition:background .15s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .hb:hover{background:rgba(255,255,255,.22)}
 .dot{width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 2s infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -554,32 +554,34 @@ tbody tr:hover td{background:var(--al)}
 
 /* Hamburger button — hidden on desktop */
 #mob-menu-btn {
-  display: none;
+  display: none; /* shown via media query below */
   align-items: center;
   justify-content: center;
-  width: 38px; height: 38px;
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.22);
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.3);
   border-radius: 8px;
   cursor: pointer;
   flex-shrink: 0;
   z-index: 210;
-  margin-right: 4px;
+  padding: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 #mob-menu-btn span {
-  display: block; width: 18px; height: 2px;
+  display: block; width: 20px; height: 2px;
   background: #fff; border-radius: 2px;
   position: relative; transition: all .25s;
 }
 #mob-menu-btn span::before,
 #mob-menu-btn span::after {
   content: ''; position: absolute; left: 0;
-  width: 18px; height: 2px;
+  width: 20px; height: 2px;
   background: #fff; border-radius: 2px;
   transition: all .25s;
 }
-#mob-menu-btn span::before { top: -5px; }
-#mob-menu-btn span::after  { top: 5px; }
+#mob-menu-btn span::before { top: -6px; }
+#mob-menu-btn span::after  { top: 6px; }
 /* X state */
 #mob-menu-btn.open span   { background: transparent; }
 #mob-menu-btn.open span::before { transform: rotate(45deg);  top: 0; }
@@ -592,6 +594,7 @@ tbody tr:hover td{background:var(--al)}
   background: rgba(0,0,0,.55);
   z-index: 205;
   backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 #mob-sidebar-overlay.show { display: block; }
 
@@ -599,40 +602,61 @@ tbody tr:hover td{background:var(--al)}
   /* ── Header ── */
   .hdr {
     padding: 0 12px;
-    height: 52px;
+    min-height: 52px;
+    height: auto;
     gap: 8px;
   }
-  .htit { font-size: 12px; }
+  .htit { font-size: 12px; max-width: 120px; }
   .lsep { display: none; }
   /* Hide non-essential header buttons on small screens */
   #tbtn { display: none !important; }
-  .hb:not(.hbr):not(#mob-hdr-user-btn) { font-size: 11px; padding: 4px 8px; gap: 3px; }
-  .role-badge { font-size: 9.5px; padding: 2px 7px; }
+  /* Show only icon in user button, hide text */
+  .hb:not(.hbr):not(#mob-menu-btn) #hdr-user { display: none; }
+  .role-badge { display: none; }
+  /* Keep logout button but make it compact */
+  .hbr { padding: 5px 10px; font-size: 11px; }
+  .hb:not(.hbr):not(#mob-menu-btn) { font-size: 11px; padding: 4px 8px; gap: 3px; }
 
-  /* Show hamburger */
-  #mob-menu-btn { display: flex; }
+  /* ── Show hamburger — ALWAYS on mobile ── */
+  #mob-menu-btn { display: flex !important; }
 
-  /* ── Sidebar — slide-in drawer ── */
+  /* ── Sidebar — ALWAYS a slide-in drawer on mobile ── */
+  /* This ensures it's hidden by default, regardless of inline styles */
+  #admin-sidebar,
+  #partner-sidebar,
   .sidebar {
     position: fixed !important;
-    top: 52px; left: 0; bottom: 0;
-    width: 260px !important;
-    z-index: 210;
-    transform: translateX(-100%);
-    transition: transform .28s cubic-bezier(.4,0,.2,1);
-    overflow-y: auto;
-    box-shadow: 4px 0 24px rgba(0,0,0,.35);
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    z-index: 210 !important;
+    transform: translateX(-100%) !important;
+    -webkit-transform: translateX(-100%) !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
+    -webkit-transition: -webkit-transform .28s cubic-bezier(.4,0,.2,1) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,.35) !important;
+    /* Sit below the header */
+    padding-top: 60px !important;
   }
+  #admin-sidebar.mob-open,
+  #partner-sidebar.mob-open,
   .sidebar.mob-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+    -webkit-transform: translateX(0) !important;
   }
 
-  /* ── Layout ── */
-  .layout { flex-direction: column; }
+  /* ── Layout — no sidebar taking space ── */
+  .layout { flex-direction: row; }
   .main {
     padding: 14px 12px;
-    width: 100%;
+    width: 100% !important;
     min-width: 0;
+    /* Take full width since sidebar is overlaid */
+    flex: 1;
   }
 
   /* ── KPI grids → 2 cols on mobile ── */
@@ -810,13 +834,11 @@ input[type=range]::-webkit-slider-thumb {
 
 /* Fix iOS position:fixed + transform bug (sidebar slide-in) */
 @supports (-webkit-overflow-scrolling: touch) {
+  /* Sidebar GPU layer for smooth animation on iOS */
   .sidebar {
-    -webkit-transform: translateX(-100%);
-    transform: translateX(-100%);
-  }
-  .sidebar.mob-open {
-    -webkit-transform: translateX(0);
-    transform: translateX(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
   }
   /* Fix fixed overlay on iOS - force GPU layer */
   #mob-sidebar-overlay,
@@ -2688,7 +2710,7 @@ function navScrollTo(id) {
       <button class="hb"><span class="dot"></span>&nbsp;<span id="hdr-user">Admin</span></button>
       <button class="hb" id="tbtn" onclick="toggleTheme()">🌙 Dark</button>
       <button class="hb hbr" onclick="doLogout()">⬡ Logout</button>
-      <button id="mob-menu-btn" onclick="_toggleMobSidebar()" aria-label="Toggle menu" style="display:none;"><span></span></button>
+      <button id="mob-menu-btn" onclick="_toggleMobSidebar()" aria-label="Toggle menu"><span></span></button>
     </div>
   </header>
   <div id="mob-sidebar-overlay" onclick="_closeMobSidebar()"></div>
@@ -15119,10 +15141,13 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
   function isMobile(){ return window.innerWidth <= MOB_BP; }
 
   // Show/hide hamburger based on viewport
+  // NOTE: CSS media query handles display. JS just ensures portal-open state is right.
   function _syncHamburger(){
     var btn = document.getElementById('mob-menu-btn');
     if(!btn) return;
-    btn.style.display = isMobile() ? 'flex' : 'none';
+    // Let CSS media query control display — only force-show when portal is open on mobile
+    // Remove any inline style so CSS takes over
+    btn.style.display = '';
   }
 
   // Open sidebar drawer
