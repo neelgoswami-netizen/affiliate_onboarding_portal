@@ -17421,490 +17421,559 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
 })();
 </script>
 
-<!-- ══════════════════════════════════════════════════════════
-     GITHUB PAGES DATA-RENDER FIX & CROSS-TAB STORAGE SYNC
-     Ensures UI re-renders when localStorage changes (e.g. admin
-     imports data in one tab and partner sees it in another, or
-     after a GitHub Pages deploy / hard-refresh clears cached JS)
-     ══════════════════════════════════════════════════════════ -->
+<!-- iOS/mobile fixes — cross-tab/cross-device sync handled by C24Sync v2 below -->
 <script>
 (function(){
   'use strict';
+  // Old cross-tab storage handler removed — C24Sync v2 BroadcastChannel+relay owns this now.
+  // Keeping minimal fallback for global reload + iOS fixes only.
 
-  // ── 1. Cross-tab storage event: re-render affected views ──────────────────
   window.addEventListener('storage', function(e){
-    if(!e.key || !e.key.startsWith('cars24_')) return;
-    console.log('[Cars24] Storage updated in another tab:', e.key);
-
-    // Reload data globals
-    try {
-      if(e.key === 'cars24_partners_data'){
-        window.PARTNERS = JSON.parse(e.newValue||'[]');
-        if(typeof window.rebuildMonthMeta === 'function') window.rebuildMonthMeta();
-      }
-      if(e.key === 'cars24_partner_sheet_data'){
-        window.PARTNER_SHEET = JSON.parse(e.newValue||'{}');
-      }
-      if(e.key === 'cars24_partner_creds'){
-        window.PARTNER_CREDS = JSON.parse(e.newValue||'[]');
-      }
-    } catch(err){}
-
-    // Re-render active view if portal is open
-    var pf = document.getElementById('portal-fullscreen');
-    if(pf && pf.classList.contains('open')){
-      var activeView = document.querySelector('#portal-fullscreen .view.active');
-      if(activeView) {
-        var vid = activeView.id;
-        // Trigger re-render functions that exist
-        ['renderAdminDashboard','renderPartnerDashboard','renderInvoiceTableAdmin',
-         'renderProofTable','buildTargets','renderAdminBuyerView','renderVasView'
-        ].forEach(function(fn){
-          if(typeof window[fn] === 'function'){
-            try{ window[fn](); }catch(err){}
-          }
-        });
-      }
-    }
+    if(!e.key||!e.key.startsWith('cars24_')) return;
+    try{ if(e.key==='cars24_partners_data'&&e.newValue){ window.PARTNERS=JSON.parse(e.newValue); if(typeof window.rebuildMonthMeta==='function') window.rebuildMonthMeta(); }}catch(ex){}
+    try{ if(e.key==='cars24_partner_sheet_data'&&e.newValue) window.PARTNER_SHEET=JSON.parse(e.newValue); }catch(ex){}
+    try{ if(e.key==='cars24_partner_creds'&&e.newValue) window.PARTNER_CREDS=JSON.parse(e.newValue); }catch(ex){}
   });
 
-  // ── 2. Visibility change: refresh data when tab becomes active ─────────────
-  // This handles GitHub Pages hard-refresh / new deploy scenarios
-  document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState !== 'visible') return;
-
-    // Reload data from localStorage (in case another tab wrote to it)
-    try {
-      var ps = localStorage.getItem('cars24_partners_data');
-      if(ps) window.PARTNERS = JSON.parse(ps);
-      var psh = localStorage.getItem('cars24_partner_sheet_data');
-      if(psh) window.PARTNER_SHEET = JSON.parse(psh);
-      var pc = localStorage.getItem('cars24_partner_creds');
-      if(pc) window.PARTNER_CREDS = JSON.parse(pc);
-    } catch(e){}
-
-    // Re-render if portal is open
-    var pf = document.getElementById('portal-fullscreen');
-    if(pf && pf.classList.contains('open')){
-      ['renderAdminDashboard','renderPartnerDashboard'].forEach(function(fn){
-        if(typeof window[fn] === 'function'){
-          try{ window[fn](); }catch(err){}
-        }
-      });
-    }
-  });
-
-  // ── 3. iOS Safari back/forward cache fix ─────────────────────────────────
-  // When user navigates back on iOS, cached page state can be stale
+  // iOS bfcache
   window.addEventListener('pageshow', function(e){
-    if(e.persisted){
-      // Page was restored from bfcache — reload data and re-render
-      console.log('[Cars24] Page restored from bfcache — reloading data');
-      try {
-        var ps = localStorage.getItem('cars24_partners_data');
-        if(ps) window.PARTNERS = JSON.parse(ps);
-        var psh = localStorage.getItem('cars24_partner_sheet_data');
-        if(psh) window.PARTNER_SHEET = JSON.parse(psh);
-      } catch(e){}
-
-      if(typeof window.rebuildMonthMeta === 'function') {
-        try{ window.rebuildMonthMeta(); }catch(e){}
-      }
-    }
+    if(!e.persisted) return;
+    try{ var ps=localStorage.getItem('cars24_partners_data'); if(ps) window.PARTNERS=JSON.parse(ps); }catch(ex){}
+    try{ var psh=localStorage.getItem('cars24_partner_sheet_data'); if(psh) window.PARTNER_SHEET=JSON.parse(psh); }catch(ex){}
+    if(typeof window.rebuildMonthMeta==='function') try{ window.rebuildMonthMeta(); }catch(ex){}
   });
 
-  // ── 4. Mobile keyboard — prevent body scroll when input focused ───────────
-  // Fixes iOS bug where page scrolls behind modal when keyboard appears
-  var lastScrollY = 0;
+  // Mobile keyboard scroll-into-view
   document.addEventListener('focusin', function(e){
-    var tag = (e.target && e.target.tagName || '').toLowerCase();
-    if(tag === 'input' || tag === 'textarea' || tag === 'select'){
-      // Small delay so keyboard has time to appear
-      setTimeout(function(){
-        if(e.target && typeof e.target.scrollIntoView === 'function'){
-          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
+    var tag=(e.target&&e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select'){
+      setTimeout(function(){ if(e.target&&typeof e.target.scrollIntoView==='function') e.target.scrollIntoView({behavior:'smooth',block:'center'}); },300);
     }
   });
 
-  // ── 5. Fix iOS fixed-position modals during scroll ───────────────────────
-  // Prevents the "fixed element jumps" bug on iOS Safari
-  var bodyLocked = false;
-  window._lockBodyScroll = function(){
-    if(bodyLocked) return;
-    lastScrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = '-' + lastScrollY + 'px';
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    bodyLocked = true;
-  };
-  window._unlockBodyScroll = function(){
-    if(!bodyLocked) return;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    window.scrollTo(0, lastScrollY);
-    bodyLocked = false;
-  };
+  // iOS fixed-modal scroll lock
+  var _lsy=0,_lkd=false;
+  window._lockBodyScroll=function(){ if(_lkd)return; _lsy=window.scrollY; document.body.style.cssText='position:fixed;top:-'+_lsy+'px;left:0;right:0'; _lkd=true; };
+  window._unlockBodyScroll=function(){ if(!_lkd)return; document.body.style.cssText=''; window.scrollTo(0,_lsy); _lkd=false; };
+  var _osp=window.showPortal;
+  window.showPortal=function(){ window._lockBodyScroll(); if(typeof _osp==='function') _osp.apply(this,arguments); };
 
-  // Apply body lock to portal fullscreen open/close
-  var _origShowPortal = window.showPortal;
-  window.showPortal = function(){
-    window._lockBodyScroll();
-    if(typeof _origShowPortal === 'function') _origShowPortal.apply(this, arguments);
-  };
-
-  // ── 6. GitHub Pages: detect if running on GitHub Pages and log ────────────
-  if(window.location.hostname.endsWith('.github.io') || window.location.hostname.endsWith('.githubusercontent.com')){
-    console.log('[Cars24] Running on GitHub Pages — localStorage is active, data persists per-browser');
-    // Ensure charts re-render after fonts load (GitHub Pages CDN can be slow)
-    document.fonts && document.fonts.ready && document.fonts.ready.then(function(){
-      if(typeof Chart !== 'undefined'){
-        Chart.instances && Object.values(Chart.instances).forEach(function(c){
-          try{ c.update(); }catch(e){}
-        });
-      }
-    });
+  // GitHub Pages chart reload after fonts
+  if(window.location.hostname.endsWith('.github.io')||window.location.hostname.endsWith('.githubusercontent.com')){
+    document.fonts&&document.fonts.ready&&document.fonts.ready.then(function(){ if(typeof Chart!=='undefined') Object.values(Chart.instances||{}).forEach(function(c){ try{c.update();}catch(ex){} }); });
   }
 
-  console.log('[Cars24] GitHub Pages data-render fix + iOS/Android cross-tab sync applied');
+  console.log('[Cars24] iOS/mobile fixes applied');
 })();
 </script>
 
 <!-- ══════════════════════════════════════════════════════════════════
-     CARS24 CONFIG SYNC — Makes admin changes visible to ALL users
+     CARS24 LIVE SYNC ENGINE v2
+     Real-time bidirectional data flow — admin ↔ partner, any device
      ══════════════════════════════════════════════════════════════════
-     
-     PROBLEM: localStorage is per-browser. Admin saves credentials/
-     announcements/payouts on their device → partners on other devices
-     see nothing because they have empty localStorage.
 
-     SOLUTION: Route all admin config writes through the existing
-     Google Apps Script relay (driveWebAppUrl). Config is stored as
-     JSON files in Google Drive and fetched on every page load.
-     
-     Keys synced via Drive/Apps Script:
-       cars24_partner_creds    → partner login credentials
-       cars24_admin_pass       → admin password  
-       cars24_announcements    → announcements
-       cars24_invoices         → invoice records
-       cars24_partner_sheet_data → partner dashboard data
-       cars24_target_store     → targets
-       cars24_admin_accounts   → secondary admin accounts
-     
-     Performance data (PARTNERS, buyer, VAS) flows from Google Sheet
-     via refreshGSheetData() — already shared. ✅
+     ARCHITECTURE:
+       Layer 1 — BroadcastChannel  (instant, same browser, multi-tab)
+       Layer 2 — localStorage "storage" event  (instant, same browser)
+       Layer 3 — Drive/Apps Script polling  (cross-device, 10s interval)
+
+     DATA FLOWS COVERED:
+       Admin → Partner:
+         ✅ Announcements posted / edited / deleted
+         ✅ Targets set or bulk-uploaded
+         ✅ Invoice status changed (Approved / Rejected)
+         ✅ Payment proof added / deleted
+         ✅ Partner credentials added / edited / deleted
+         ✅ Partner password changed by admin
+         ✅ Partner sheet data updated (performance import)
+         ✅ Payout store updated
+         ✅ Admin view data (seller/buyer/VAS data)
+         ✅ Month registry updated
+
+       Partner → Admin:
+         ✅ Invoice submitted
+         ✅ Password changed by partner
+         ✅ Any other partner-side localStorage write
+
+       Same-browser multi-tab:
+         ✅ All of the above instantly via BroadcastChannel
+
+     SYNC INDICATOR:
+       Live dot in portal header showing: syncing / live / offline
      ══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
   'use strict';
 
+  // ─────────────────────────────────────────────────────────────────
+  //  CONFIG
+  // ─────────────────────────────────────────────────────────────────
   var RELAY_URL = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG && window.CARS24_CONFIG.driveWebAppUrl) || '';
 
-  // Config keys that must be shared across all users
+  // All keys synced across devices via Drive relay
   var SYNC_KEYS = [
-    'cars24_partner_creds',
-    'cars24_admin_pass',
-    'cars24_announcements',
-    'cars24_invoices',
-    'cars24_payment_proofs',       // ← payment proof records (was missing)
-    'cars24_partner_sheet_data',
-    'cars24_target_store',
-    'cars24_admin_accounts',
-    'cars24_partners_data',
-    'cars24_admin_view_data',      // ← admin analytics store
+    'cars24_partner_creds',         // admin → partner: login credentials
+    'cars24_admin_pass',            // admin: master password
+    'cars24_admin_accounts',        // admin: secondary admin accounts
+    'cars24_announcements',         // admin → partner: announcements
+    'cars24_invoices',              // partner → admin → partner: invoice status
+    'cars24_payment_proofs',        // admin → partner: payment proof/UTR
+    'cars24_target_store',          // admin → partner: monthly targets
+    'cars24_payout_store',          // admin → partner: payout records
+    'cars24_partner_sheet_data',    // admin → partner: dashboard KPI data
+    'cars24_partners_data',         // admin → partner: partner list
+    'cars24_admin_view_data',       // admin: analytics store
+    'cars24_month_registry',        // admin: available months
   ];
 
-  // ── Utility: debounce to batch rapid saves ──────────────────────
+  // Map: which SYNC_KEY change should re-render which functions per role
+  var RENDER_MAP = {
+    // key → { admin: [fns], partner: [fns] }
+    'cars24_announcements': {
+      admin:   ['buildAnnouncementsAdmin', 'renderAuditLog'],
+      partner: ['buildAnnouncementsPartner', '_checkAndShowAnnBadge']
+    },
+    'cars24_invoices': {
+      admin:   ['renderInvoiceTableAdmin'],
+      partner: ['buildPartnerInvoices']
+    },
+    'cars24_payment_proofs': {
+      admin:   ['renderProofTable'],
+      partner: ['buildPartnerPayments']
+    },
+    'cars24_target_store': {
+      admin:   ['buildTargets'],
+      partner: ['buildPartnerTargets', 'buildPartnerOverview']
+    },
+    'cars24_payout_store': {
+      admin:   ['renderPayoutTable'],
+      partner: ['buildPartnerOverview']
+    },
+    'cars24_partner_creds': {
+      admin:   ['renderCredTable'],
+      partner: []
+    },
+    'cars24_admin_accounts': {
+      admin:   ['renderCredTable'],
+      partner: []
+    },
+    'cars24_partner_sheet_data': {
+      admin:   ['updateDashboard'],
+      partner: ['buildPartnerOverview', 'buildSellerChannels', 'buildBuyerView', 'buildVasView', 'buildPartnerTargets']
+    },
+    'cars24_partners_data': {
+      admin:   ['updateDashboard', 'buildTargets'],
+      partner: ['buildPartnerOverview']
+    },
+    'cars24_admin_view_data': {
+      admin:   ['updateDashboard', 'renderAdminBuyerView', 'renderVasView'],
+      partner: []
+    },
+    'cars24_month_registry': {
+      admin:   ['buildInvMonthBtnsAdmin', 'buildProofMonthBtns'],
+      partner: ['buildPartnerInvoices']
+    },
+    'cars24_admin_pass': {
+      admin:   [],
+      partner: []
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────
+  //  UTILITIES
+  // ─────────────────────────────────────────────────────────────────
   var _debounceTimers = {};
   function _debounce(key, fn, delay){
     clearTimeout(_debounceTimers[key]);
-    _debounceTimers[key] = setTimeout(fn, delay || 1200);
+    _debounceTimers[key] = setTimeout(fn, delay || 800);
   }
 
-  // ── Push a config key's value to Drive via Apps Script ──────────
-  function _pushToRelay(key, value){
-    if(!RELAY_URL) return; // no relay configured
-    try {
-      var payload = JSON.stringify({
-        action: 'saveConfig',
-        configKey: key,
-        configValue: JSON.stringify(value)
-      });
-      fetch(RELAY_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
-        body: payload,
-        redirect: 'follow',
-        mode: 'no-cors'   // Apps Script requires no-cors for POST
-      }).catch(function(e){
-        console.warn('[C24Sync] Push failed for', key, e);
-      });
-    } catch(e) {
-      console.warn('[C24Sync] Push error:', e);
+  // Safe call a window function by name
+  function _call(fn){
+    if(typeof window[fn] === 'function'){
+      try{ window[fn](); }catch(e){ console.warn('[C24Sync] Error in', fn, e); }
     }
   }
 
-  // ── Fetch all config keys from Drive on page load ────────────────
+  // ─────────────────────────────────────────────────────────────────
+  //  LAYER 1 — BroadcastChannel (instant same-browser multi-tab)
+  // ─────────────────────────────────────────────────────────────────
+  var _bc = null;
+  try{
+    if(typeof BroadcastChannel !== 'undefined'){
+      _bc = new BroadcastChannel('cars24_sync');
+      _bc.onmessage = function(ev){
+        var msg = ev.data;
+        if(!msg || !msg.key) return;
+        console.log('[C24Sync:BC] Received update for', msg.key);
+        // Write value into this tab's localStorage silently (without re-triggering push)
+        if(msg.value !== undefined){
+          try{ _origSetItem(msg.key, typeof msg.value === 'string' ? msg.value : JSON.stringify(msg.value)); }catch(e){}
+        }
+        _reloadGlobals([msg.key]);
+        _renderForKey(msg.key);
+        _updateSyncIndicator('live');
+      };
+    }
+  }catch(e){ console.warn('[C24Sync] BroadcastChannel not available'); }
+
+  // Broadcast a key change to all same-browser tabs
+  function _broadcastKey(key, value){
+    if(!_bc) return;
+    try{ _bc.postMessage({ key: key, value: value }); }catch(e){}
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  LAYER 2 — localStorage storage event (same browser, different tab)
+  //  (BroadcastChannel handles this too, but this is a fallback)
+  // ─────────────────────────────────────────────────────────────────
+  window.addEventListener('storage', function(e){
+    if(!e.key || SYNC_KEYS.indexOf(e.key) === -1) return;
+    console.log('[C24Sync:LS] Storage event for', e.key);
+    try{
+      if(e.key === 'cars24_partner_creds' && e.newValue) window.PARTNER_CREDS = JSON.parse(e.newValue);
+      if(e.key === 'cars24_partner_sheet_data' && e.newValue) window.PARTNER_SHEET = JSON.parse(e.newValue);
+      if(e.key === 'cars24_partners_data' && e.newValue){
+        window.PARTNERS = JSON.parse(e.newValue);
+        if(typeof window.rebuildMonthMeta === 'function') window.rebuildMonthMeta();
+      }
+    }catch(ex){}
+    _renderForKey(e.key);
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  //  LAYER 3 — Drive/Apps Script relay (cross-device polling)
+  // ─────────────────────────────────────────────────────────────────
+
+  // Checksums to detect what actually changed (avoid unnecessary re-renders)
+  var _lastChecksums = {};
+  function _checksum(str){ var h=0,i,c; for(i=0;i<str.length;i++){c=str.charCodeAt(i);h=((h<<5)-h)+c;h|=0;} return h; }
+
+  function _pushToRelay(key, value){
+    if(!RELAY_URL) return;
+    var payload = JSON.stringify({ action:'saveConfig', configKey:key, configValue: JSON.stringify(value) });
+    fetch(RELAY_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload, redirect:'follow', mode:'no-cors' })
+      .catch(function(e){ console.warn('[C24Sync] Push failed for', key, e); });
+  }
+
   function _pullFromRelay(onDone){
-    if(!RELAY_URL){ if(onDone) onDone(false); return; }
-    
-    // Use JSONP via script tag (works with no-cors Apps Script GET)
-    var cbName = '_c24ConfigCb' + Date.now();
-    var timeout = setTimeout(function(){
+    if(!RELAY_URL){ if(onDone) onDone(false, []); return; }
+    _updateSyncIndicator('syncing');
+    var cbName = '_c24Cb' + Date.now();
+    var tid = setTimeout(function(){
       try{ delete window[cbName]; }catch(e){}
-      var s = document.getElementById('_c24ConfigScript');
-      if(s) s.parentNode.removeChild(s);
-      console.warn('[C24Sync] Pull timeout — working from local cache');
-      if(onDone) onDone(false);
+      var s=document.getElementById('_c24Script'); if(s) s.parentNode.removeChild(s);
+      _updateSyncIndicator('offline');
+      if(onDone) onDone(false, []);
     }, 8000);
 
     window[cbName] = function(data){
-      clearTimeout(timeout);
+      clearTimeout(tid);
       try{ delete window[cbName]; }catch(e){}
-      var s = document.getElementById('_c24ConfigScript');
-      if(s) s.parentNode.removeChild(s);
+      var s=document.getElementById('_c24Script'); if(s) s.parentNode.removeChild(s);
+      if(!data || data.error){ _updateSyncIndicator('offline'); if(onDone) onDone(false,[]); return; }
 
-      if(!data || data.error){
-        console.warn('[C24Sync] Pull error:', data && data.error);
-        if(onDone) onDone(false);
-        return;
-      }
-
-      // Merge remote config into localStorage
-      var updated = 0;
+      var changedKeys = [];
       SYNC_KEYS.forEach(function(key){
-        if(data[key] !== undefined && data[key] !== null){
-          try{
-            var remoteVal = typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]);
-            var localVal  = localStorage.getItem(key);
-            if(remoteVal !== localVal){
-              localStorage.setItem(key, remoteVal);
-              updated++;
+        if(data[key] === undefined || data[key] === null) return;
+        try{
+          var remoteStr = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
+          var localStr  = localStorage.getItem(key);
+          var remoteCs  = _checksum(remoteStr);
+          if(remoteCs !== _lastChecksums[key]){
+            _lastChecksums[key] = remoteCs;
+            if(remoteStr !== localStr){
+              _origSetItem(key, remoteStr);  // write without triggering push loop
+              changedKeys.push(key);
             }
-          } catch(e){}
-        }
+          }
+        }catch(e){}
       });
 
-      // Reload data globals after merge
-      _reloadGlobals();
-      console.log('[C24Sync] Pulled config from Drive —', updated, 'keys updated');
-      if(onDone) onDone(true);
+      if(changedKeys.length){
+        _reloadGlobals(changedKeys);
+        changedKeys.forEach(function(k){ _renderForKey(k); });
+        _showSyncToast(changedKeys);
+        console.log('[C24Sync] Remote changes applied:', changedKeys);
+      }
+      _updateSyncIndicator('live');
+      if(onDone) onDone(true, changedKeys);
     };
 
-    var script = document.createElement('script');
-    script.id  = '_c24ConfigScript';
-    script.src = RELAY_URL + '?action=getConfig&keys=' + SYNC_KEYS.join(',') + '&cb=' + cbName + '&t=' + Date.now();
-    script.onerror = function(){
-      clearTimeout(timeout);
-      try{ delete window[cbName]; }catch(e){}
-      console.warn('[C24Sync] Script load failed — relay may not support getConfig yet');
-      if(onDone) onDone(false);
+    var sc = document.createElement('script');
+    sc.id  = '_c24Script';
+    sc.src = RELAY_URL+'?action=getConfig&keys='+SYNC_KEYS.join(',')+'&cb='+cbName+'&t='+Date.now();
+    sc.onerror = function(){
+      clearTimeout(tid);
+      try{delete window[cbName];}catch(e){}
+      _updateSyncIndicator('offline');
+      if(onDone) onDone(false,[]);
     };
-    document.head.appendChild(script);
+    document.head.appendChild(sc);
   }
 
-  // ── Reload JS globals from (now-updated) localStorage ───────────
-  function _reloadGlobals(){
-    // Partner credentials
-    try{
-      var pc = localStorage.getItem('cars24_partner_creds');
-      if(pc) window.PARTNER_CREDS = JSON.parse(pc);
-    }catch(e){}
-    // Partner sheet data (used for partner-login views)
-    try{
-      var psd = localStorage.getItem('cars24_partner_sheet_data');
-      if(psd) window.PARTNER_SHEET = JSON.parse(psd);
-    }catch(e){}
-    // Partners array (performance data — used by buildPartnerOverview, targets, etc.)
-    try{
-      var pd = localStorage.getItem('cars24_partners_data');
-      if(pd){
-        window.PARTNERS = JSON.parse(pd);
-        if(typeof window.rebuildMonthMeta === 'function') window.rebuildMonthMeta();
-      }
-    }catch(e){}
-    // Admin accounts
-    try{
-      var aa = localStorage.getItem('cars24_admin_accounts');
-      if(aa) window._adminAccounts = JSON.parse(aa);
-    }catch(e){}
-    // Targets
-    try{
-      var tgt = localStorage.getItem('cars24_target_store');
-      if(tgt) window._targetStoreCache = JSON.parse(tgt);
-    }catch(e){}
-    // Fire unread announcement badge refresh for partner
-    try{
-      if(window.currentRole === 'partner' && typeof window._checkAndShowAnnBadge === 'function'){
-        window._checkAndShowAnnBadge();
-      }
-    }catch(e){}
+  // ─────────────────────────────────────────────────────────────────
+  //  RELOAD GLOBALS from localStorage after a sync update
+  // ─────────────────────────────────────────────────────────────────
+  function _reloadGlobals(keys){
+    var all = !keys || keys.length === 0;
+    function _has(k){ return all || keys.indexOf(k) !== -1; }
+    try{ if(_has('cars24_partner_creds')){ var pc=localStorage.getItem('cars24_partner_creds'); if(pc) window.PARTNER_CREDS=JSON.parse(pc); }}catch(e){}
+    try{ if(_has('cars24_partner_sheet_data')){ var psd=localStorage.getItem('cars24_partner_sheet_data'); if(psd) window.PARTNER_SHEET=JSON.parse(psd); }}catch(e){}
+    try{ if(_has('cars24_partners_data')){ var pd=localStorage.getItem('cars24_partners_data'); if(pd){ window.PARTNERS=JSON.parse(pd); if(typeof window.rebuildMonthMeta==='function') window.rebuildMonthMeta(); }}}catch(e){}
+    try{ if(_has('cars24_admin_accounts')){ var aa=localStorage.getItem('cars24_admin_accounts'); if(aa) window._adminAccounts=JSON.parse(aa); }}catch(e){}
+    try{ if(_has('cars24_target_store')){ var tgt=localStorage.getItem('cars24_target_store'); if(tgt) window._targetStoreCache=JSON.parse(tgt); }}catch(e){}
+
+    // Refresh currentPartner object so stale login reference gets updated data
+    if(window.currentRole==='partner' && window.currentPartner && window.PARTNERS){
+      try{
+        var fresh=window.PARTNERS.find(function(p){ return p.name===window.currentPartner.name || p.name.toLowerCase().trim()===(window.currentPartner.name||'').toLowerCase().trim(); });
+        if(fresh) window.currentPartner=Object.assign({},window.currentPartner,fresh);
+      }catch(e){}
+    }
   }
 
-  // ── Intercept localStorage.setItem to auto-push sync keys ───────
+  // ─────────────────────────────────────────────────────────────────
+  //  SMART RE-RENDER: only fire functions relevant to changed key + role
+  // ─────────────────────────────────────────────────────────────────
+  function _renderForKey(key){
+    var pf = document.getElementById('portal-fullscreen');
+    if(!pf || !pf.classList.contains('open')) return;
+    var role = window.currentRole;
+    var map  = RENDER_MAP[key];
+    if(!map) return;
+    var fns  = (role==='admin' ? map.admin : map.partner) || [];
+    fns.forEach(_call);
+
+    // Also re-render the currently active sub-view if it matches
+    var activeView = document.querySelector('#portal-fullscreen .view.active');
+    if(activeView){
+      var vid = activeView.id || '';
+      if(vid.indexOf('p-targets')>-1 || vid.indexOf('target')>-1){
+        _call(role==='admin' ? 'buildTargets' : 'buildPartnerTargets');
+      }
+      if(vid.indexOf('invoice')>-1){
+        _call(role==='admin' ? 'renderInvoiceTableAdmin' : 'buildPartnerInvoices');
+      }
+      if(vid.indexOf('payment')>-1 || vid.indexOf('proof')>-1){
+        _call(role==='admin' ? 'renderProofTable' : 'buildPartnerPayments');
+      }
+      if(vid.indexOf('ann')>-1){
+        _call(role==='admin' ? 'buildAnnouncementsAdmin' : 'buildAnnouncementsPartner');
+      }
+      if(vid.indexOf('payout')>-1){
+        _call('renderPayoutTable');
+      }
+      if(vid.indexOf('seller')>-1){
+        _call('buildSellerChannels');
+      }
+      if(vid.indexOf('buyer')>-1){
+        _call(role==='admin' ? 'renderAdminBuyerView' : 'buildBuyerView');
+      }
+      if(vid.indexOf('cred')>-1){
+        _call('renderCredTable');
+      }
+      if(vid.indexOf('audit')>-1){
+        _call('renderAuditLog');
+      }
+    }
+
+    // Always refresh announcement badge for partner
+    if(role==='partner') _call('_checkAndShowAnnBadge');
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  INTERCEPT localStorage.setItem — auto-push + broadcast
+  // ─────────────────────────────────────────────────────────────────
   var _origSetItem = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function(key, value){
-    _origSetItem(key, value);
-    if(SYNC_KEYS.indexOf(key) !== -1){
-      _debounce('push_' + key, function(){
-        try {
-          _pushToRelay(key, JSON.parse(value));
-        } catch(e){
-          _pushToRelay(key, value); // push as string if not JSON
-        }
-      }, 800);
-    }
+    _origSetItem(key, value);                    // write to this tab
+    if(SYNC_KEYS.indexOf(key) === -1) return;
+
+    // 1. Instant broadcast to other same-browser tabs
+    _broadcastKey(key, value);
+
+    // 2. Push to Drive relay (debounced to batch rapid saves)
+    _debounce('push_'+key, function(){
+      try{ _pushToRelay(key, JSON.parse(value)); }catch(e){ _pushToRelay(key, value); }
+    }, 800);
+
+    // Update checksum so next poll skips unchanged keys
+    try{ _lastChecksums[key] = _checksum(value); }catch(e){}
   };
 
-  // ── Pull config on page load (after DOM ready) ───────────────────
+  // ─────────────────────────────────────────────────────────────────
+  //  SYNC STATUS INDICATOR (live dot in portal header)
+  // ─────────────────────────────────────────────────────────────────
+  function _injectSyncIndicator(){
+    if(document.getElementById('c24-sync-dot')) return;
+    var dot = document.createElement('div');
+    dot.id = 'c24-sync-dot';
+    dot.title = 'Live sync status';
+    dot.style.cssText = [
+      'display:inline-flex','align-items:center','gap:5px',
+      'font-size:11px','font-weight:600','font-family:DM Sans,sans-serif',
+      'color:var(--sub,#7a8fa8)','cursor:pointer','padding:4px 10px',
+      'border:1px solid var(--muted,#1e2a3a)','border-radius:20px',
+      'background:var(--card,#0e1420)','transition:all .3s','margin-left:8px'
+    ].join(';');
+    dot.innerHTML = '<span id="c24-sync-pulse" style="width:7px;height:7px;border-radius:50%;background:#6b7280;display:inline-block;transition:background .3s;"></span><span id="c24-sync-label">sync</span>';
+    dot.onclick = function(){
+      _updateSyncIndicator('syncing');
+      _pullFromRelay(function(ok, changed){
+        if(typeof window.showImportToast==='function')
+          window.showImportToast(ok ? (changed.length ? '🔄 Synced — '+changed.length+' key'+(changed.length!==1?'s':'')+' updated' : '✅ Already up to date') : '⚠️ Sync failed — check relay');
+      });
+    };
+    // Inject into portal header actions area
+    var hdrRight = document.querySelector('#portal-fullscreen .phr') || document.querySelector('#portal-fullscreen header');
+    if(hdrRight) hdrRight.appendChild(dot);
+    else document.body.appendChild(dot);
+  }
+
+  function _updateSyncIndicator(state){
+    // state: 'syncing' | 'live' | 'offline' | 'local'
+    var pulse = document.getElementById('c24-sync-pulse');
+    var label = document.getElementById('c24-sync-label');
+    if(!pulse || !label) return;
+    var cfg = {
+      syncing: { color:'#f59e0b', text:'syncing…', anim:'c24-pulse-anim' },
+      live:    { color:'#10b981', text:'live',      anim:'' },
+      offline: { color:'#ef4444', text:'offline',   anim:'' },
+      local:   { color:'#6b7280', text:'local only',anim:'' }
+    }[state] || { color:'#6b7280', text:'sync', anim:'' };
+    pulse.style.background = cfg.color;
+    label.textContent = cfg.text;
+    // Add pulse animation for syncing state
+    if(cfg.anim && !document.getElementById('c24-sync-style')){
+      var st=document.createElement('style'); st.id='c24-sync-style';
+      st.textContent='@keyframes c24pulse{0%,100%{opacity:1}50%{opacity:.3}}.c24-pulse-anim{animation:c24pulse 1s ease-in-out infinite!important;}';
+      document.head.appendChild(st);
+    }
+    pulse.className = cfg.anim || '';
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  SYNC TOAST — shows what just changed (non-intrusive)
+  // ─────────────────────────────────────────────────────────────────
+  var _CHANGE_LABELS = {
+    'cars24_announcements':     '📢 Announcements updated',
+    'cars24_invoices':          '🧾 Invoice status updated',
+    'cars24_payment_proofs':    '✅ Payment proof updated',
+    'cars24_target_store':      '🎯 Targets updated',
+    'cars24_payout_store':      '💰 Payouts updated',
+    'cars24_partner_creds':     '🔑 Credentials updated',
+    'cars24_partner_sheet_data':'📊 Dashboard data updated',
+    'cars24_partners_data':     '👥 Partner data updated',
+    'cars24_admin_view_data':   '📈 Analytics updated',
+    'cars24_month_registry':    '📅 Months updated',
+    'cars24_admin_pass':        '🔐 Admin password changed',
+    'cars24_admin_accounts':    '👤 Admin accounts updated'
+  };
+  var _toastShown = {};
+  function _showSyncToast(keys){
+    var pf = document.getElementById('portal-fullscreen');
+    if(!pf || !pf.classList.contains('open')) return;
+    // Deduplicate per 5s window
+    var msgs = keys.filter(function(k){
+      if(_toastShown[k] && Date.now()-_toastShown[k]<5000) return false;
+      _toastShown[k]=Date.now(); return true;
+    }).map(function(k){ return _CHANGE_LABELS[k]||k; });
+    if(!msgs.length) return;
+    if(typeof window.showImportToast === 'function'){
+      window.showImportToast('🔄 Live update: '+msgs.slice(0,2).join(' · ')+(msgs.length>2?' +more':''));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  NO-RELAY WARNING BANNER
+  // ─────────────────────────────────────────────────────────────────
+  function _showNoRelayBanner(){
+    if(RELAY_URL) return;
+    var pf=document.getElementById('portal-fullscreen');
+    if(!pf||!pf.classList.contains('open')) return;
+    if(document.getElementById('c24-no-relay-banner')) return;
+    var b=document.createElement('div');
+    b.id='c24-no-relay-banner';
+    b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#92400e;color:#fef3c7;border:1px solid #b45309;border-radius:10px;padding:10px 18px;font-size:12px;font-weight:600;font-family:DM Sans,sans-serif;max-width:90vw;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.35);line-height:1.6';
+    b.innerHTML='⚠️ <strong>Cross-device sync not configured</strong> — data is local to this browser only.<br>Set <code style="background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;">driveWebAppUrl</code> in <strong>CARS24_CONFIG</strong> to enable live sync.';
+    var x=document.createElement('button'); x.textContent='✕'; x.style.cssText='background:none;border:none;color:inherit;font-size:14px;cursor:pointer;margin-left:10px;vertical-align:middle;'; x.onclick=function(){b.remove();}; b.appendChild(x);
+    document.body.appendChild(b);
+    setTimeout(function(){if(b.parentNode)b.remove();},14000);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  VISIBILITY CHANGE — re-sync when tab becomes active
+  // ─────────────────────────────────────────────────────────────────
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState !== 'visible') return;
+    _pullFromRelay(function(ok, changed){
+      if(ok && changed.length) console.log('[C24Sync] Visibility sync:', changed);
+    });
+  });
+
+  // iOS bfcache
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted) _pullFromRelay(null);
+  });
+
+  // ─────────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────────
   function _initSync(){
-    // First try pulling from relay (async)
-    _pullFromRelay(function(ok){
-      if(ok){
-        // Re-render portal if already open
-        var pf = document.getElementById('portal-fullscreen');
-        if(pf && pf.classList.contains('open')){
-          ['renderAdminDashboard','renderPartnerDashboard','buildCredentialsView',
-           'renderInvoiceTableAdmin','renderProofTable'
-          ].forEach(function(fn){
-            if(typeof window[fn]==='function') try{window[fn]();}catch(e){}
-          });
-          // ── Fix: refresh announcements + badge after initial sync pull ──
-          // (partner's localStorage was empty at login; sync now has the data)
-          if(window.currentRole === 'partner'){
-            try{ if(typeof window.buildAnnouncementsPartner==='function') window.buildAnnouncementsPartner(); }catch(e){}
-            try{ if(typeof window._checkAndShowAnnBadge==='function')     window._checkAndShowAnnBadge(); }catch(e){}
-          }
-          if(window.currentRole === 'admin'){
-            try{ if(typeof window.buildAnnouncementsAdmin==='function') window.buildAnnouncementsAdmin(); }catch(e){}
-          }
-        }
+    _updateSyncIndicator(RELAY_URL ? 'syncing' : 'local');
+
+    // Initial pull
+    _pullFromRelay(function(ok, changed){
+      _updateSyncIndicator(ok ? 'live' : (RELAY_URL ? 'offline' : 'local'));
+
+      var pf = document.getElementById('portal-fullscreen');
+      if(pf && pf.classList.contains('open')){
+        // Full refresh after initial pull
+        var allFns = ['renderAdminDashboard','updateDashboard','renderInvoiceTableAdmin',
+          'renderProofTable','buildAnnouncementsAdmin','buildCredentialsView','buildTargets',
+          'buildPartnerOverview','buildAnnouncementsPartner','buildPartnerInvoices',
+          'buildPartnerPayments','buildPartnerTargets','renderPayoutTable'];
+        allFns.forEach(_call);
+        _call('_checkAndShowAnnBadge');
       }
     });
 
-    // Also pull every 60s while page is open (live updates)
+    // Rolling poll every 10s (was 60s — now near-real-time)
     setInterval(function(){
-      if(document.visibilityState !== 'hidden'){
-        _pullFromRelay(function(ok){
-          if(!ok) return;
-          var pf = document.getElementById('portal-fullscreen');
-          if(!pf || !pf.classList.contains('open')) return;
-
-          // ── Refresh currentPartner object from the newly-synced PARTNERS array ──
-          // (currentPartner is set at login and holds a stale reference;
-          //  after a sync pull PARTNERS[] is updated but currentPartner is not)
-          if(window.currentRole === 'partner' && window.currentPartner && window.PARTNERS){
-            var freshPartner = window.PARTNERS.find(function(p){
-              return p.name === window.currentPartner.name ||
-                     p.name.toLowerCase().trim() === (window.currentPartner.name||'').toLowerCase().trim();
-            });
-            if(freshPartner){
-              // Merge: keep display/login fields, update performance data
-              window.currentPartner = Object.assign({}, window.currentPartner, freshPartner);
-            }
-          }
-
-          // ── Admin views ──────────────────────────────────────────────────────
-          if(window.currentRole === 'admin'){
-            [
-              'renderAdminDashboard',
-              'updateDashboard',
-              'renderInvoiceTableAdmin',
-              'renderProofTable',
-              'buildAnnouncementsAdmin',
-              'buildCredentialsView',
-              'buildTargets',
-            ].forEach(function(fn){
-              if(typeof window[fn]==='function') try{ window[fn](); }catch(e){}
-            });
-          }
-
-          // ── Partner views ────────────────────────────────────────────────────
-          if(window.currentRole === 'partner'){
-            [
-              'buildPartnerOverview',       // payout, leads, inspections KPIs
-              'buildAnnouncementsPartner',   // announcements (new badge)
-              'buildPartnerInvoices',        // invoice status updates
-              'buildPartnerPayments',        // payment proof / UTR
-              'buildTargets',               // targets set by admin
-              'populatePartnerUTMCard',      // UTM / channel data
-            ].forEach(function(fn){
-              if(typeof window[fn]==='function') try{ window[fn](); }catch(e){}
-            });
-            // Refresh whichever sub-view is currently active
-            var activeView = document.querySelector('#portal-fullscreen .view.active');
-            if(activeView){
-              var vid = activeView.id || '';
-              if(vid.indexOf('ann')>-1        && typeof window.buildAnnouncementsPartner==='function') window.buildAnnouncementsPartner();
-              if(vid.indexOf('target')>-1     && typeof window.buildTargets==='function')              window.buildTargets();
-              if(vid.indexOf('invoice')>-1    && typeof window.buildPartnerInvoices==='function')      window.buildPartnerInvoices();
-              if(vid.indexOf('payment')>-1    && typeof window.buildPartnerPayments==='function')      window.buildPartnerPayments();
-            }
-          }
-        });
-      }
-    }, 60000);
+      if(document.visibilityState === 'hidden') return;
+      _pullFromRelay(null);
+    }, 10000);
   }
 
-  // ── Show a persistent banner if relay is not configured ─────────
-  function _showNoBannerIfNeeded(){
-    if(RELAY_URL) return; // all good
-    // Only show in portal (admin view), not public landing
-    var pf = document.getElementById('portal-fullscreen');
-    if(!pf || !pf.classList.contains('open')) return;
-    var existing = document.getElementById('c24-no-relay-banner');
-    if(existing) return;
-    var banner = document.createElement('div');
-    banner.id = 'c24-no-relay-banner';
-    banner.style.cssText = [
-      'position:fixed','bottom:16px','left:50%','transform:translateX(-50%)',
-      'z-index:99999','background:#92400e','color:#fef3c7',
-      'border:1px solid #b45309','border-radius:10px',
-      'padding:10px 18px','font-size:12px','font-weight:600',
-      'font-family:DM Sans,sans-serif','max-width:90vw','text-align:center',
-      'box-shadow:0 4px 24px rgba(0,0,0,.35)','line-height:1.5'
-    ].join(';');
-    banner.innerHTML = '⚠️ <strong>Sync not configured</strong> — Admin changes are saved locally only.<br>'
-      + 'Set <code style="background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;">driveWebAppUrl</code> '
-      + 'in <strong>CARS24_CONFIG</strong> to share data across all users.';
-    // Close button
-    var x = document.createElement('button');
-    x.textContent = '✕';
-    x.style.cssText = 'background:none;border:none;color:inherit;font-size:14px;cursor:pointer;margin-left:10px;vertical-align:middle;';
-    x.onclick = function(){ banner.remove(); };
-    banner.appendChild(x);
-    document.body.appendChild(banner);
-    // Auto-dismiss after 12s
-    setTimeout(function(){ if(banner.parentNode) banner.remove(); }, 12000);
-  }
-
-  // Show banner when portal opens
+  // Patch showPortal to inject indicator + banner check
   var _origShowPortal2 = window.showPortal;
   window.showPortal = function(){
-    if(typeof _origShowPortal2 === 'function') _origShowPortal2.apply(this, arguments);
-    setTimeout(_showNoBannerIfNeeded, 1500);
+    if(typeof _origShowPortal2==='function') _origShowPortal2.apply(this, arguments);
+    setTimeout(function(){
+      _injectSyncIndicator();
+      _showNoRelayBanner();
+      _updateSyncIndicator(RELAY_URL ? 'live' : 'local');
+    }, 600);
   };
 
-  // Expose manual pull for admin
-  window.c24SyncPull = function(cb){ _pullFromRelay(cb); };
-  window.c24SyncPush = function(key){
-    var v = localStorage.getItem(key);
-    if(v) _pushToRelay(key, v);
+  // Public API
+  window.c24SyncPull  = function(cb){ _pullFromRelay(cb); };
+  window.c24SyncPush  = function(key){ var v=localStorage.getItem(key); if(v) _pushToRelay(key, v); };
+  window.c24SyncPushAll = function(){
+    SYNC_KEYS.forEach(function(k){
+      var v=localStorage.getItem(k); if(v) _pushToRelay(k, v);
+    });
+    if(typeof window.showImportToast==='function') window.showImportToast('☁️ Pushed all config to Drive relay');
   };
 
-  // Init when DOM is ready
-  if(document.readyState === 'loading'){
+  if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded', _initSync);
   } else {
-    // DOM already ready — run after a short delay so all globals are defined
     setTimeout(_initSync, 500);
   }
 
-  console.log('[C24Sync] Config sync layer loaded. Relay:', RELAY_URL ? '✅ configured' : '⚠️ NOT configured — set driveWebAppUrl in CARS24_CONFIG');
+  console.log('[C24Sync v2] Live sync engine loaded. Relay:', RELAY_URL ? '✅ '+RELAY_URL.slice(0,40)+'…' : '⚠️ NOT configured');
 })();
 </script>
 
