@@ -16984,52 +16984,75 @@ var DRIVE_WEBAPP_URL = window.CARS24_DRIVE_URL || '';  // set in config if avail
 
 // Base64-encode a File and POST to the Apps Script relay
 async function uploadFileToDrive(file, folder, fileName){
-  return new Promise(function(resolve, reject){
-    if(!DRIVE_WEBAPP_URL){
-      // No Drive URL set — resolve with null (file saved locally only)
+  return new Promise(function(resolve){
+    var url = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || '';
+    if(!url){
+      console.warn('[Drive] driveWebAppUrl not configured — file saved locally only');
       resolve(null);
       return;
     }
+
+    // File size check — Apps Script has a 50MB limit, warn at 10MB
+    if(file.size > 10 * 1024 * 1024){
+      console.warn('[Drive] File too large:', (file.size/1024/1024).toFixed(1)+'MB — max recommended 10MB');
+    }
+
     var reader = new FileReader();
     reader.onload = function(e){
       var base64 = e.target.result.split(',')[1];
       var payload = JSON.stringify({
+        action    : 'upload',
         fileName  : fileName,
         mimeType  : file.type || 'application/octet-stream',
         base64Data: base64,
         folder    : folder,
-        // Pass extra metadata so the Apps Script can log it
-        partner   : (window.currentPartner ? (window.currentPartner.display||window.currentPartner.name||'') : ''),
+        partner   : window.currentPartner ? (window.currentPartner.display||window.currentPartner.name||'') : '',
         month     : folder === 'Cars24_Invoices' ? (window._lastInvMonth||'') : (window._lastProofMonth||''),
-        amount    : (window._lastInvAmount||window._lastProofAmount||0)
+        invNo     : window._lastInvNo || '',
+        utr       : window._lastProofUtr || '',
+        amount    : window._lastInvAmount || window._lastProofAmount || 0
       });
-      // POST JSON payload to Apps Script relay (no-cors not needed — Apps Script handles CORS)
-      fetch(DRIVE_WEBAPP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload   // payload is already JSON.stringify'd above — do NOT double-stringify
+
+      // Use text/plain — Apps Script requires this for simple (non-preflighted) POST
+      // application/json triggers a CORS preflight which Apps Script doesn't handle
+      fetch(url, {
+        method : 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body   : payload,
+        redirect: 'follow'
       })
       .then(function(r){
-        // Apps Script may return status 0 for opaque responses in no-cors mode
-        if(!r.ok && r.status !== 0) throw new Error('HTTP ' + r.status);
+        // status 0 = opaque no-cors response (still succeeded server-side)
+        if(r.status === 0) return r.text().catch(function(){ return '{}'; });
+        if(!r.ok) throw new Error('HTTP ' + r.status);
         return r.text();
       })
       .then(function(txt){
         try{
           var d = JSON.parse(txt);
-          resolve(d.fileUrl || d.url || null);
-        } catch(pe){
-          // Apps Script returned HTML (auth error) or unexpected text
-          console.warn('[Drive] Unexpected response:', txt.slice(0,200));
+          if(d.success && (d.fileUrl||d.url)){
+            console.log('[Drive] Upload OK:', d.fileUrl||d.url);
+            resolve(d.fileUrl || d.url);
+          } else if(d.error){
+            console.warn('[Drive] Upload error:', d.error);
+            resolve(null);
+          } else {
+            resolve(d.fileUrl || d.url || null);
+          }
+        }catch(pe){
+          console.warn('[Drive] Parse error:', txt.slice(0,200));
           resolve(null);
         }
       })
       .catch(function(err){
-        console.warn('[Drive upload failed]', err);
+        console.warn('[Drive] Upload failed:', err.message);
         resolve(null);
       });
     };
-    reader.onerror = function(){ resolve(null); };
+    reader.onerror = function(e){
+      console.warn('[Drive] FileReader error:', e);
+      resolve(null);
+    };
     reader.readAsDataURL(file);
   });
 }
@@ -17078,6 +17101,7 @@ window.submitPartnerInvoice = (function(_orig){
       window._lastInvMonth  = fullMo;
       window._lastInvAmount = amount;
       window._lastInvNo     = invNo;
+      window._lastProofUtr  = '';  // clear proof UTR
       driveUrl = await uploadFileToDrive(file, 'Cars24_Invoices', driveName);
     }
 
@@ -17152,8 +17176,7 @@ window.buildPartnerInvoices = (function(){
   };
 })();
 
-// ── OVERRIDE: savePaymentProof — add Drive upload ────────────────
-var _origSPP = window.savePaymentProof || function(){};
+// ── OVERRIDE: savePaymentProof — with Drive upload ───────────────
 window.savePaymentProof = async function(){
   var partner = (document.getElementById('proof-partner')||{value:''}).value.trim();
   var month   = (document.getElementById('proof-month-sel')||{value:''}).value;
@@ -17163,37 +17186,50 @@ window.savePaymentProof = async function(){
   var fileEl  = document.getElementById('proof-file-inp');
   var errEl   = document.getElementById('proof-ov-err');
 
-  function showErr(t){ if(errEl){errEl.style.display='block';errEl.textContent=t;} }
+  function showErr(t,col){
+    if(!errEl) return;
+    errEl.style.display='block';
+    errEl.style.color = col||'#dc2626';
+    errEl.textContent = t;
+  }
   if(!partner||!amount||!utr){ showErr('⚠ Partner, amount, and UTR are required.'); return; }
 
-  var file = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
-  var fname = file ? file.name : '—';
+  // Declare fullMo BEFORE any reference to it
+  var fullMo   = (window.MLABEL&&window.MLABEL[month]) ? window.MLABEL[month] : month;
+  var file     = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
+  var fname    = file ? file.name : '—';
   var driveUrl = null;
 
   if(file){
-    if(errEl){ errEl.style.display='block'; errEl.style.color='#f59e0b'; errEl.textContent='⏳ Uploading proof attachment…'; }
-    var driveName = 'PROOF_'+partner.replace(/[^a-zA-Z0-9]/g,'_')+'_'+utr+'_'+(month||'')+'.'+ fname.split('.').pop();
-    // Stash metadata so uploadFileToDrive can include it in the log
+    showErr('⏳ Uploading attachment to Drive…', '#f59e0b');
+    var ext       = fname.split('.').pop();
+    var driveName = 'PROOF_'+partner.replace(/[^a-zA-Z0-9]/g,'_')+'_'+utr+'_'+fullMo.replace(/[^a-zA-Z0-9]/g,'_')+'.'+ext;
     window._lastProofMonth  = fullMo;
     window._lastProofAmount = amount;
+    window._lastProofUtr    = utr;
+    window._lastInvNo       = '';  // clear invoice number
     driveUrl = await uploadFileToDrive(file, 'Cars24_PaymentProofs', driveName);
-    if(errEl) errEl.style.display='none';
+    if(errEl) errEl.style.display = 'none';
   }
 
   var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
-  var fullMo = (window.MLABEL&&window.MLABEL[month]) ? window.MLABEL[month] : month;
   proofs.push({
     id: Date.now(), partner: partner, month: month, fullMonth: fullMo,
     amount: amount, utr: utr, driveUrl: driveUrl,
-    date: date ? date.split('-').reverse().join(' ').replace(/(\d+) (\d+) (\d+)/,function(_,d,m,y){var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d+' '+mn[parseInt(m)]+' '+y;}) : new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    date: date
+      ? date.split('-').reverse().join(' ').replace(/(\d+) (\d+) (\d+)/,function(_,d,m,y){
+          var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return d+' '+mn[parseInt(m)]+' '+y;
+        })
+      : new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
     fileName: fname
   });
   if(typeof window.saveProofs==='function') window.saveProofs(proofs);
 
   var ov = document.getElementById('proof-ov'); if(ov) ov.remove();
   if(typeof window.renderProofTable==='function') window.renderProofTable();
-  if(typeof window.showImportToast==='function') window.showImportToast('✅ Payment proof saved for '+partner+(driveUrl?' · Drive ✓':''));
-  if(typeof window._auditLog==='function') window._auditLog('Payment proof uploaded', partner+' · '+utr+' · ₹'+amount+(driveUrl?' · Drive:'+driveUrl:''));
+  if(typeof window.showImportToast==='function') window.showImportToast('✅ Payment proof saved for '+partner+(driveUrl?' · Drive ✓':(file?' · local only':'')));
+  if(typeof window._auditLog==='function') window._auditLog('Payment proof uploaded', partner+' · UTR:'+utr+' · ₹'+amount+(driveUrl?' · Drive:'+driveUrl:''));
 };
 
 // ── Patch renderProofTable to show Drive link ─────────────────────
@@ -17651,50 +17687,57 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   // Map: which SYNC_KEY change should re-render which functions per role
   var RENDER_MAP = {
     // key → { admin: [fns], partner: [fns] }
+    // ── Announcements (admin posts → partner sees) ──────────────────
     'cars24_announcements': {
       admin:   ['buildAnnouncementsAdmin', 'renderAuditLog'],
       partner: ['buildAnnouncementsPartner', '_checkAndShowAnnBadge']
     },
+    // ── Invoices (partner submits → admin sees; admin approves → partner sees) ─
     'cars24_invoices': {
       admin:   ['renderInvoiceTableAdmin', 'buildInvMonthBtnsAdmin'],
       partner: ['buildPartnerInvoices']
     },
+    // ── Payment proofs (admin uploads → partner sees) ───────────────
     'cars24_payment_proofs': {
       admin:   ['renderProofTable', 'buildProofMonthBtns'],
       partner: ['buildPartnerPayments']
     },
+    // ── Targets (admin sets → partner sees) ────────────────────────
     'cars24_target_store': {
       admin:   ['buildTargets'],
-      partner: ['buildPartnerTargets', 'buildPartnerOverview']
+      partner: ['buildPartnerTargets', 'buildPartnerOverview', 'loadPartnerSidebar']
     },
+    // ── Payouts (admin manages → partner sees) ──────────────────────
     'cars24_payout_store': {
       admin:   ['renderPayoutTable'],
-      partner: ['buildPartnerOverview', 'buildPartnerTargets']
+      partner: ['buildPartnerOverview', 'buildPartnerTargets', 'loadPartnerSidebar']
     },
+    // ── Partner credentials (admin edits OR partner changes password) ─
     'cars24_partner_creds': {
       admin:   ['renderCredTable'],
       partner: []
     },
+    // ── Admin accounts ──────────────────────────────────────────────
     'cars24_admin_accounts': {
       admin:   ['renderCredTable'],
       partner: []
     },
-    'cars24_announcements': {
-      admin:   ['buildAnnouncementsAdmin'],
-      partner: ['buildAnnouncementsPartner', '_checkAndShowAnnBadge']
-    },
+    // ── Partner sheet data (GSheet sync → partner dashboard) ────────
     'cars24_partner_sheet_data': {
       admin:   ['updateDashboard'],
       partner: ['loadPartnerSidebar', 'buildPartnerOverview', 'buildSellerChannels', 'buildBuyerView', 'buildVasView', 'buildPartnerTargets']
     },
+    // ── Partners data (GSheet sync → admin dashboard) ───────────────
     'cars24_partners_data': {
       admin:   ['updateDashboard', 'buildTargets'],
       partner: ['loadPartnerSidebar', 'buildPartnerOverview']
     },
+    // ── Admin analytics (import → admin views) ──────────────────────
     'cars24_admin_view_data': {
       admin:   ['updateDashboard', 'renderAdminBuyerView', 'renderVasView'],
       partner: []
     },
+    // ── Month registry ───────────────────────────────────────────────
     'cars24_month_registry': {
       admin:   ['buildInvMonthBtnsAdmin', 'buildProofMonthBtns'],
       partner: ['buildPartnerInvoices']
@@ -17840,18 +17883,56 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       _showSyncToast(changedKeys);
       console.log('[C24Sync] Applied:', changedKeys);
 
-      // ── Credential-specific: always force re-render on admin side ──
-      // renderCredTable is safe to call even when view is not active
-      // (it checks for #cred-tbl and returns early if not found)
-      if(changedKeys.indexOf('cars24_partner_creds') !== -1){
-        if(typeof getLatestCreds === 'function') getLatestCreds(); // sync var binding
-        if(window.currentRole === 'admin'){
-          setTimeout(function(){
-            if(typeof renderCredTable === 'function') renderCredTable();
-            if(typeof renderAdminAccountsInCredView === 'function') renderAdminAccountsInCredView();
-          }, 100);
+      // ── Force re-render for ALL changed keys regardless of active view ──
+      // All render functions check for their DOM element and return early if absent.
+      // This ensures admin ALWAYS sees updates even if on a different view.
+      setTimeout(function(){
+        var role = window.currentRole;
+        changedKeys.forEach(function(k){
+          var map = RENDER_MAP[k];
+          if(!map) return;
+          var fns = (role==='admin' ? map.admin : map.partner) || [];
+          fns.forEach(function(fn){
+            if(typeof window[fn] === 'function'){
+              try{ window[fn](); }catch(e){}
+            }
+          });
+        });
+
+        // ── Credential-specific extras ───────────────────────────────
+        if(changedKeys.indexOf('cars24_partner_creds') !== -1){
+          if(typeof getLatestCreds === 'function') getLatestCreds();
+          if(role === 'admin'){
+            if(typeof renderCredTable === 'function') try{ renderCredTable(); }catch(e){}
+          }
         }
-      }
+
+        // ── Invoice-specific: refresh month buttons too ──────────────
+        if(changedKeys.indexOf('cars24_invoices') !== -1 && role === 'admin'){
+          if(typeof buildInvMonthBtnsAdmin === 'function') try{ buildInvMonthBtnsAdmin(); }catch(e){}
+          if(typeof renderInvoiceTableAdmin === 'function') try{ renderInvoiceTableAdmin(); }catch(e){}
+        }
+
+        // ── Payment proof specific ───────────────────────────────────
+        if(changedKeys.indexOf('cars24_payment_proofs') !== -1){
+          if(role === 'admin'){
+            if(typeof renderProofTable === 'function') try{ renderProofTable(); }catch(e){}
+          } else {
+            if(typeof buildPartnerPayments === 'function') try{ buildPartnerPayments(); }catch(e){}
+          }
+        }
+
+        // ── Announcement specific: refresh badge for partner ─────────
+        if(changedKeys.indexOf('cars24_announcements') !== -1 && role === 'partner'){
+          if(typeof window._checkAndShowAnnBadge === 'function') try{ window._checkAndShowAnnBadge(); }catch(e){}
+          if(typeof window.buildAnnouncementsPartner === 'function') try{ window.buildAnnouncementsPartner(); }catch(e){}
+        }
+
+        // ── Target specific: refresh partner sidebar ─────────────────
+        if(changedKeys.indexOf('cars24_target_store') !== -1 && role === 'partner'){
+          if(typeof loadPartnerSidebar === 'function') try{ loadPartnerSidebar(); }catch(e){}
+        }
+      }, 150);
     }
     _updateSyncIndicator('live');
     if(onDone) onDone(true, changedKeys);
@@ -18009,44 +18090,58 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     window._store = _patchedStore;
   }
 
-  // ── Patch saveTargetStore to go through intercepted setItem ─────────────────────
-  var _origSaveTS = window.saveTargetStore;
-  window.saveTargetStore = function(obj){
-    try{ localStorage.setItem('cars24_target_store', JSON.stringify(obj)); }catch(e){}
-    // Also call original if it does extra work
-    if(typeof _origSaveTS === 'function' && _origSaveTS !== window.saveTargetStore){
-      try{ _origSaveTS(obj); }catch(e){}
-    }
-  };
+  // ── Helper: write + immediate push to Drive relay ──────────────────────────────
+  function _syncWrite(key, value){
+    try{
+      var str = JSON.stringify(value);
+      localStorage.setItem(key, str); // goes through C24Sync intercept → push
+      // Force immediate push (don't wait for debounce)
+      setTimeout(function(){
+        var v = localStorage.getItem(key);
+        if(v) _pushToRelay(key, v);
+      }, 150);
+    }catch(e){ console.warn('[C24Sync] _syncWrite error:', key, e); }
+  }
+
+  // ── Patch saveTargetStore ────────────────────────────────────────────────────────
+  window.saveTargetStore = function(obj){ _syncWrite('cars24_target_store', obj); };
 
   // ── Patch savePayoutStore ────────────────────────────────────────────────────────
-  var _origSavePayout = window.savePayoutStore;
-  window.savePayoutStore = function(obj){
-    try{ localStorage.setItem('cars24_payout_store', JSON.stringify(obj)); }catch(e){}
-    if(typeof _origSavePayout === 'function' && _origSavePayout !== window.savePayoutStore){
-      try{ _origSavePayout(obj); }catch(e){}
-    }
-  };
+  window.savePayoutStore = function(obj){ _syncWrite('cars24_payout_store', obj); };
 
   // ── Patch saveAnnouncements ──────────────────────────────────────────────────────
-  var _origSaveAnn = window.saveAnnouncements;
-  window.saveAnnouncements = function(arr){
-    try{ localStorage.setItem('cars24_announcements', JSON.stringify(arr)); }catch(e){}
-    if(typeof _origSaveAnn === 'function' && _origSaveAnn !== window.saveAnnouncements){
-      try{ _origSaveAnn(arr); }catch(e){}
-    }
-  };
+  window.saveAnnouncements = function(arr){ _syncWrite('cars24_announcements', arr); };
 
   // ── Patch saveAdminViewStore ─────────────────────────────────────────────────────
-  var _origSaveAV = window.saveAdminViewStore;
   window.saveAdminViewStore = function(obj){
-    try{ localStorage.setItem('cars24_admin_view_data', JSON.stringify(obj)); }catch(e){}
-    if(typeof _origSaveAV === 'function' && _origSaveAV !== window.saveAdminViewStore){
-      try{ _origSaveAV(obj); }catch(e){}
-    }
+    if(typeof currentRole !== 'undefined' && currentRole === 'partner') return;
+    _syncWrite('cars24_admin_view_data', obj);
   };
 
-  console.log('[C24Sync] All save paths patched — cars24_ls, _store, saveTargetStore, savePayoutStore, saveAnnouncements, saveAdminViewStore');
+  // ── Patch saveInvoices — used by both partner submit and admin approve ───────────
+  window.saveInvoices = function(arr){ _syncWrite('cars24_invoices', arr); };
+
+  // ── Patch saveProofs ─────────────────────────────────────────────────────────────
+  window.saveProofs = function(arr){ _syncWrite('cars24_payment_proofs', arr); };
+
+  // ── Patch cars24_ls.set ──────────────────────────────────────────────────────────
+  if(window.cars24_ls){
+    window.cars24_ls.set = function(k, v){
+      try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; }
+    };
+  }
+
+  // ── Patch _store (low-level write path) ─────────────────────────────────────────
+  var _patchedStore = function(k, v){
+    if(v === undefined){
+      try{ var s=localStorage.getItem(k); return s?JSON.parse(s):null; }catch(e){ return null; }
+    }
+    try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
+  };
+  try{ _store = _patchedStore; }catch(e){}
+  window._store = _patchedStore;
+
+  console.log('[C24Sync] All save paths patched — saveInvoices, saveProofs, saveTargetStore, savePayoutStore, saveAnnouncements, saveAdminViewStore, cars24_ls, _store');
 
   // ─────────────────────────────────────────────────────────────────
   //  SYNC STATUS INDICATOR (live dot in portal header)
