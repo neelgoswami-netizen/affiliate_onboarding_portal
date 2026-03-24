@@ -19,8 +19,17 @@ const CARS24_CONFIG = {
     publicKey:  'QOAPOz9UfNNraQnVJ',
     serviceId:  'service_r4z0idc',
     templateId: 'template_89ryon7',
-  }
+  },
+  // ── Google Drive Upload Relay ──────────────────────────────────
+  // Paste your Apps Script Web App URL here after deploying Cars24_Drive_Upload.gs
+  // Leave empty to disable Drive uploads (files saved locally only)
+  driveWebAppUrl: 'https://script.google.com/macros/s/AKfycbz1AF_6l5bhjJ21Aec_GhyJDAuWutchX9nrBkeHlU880pTamhLF9XHTBp54GrBlKBG5/exec'
 };
+
+// Wire Drive URL into upload helper immediately
+if(CARS24_CONFIG.driveWebAppUrl){
+  window.CARS24_DRIVE_URL = CARS24_CONFIG.driveWebAppUrl;
+}
 
 // Initialise EmailJS
 document.addEventListener('DOMContentLoaded', function () {
@@ -5005,10 +5014,10 @@ function buildPartnerTable(){
       const cv=p._L>0?(p._S/p._L*100).toFixed(2):'—';
       const badge=p.status==='Active'?'<span class="ba bag"><span class="bdot"></span>Active</span>':'<span class="ba bar"><span class="bdot"></span>Inactive</span>';
       return `<tr>
-        <td style="color:var(--t3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+        <td style="color:var(--t3);font-family:monospace;font-size:11px">${i+1}</td>
         <td style="font-weight:600">${escH((p.name||'').trim())}</td>
         <td style="font-size:12px;color:var(--t2)">${p._region||'—'}</td>
-        <td style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p._srcMed||''}">${p._srcMed||'—'}</td>
+        <td style="font-size:11px;color:var(--t3);font-family:monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p._srcMed||''}">${p._srcMed||'—'}</td>
         <td>${badge}</td>
         <td class="num">${p._L.toLocaleString()}</td>
         <td class="num">${p._A.toLocaleString()}</td>
@@ -6110,23 +6119,23 @@ function renderCredTable(){
     const utmLink=buildUTMLink(cid, c.utm_medium||'email_ob');
     const shortLink=utmLink.length>55?utmLink.slice(0,52)+'…':utmLink;
     return `<tr>
-      <td style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace">${idx+1}</td>
+      <td style="font-size:11px;color:var(--t3);font-family:monospace">${idx+1}</td>
       <td style="font-weight:600">${escH(c.display)}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${escH(c.username)}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--t3)">${escH(c.password)}</td>
+      <td style="font-family:monospace;font-size:12px">${escH(c.username)}</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--t3)">${escH(c.password)}</td>
       <td style="font-size:12px;color:var(--t2);">${c.email?'<a href="mailto:'+escH(c.email)+'" style="color:var(--ac);text-decoration:none;">'+escH(c.email)+'</a>':'<span style="color:var(--t3)">—</span>'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#4f46e5;letter-spacing:1px">${escH(cid)}</td>
+      <td style="font-family:monospace;font-size:12px;font-weight:700;color:#4f46e5;letter-spacing:1px">${escH(cid)}</td>
       <td style="max-width:220px;">
         <div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;" title="${escH(utmLink)}">${escH(shortLink)}</span>
+          <span style="font-size:10px;font-family:monospace;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;" title="${escH(utmLink)}">${escH(shortLink)}</span>
           <button onclick="copyUTMLink(${idx})" title="Copy UTM link" style="padding:2px 7px;background:var(--al);border:1px solid rgba(79,70,229,.2);border-radius:4px;font-size:10px;cursor:pointer;color:var(--ac);flex-shrink:0;">📋</button>
         </div>
       </td>
       <td><span class="ba ${isActive?'bag':'bar'}"><span class="bdot"></span>${c.status}</span></td>
       <td style="text-align:center">
-        <button onclick="openCredModal(${idx})" style="padding:4px 12px;background:var(--al);border:1px solid rgba(79,70,229,.2);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ac);font-family:'DM Sans',sans-serif;margin-right:4px">Edit</button>
-        <button onclick="toggleCredStatus(${idx})" style="padding:4px 10px;background:${isActive?'rgba(239,68,68,.09)':'rgba(16,185,129,.09)'};border:1px solid ${isActive?'rgba(239,68,68,.2)':'rgba(16,185,129,.2)'};border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:${isActive?'#dc2626':'#059669'};font-family:'DM Sans',sans-serif;margin-right:4px">${isActive?'Deactivate':'Activate'}</button>
-        <button onclick="deleteCredential(${idx})" style="padding:4px 10px;background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.2);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:#dc2626;font-family:'DM Sans',sans-serif">🗑</button>
+        <button onclick="openCredModal(${idx})" style="padding:4px 12px;background:var(--al);border:1px solid rgba(79,70,229,.2);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ac);font-family:sans-serif;margin-right:4px">Edit</button>
+        <button onclick="toggleCredStatus(${idx})" style="padding:4px 10px;background:${isActive?'rgba(239,68,68,.09)':'rgba(16,185,129,.09)'};border:1px solid ${isActive?'rgba(239,68,68,.2)':'rgba(16,185,129,.2)'};border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:${isActive?'#dc2626':'#059669'};font-family:sans-serif;margin-right:4px">${isActive?'Deactivate':'Activate'}</button>
+        <button onclick="deleteCredential(${idx})" style="padding:4px 10px;background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.2);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;color:#dc2626;font-family:sans-serif">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -8033,13 +8042,13 @@ function renderPayoutTable(){
       :e.status==='Processing'?'<span style="background:rgba(245,158,11,.12);color:#f59e0b;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏳ Processing</span>'
       :'<span style="background:rgba(99,102,241,.12);color:#6366f1;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;">⏺ Pending</span>';
     return`<tr>
-      <td style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace">${i+1}</td>
+      <td style="font-size:11px;color:var(--t3);font-family:monospace">${i+1}</td>
       <td style="font-weight:600">${escH(p.name)}</td>
       <td class="num">${((p.leads&&p.leads[_payoutMonth])||0).toLocaleString()}</td>
       <td class="num">${insps.toLocaleString()}</td><td class="num">${stocks}</td>
       <td class="num" style="font-weight:700;color:var(--ac);">
         <input type="number" value="${e.amount}" min="0" onchange="updatePayoutEntry('${escH(p.name)}','${_payoutMonth}',this.value)"
-          style="width:100px;padding:4px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--ac);text-align:right;outline:none;"
+          style="width:100px;padding:4px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:monospace;background:var(--bg);color:var(--ac);text-align:right;outline:none;"
           onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--bd)'">
       </td>
       <td>${stBadge}</td>
@@ -8184,7 +8193,7 @@ function renderInvoiceTableAdmin(){
       <td style="font-size:11px;color:var(--t3);">${i+1}</td>
       <td style="font-weight:600">${escH(inv.partner)}</td>
       <td>${escH(inv.fullMonth||inv.month)}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;">${escH(inv.invNo)}</td>
+      <td style="font-family:monospace;font-size:12px;">${escH(inv.invNo)}</td>
       <td class="num">₹${(inv.amount||0).toLocaleString()}</td>
       <td style="color:var(--t3);font-size:12px;">${inv.submitted}</td>
       <td style="font-size:12px;color:var(--t3);">${escH(inv.fileName||'—')}</td>
@@ -8237,7 +8246,7 @@ function renderProofTable(){
       <td style="font-weight:600">${escH(pr.partner)}</td>
       <td>${escH(pr.fullMonth||pr.month)}</td>
       <td class="num">₹${(pr.amount||0).toLocaleString()}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;">${escH(pr.utr||'—')}</td>
+      <td style="font-family:monospace;font-size:12px;">${escH(pr.utr||'—')}</td>
       <td style="color:var(--t3);font-size:12px;">${pr.date||'—'}</td>
       <td style="font-size:12px;color:var(--t3);">${escH(pr.fileName||'—')}</td>
       <td style="text-align:center"><button onclick="deleteProof(${pr.id})" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;cursor:pointer;">🗑</button></td></tr>`;
@@ -8306,7 +8315,7 @@ function buildPartnerPayments(){
   el.innerHTML=mine.slice().reverse().map(pr=>`<div style="background:var(--sf,#0E1420);border:1px solid var(--bd);border-left:4px solid #10b981;border-radius:10px;padding:16px 20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div><div style="font-weight:700;font-size:15px;">✅ ${pr.fullMonth||pr.month} Payment Released</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:3px;">UTR: <span style="font-family:'DM Mono',monospace;color:var(--t2)">${escH(pr.utr||'—')}</span> · Date: ${pr.date||'—'}</div></div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">UTR: <span style="font-family:monospace;color:var(--t2)">${escH(pr.utr||'—')}</span> · Date: ${pr.date||'—'}</div></div>
       <div style="font-size:22px;font-weight:800;color:#10b981;">₹${(pr.amount||0).toLocaleString()}</div>
     </div>
     ${pr.fileName&&pr.fileName!=='—'?`<div style="margin-top:8px;font-size:12px;color:var(--t3);">📎 ${escH(pr.fileName)}</div>`:''}
@@ -8576,7 +8585,7 @@ function buildPartnerReports(){
   if(!_pDlHistory.length){tbl.innerHTML='<tr><td colspan="4" class="empty">No downloads yet.</td></tr>';return;}
   tbl.innerHTML=_pDlHistory.slice().reverse().slice(0,10).map(h=>`<tr>
     <td style="font-weight:600">${escH(h.type)}</td><td>${escH(h.period)}</td>
-    <td style="font-family:'DM Mono',monospace;font-size:11px;">${h.fmt.toUpperCase()}</td>
+    <td style="font-family:monospace;font-size:11px;">${h.fmt.toUpperCase()}</td>
     <td style="color:var(--t3);font-size:12px;">${h.ts}</td></tr>`).join('');
 }
 function generatePartnerReport(){
@@ -9823,8 +9832,8 @@ function renderImportLog(){
     var label = typeLabel[h.viewType]||h.viewType;
     var dt = h.date ? h.date+' '+h.time : h.time||'—';
     return `<tr>
-      <td style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace">${i+1}</td>
-      <td style="font-size:12px;font-family:'DM Mono',monospace;color:var(--t2);">${dt}</td>
+      <td style="font-size:11px;color:var(--t3);font-family:monospace">${i+1}</td>
+      <td style="font-size:12px;font-family:monospace;color:var(--t2);">${dt}</td>
       <td style="font-weight:600;">${h.month||'—'}</td>
       <td><span style="background:${h.viewType==='buyer'?'rgba(16,185,129,.1)':h.viewType==='admin'?'rgba(245,158,11,.1)':h.viewType==='vhr'||h.viewType==='pdi'?'rgba(14,165,233,.1)':h.viewType==='gsheet'?'rgba(34,197,122,.1)':'rgba(79,70,229,.1)'};color:${h.viewType==='buyer'?'#10b981':h.viewType==='admin'?'#f59e0b':h.viewType==='vhr'||h.viewType==='pdi'?'#0ea5e9':h.viewType==='gsheet'?'#22c55e':'#818cf8'};padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700;">${icon} ${label}</span></td>
       <td class="num" style="font-weight:700;">${h.count||0}</td>
@@ -14782,9 +14791,19 @@ console.log('[Cars24 v33] Master fix patch applied — login ✓ session restore
       try{ var invs = typeof getInvoices==='function' ? getInvoices() : [];
         months = invs.map(function(i){return i.month;}).filter(function(m,i,a){return m&&a.indexOf(m)===i;}); }catch(e){}
     }
-    if(!months.length) return;
-    if(!window._invMonthAdmin || months.indexOf(window._invMonthAdmin)<0) window._invMonthAdmin = months[months.length-1];
     wrap.innerHTML = '';
+    // "All" button — default selection so no invoice is ever hidden by month filter
+    if(!window._invMonthAdmin) window._invMonthAdmin = 'all';
+    var allBtn = document.createElement('button');
+    allBtn.className = 'rt'+(window._invMonthAdmin==='all'?' active':'');
+    allBtn.textContent = 'All';
+    allBtn.onclick = function(){
+      window._invMonthAdmin = 'all';
+      wrap.querySelectorAll('.rt').forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+      if(typeof renderInvoiceTableAdmin==='function') renderInvoiceTableAdmin();
+    };
+    wrap.appendChild(allBtn);
     months.forEach(function(m){
       var btn = document.createElement('button');
       btn.className = 'rt'+(m===window._invMonthAdmin?' active':'');
@@ -16384,18 +16403,18 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
             ${type==='admin'?'Current Password':'New Password'}
           </label>
           <input type="password" id="v36-pw-current" placeholder="${type==='admin'?'Current password':''}"
-            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;"
             ${type!=='admin'?'placeholder="Enter new password"':''}>
         </div>
         <div style="margin-bottom:14px;" ${type!=='admin'?'style="display:none;"':''} id="v36-pw-new-wrap">
           <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">New Password</label>
           <input type="password" id="v36-pw-new" placeholder="New password (min 6 chars)"
-            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
         </div>
         <div style="margin-bottom:20px;">
           <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">Confirm New Password</label>
           <input type="password" id="v36-pw-confirm" placeholder="Confirm new password"
-            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
         </div>
         <div id="v36-pw-msg" style="font-size:12px;margin-bottom:10px;display:none;"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
@@ -16592,19 +16611,38 @@ async function uploadFileToDrive(file, folder, fileName){
     var reader = new FileReader();
     reader.onload = function(e){
       var base64 = e.target.result.split(',')[1];
+      var payload = JSON.stringify({
+        fileName: fileName,
+        mimeType: file.type || 'application/octet-stream',
+        base64Data: base64,
+        folder: folder
+      });
+      // Apps Script requires no-cors mode; use URL params to receive response via JSONP-style
+      // Instead use fetch with redirect:follow which handles the Apps Script 302 redirect
       fetch(DRIVE_WEBAPP_URL, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          fileName: fileName,
-          mimeType: file.type || 'application/octet-stream',
-          base64Data: base64,
-          folder: folder
-        })
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: payload,
+        redirect: 'follow'
       })
-      .then(function(r){ return r.json(); })
-      .then(function(d){ resolve(d.fileUrl || d.url || d.id || null); })
-      .catch(function(err){ console.warn('[Drive upload]', err); resolve(null); });
+      .then(function(r){
+        if(!r.ok && r.status !== 0) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function(txt){
+        try{
+          var d = JSON.parse(txt);
+          resolve(d.fileUrl || d.url || null);
+        } catch(pe){
+          // Apps Script returned HTML (auth error) or empty
+          console.warn('[Drive] Unexpected response:', txt.slice(0,200));
+          resolve(null);
+        }
+      })
+      .catch(function(err){
+        console.warn('[Drive upload failed]', err);
+        resolve(null);
+      });
     };
     reader.onerror = function(){ resolve(null); };
     reader.readAsDataURL(file);
@@ -16709,13 +16747,13 @@ window.buildPartnerInvoices = (function(){
         ? '<span style="color:#ef4444;font-weight:700;">✗ Rejected'+(inv.remark?' — '+inv.remark:'')+'</span>'
         : '<span style="color:#f59e0b;font-weight:700;">⏳ Pending</span>';
       var fileCell = inv.driveUrl
-        ? '<a href="'+inv.driveUrl+'" target="_blank" style="color:var(--ac);font-size:11px;font-weight:600;text-decoration:none;">📎 Drive ↗</a>'
-        : (inv.fileName&&inv.fileName!=='—'
-          ? '<span style="font-size:11px;color:var(--t3);">📎 '+inv.fileName+'</span>'
+        ? '<a href="'+inv.driveUrl+'" target="_blank" style="color:var(--ac);font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.2);border-radius:5px;">📎 View File</a>'
+        : (inv.fileName && inv.fileName!=='—'
+          ? '<span style="font-size:11px;color:var(--t3);">📎 '+inv.fileName+'<br><span style="font-size:10px;color:#f59e0b;">Not uploaded to Drive</span></span>'
           : '—');
       return '<tr>'
         +'<td>'+(window.MLABEL&&window.MLABEL[inv.month]?window.MLABEL[inv.month]:inv.fullMonth||inv.month)+'</td>'
-        +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+inv.invNo+'</td>'
+        +'<td style="font-size:12px;font-weight:600;">'+inv.invNo+'</td>'
         +'<td class="num">₹'+(inv.amount||0).toLocaleString()+'</td>'
         +'<td style="color:var(--t3);font-size:12px;">'+inv.submitted+'</td>'
         +'<td>'+fileCell+'</td>'
@@ -16789,7 +16827,7 @@ window.renderProofTable = function(){
       +'<td style="font-weight:600">'+pr.partner+'</td>'
       +'<td>'+(pr.fullMonth||pr.month)+'</td>'
       +'<td class="num">₹'+(pr.amount||0).toLocaleString()+'</td>'
-      +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+(pr.utr||'—')+'</td>'
+      +'<td style="font-family:monospace;font-size:12px;">'+(pr.utr||'—')+'</td>'
       +'<td style="color:var(--t3);font-size:12px;">'+(pr.date||'—')+'</td>'
       +'<td>'+fileCell+'</td>'
       +'<td style="text-align:center"><button onclick="deleteProof('+pr.id+')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;cursor:pointer;">🗑</button></td>'
@@ -16817,7 +16855,7 @@ window.buildPartnerPayments = function(){
     return '<div style="background:var(--sf,#0E1420);border:1px solid var(--bd);border-left:4px solid #10b981;border-radius:10px;padding:16px 20px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">'
       +'<div><div style="font-weight:700;font-size:15px;">✅ '+(pr.fullMonth||pr.month)+' Payment Released</div>'
-      +'<div style="font-size:12px;color:var(--t3);margin-top:3px;">UTR: <span style="font-family:'DM Mono',monospace;color:var(--t2)">'+(pr.utr||'—')+'</span> · Date: '+(pr.date||'—')+'</div>'
+      +'<div style="font-size:12px;color:var(--t3);margin-top:3px;">UTR: <span style="font-family:monospace;color:var(--t2)">'+(pr.utr||'—')+'</span> · Date: '+(pr.date||'—')+'</div>'
       +(fileBtn?'<div style="margin-top:8px;">'+fileBtn+'</div>':'')
       +'</div>'
       +'<div style="font-size:22px;font-weight:800;color:#10b981;">₹'+(pr.amount||0).toLocaleString()+'</div>'
@@ -16837,20 +16875,22 @@ window.scTogglePartner = function(colId, btnId){
 };
 
 // Ensure admin invoice table shows Drive links too
-var _origRITA = window.renderInvoiceTableAdmin;
 window.renderInvoiceTableAdmin = function(){
   var invs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
   var q = (document.getElementById('inv-search-admin')||{value:''}).value.toLowerCase();
   var tbl = document.getElementById('inv-tbl-admin'); if(!tbl) return;
   var mo = window._invMonthAdmin || (window.MONTHS&&window.MONTHS[window.MONTHS.length-1])||'';
+  // Show ALL invoices when month filter not yet set, otherwise filter by month
   var rows = invs.filter(function(i){
-    return i.month===mo && (!q||i.partner.toLowerCase().includes(q));
+    var monthMatch = !mo || i.month===mo;
+    var searchMatch = !q || (i.partner&&i.partner.toLowerCase().includes(q)) || (i.invNo&&i.invNo.toLowerCase().includes(q));
+    return monthMatch && searchMatch;
   });
   if(!rows.length){
     tbl.innerHTML='<tr><td colspan="9" class="empty">No invoices for this month.</td></tr>';
     return;
   }
-  tbl.innerHTML = rows.map(function(inv,i){
+  tbl.innerHTML = rows.map(function(inv,idx){
     var st = inv.status==='Approved'
       ? '<span style="color:#10b981;font-weight:700;">✓ Approved</span>'
       : inv.status==='Rejected'
@@ -16858,19 +16898,21 @@ window.renderInvoiceTableAdmin = function(){
       : '<span style="color:#f59e0b;font-weight:700;">⏳ Pending</span>';
     var fileCell = inv.driveUrl
       ? '<a href="'+inv.driveUrl+'" target="_blank" style="color:var(--ac);font-size:11px;font-weight:600;text-decoration:none;">📎 Drive ↗</a>'
-      : (inv.fileName&&inv.fileName!=='—' ? '<span style="font-size:11px;color:var(--t3);">'+inv.fileName+'</span>' : '—');
+      : (inv.fileName && inv.fileName!=='—'
+          ? '<span style="font-size:11px;color:var(--t3);">'+inv.fileName+'</span>'
+          : '—');
     return '<tr>'
-      +'<td style="font-size:11px;color:var(--t3);">'+(i+1)+'</td>'
-      +'<td style="font-weight:600">'+inv.partner+'</td>'
-      +'<td>'+(inv.fullMonth||inv.month)+'</td>'
-      +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+inv.invNo+'</td>'
+      +'<td style="font-size:11px;color:var(--t3);">'+(idx+1)+'</td>'
+      +'<td style="font-weight:600">'+(inv.partner||'')+'</td>'
+      +'<td>'+(inv.fullMonth||inv.month||'')+'</td>'
+      +'<td style="font-size:12px;">'+(inv.invNo||'')+'</td>'
       +'<td class="num">₹'+(inv.amount||0).toLocaleString()+'</td>'
-      +'<td style="color:var(--t3);font-size:12px;">'+inv.submitted+'</td>'
+      +'<td style="color:var(--t3);font-size:12px;">'+(inv.submitted||'')+'</td>'
       +'<td>'+fileCell+'</td>'
       +'<td>'+st+'</td>'
-      +'<td style="text-align:center;display:flex;gap:5px;justify-content:center;">'
-      +'<button onclick="approveInvoice('+inv.id+','Approved')" style="padding:3px 10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✓</button>'
-      +'<button onclick="approveInvoice('+inv.id+','Rejected')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✗</button>'
+      +'<td style="text-align:center;">'
+      +'<button onclick="approveInvoice('+inv.id+',\'Approved\')" style="padding:3px 10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;margin-right:4px;">✓</button>'
+      +'<button onclick="approveInvoice('+inv.id+',\'Rejected\')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✗</button>'
       +'</td></tr>';
   }).join('');
 };
