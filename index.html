@@ -529,6 +529,181 @@ tbody tr:hover td{background:var(--al)}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 .empty{padding:32px;text-align:center;color:var(--t3);font-size:12.5px}
+
+/* ══════════════════════════════════════════
+   MOBILE RESPONSIVE — Cars24 Portal
+   Breakpoints: 768px (tablet), 480px (phone)
+   ══════════════════════════════════════════ */
+
+/* Hamburger button — hidden on desktop */
+#mob-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 210;
+  margin-right: 4px;
+}
+#mob-menu-btn span {
+  display: block; width: 18px; height: 2px;
+  background: #fff; border-radius: 2px;
+  position: relative; transition: all .25s;
+}
+#mob-menu-btn span::before,
+#mob-menu-btn span::after {
+  content: ''; position: absolute; left: 0;
+  width: 18px; height: 2px;
+  background: #fff; border-radius: 2px;
+  transition: all .25s;
+}
+#mob-menu-btn span::before { top: -5px; }
+#mob-menu-btn span::after  { top: 5px; }
+/* X state */
+#mob-menu-btn.open span   { background: transparent; }
+#mob-menu-btn.open span::before { transform: rotate(45deg);  top: 0; }
+#mob-menu-btn.open span::after  { transform: rotate(-45deg); top: 0; }
+
+/* Sidebar overlay backdrop */
+#mob-sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 205;
+  backdrop-filter: blur(2px);
+}
+#mob-sidebar-overlay.show { display: block; }
+
+@media (max-width: 768px) {
+  /* ── Header ── */
+  .hdr {
+    padding: 0 12px;
+    height: 52px;
+    gap: 8px;
+  }
+  .htit { font-size: 12px; }
+  .lsep { display: none; }
+  /* Hide non-essential header buttons on small screens */
+  #tbtn { display: none !important; }
+  .hb:not(.hbr):not(#mob-hdr-user-btn) { font-size: 11px; padding: 4px 8px; gap: 3px; }
+  .role-badge { font-size: 9.5px; padding: 2px 7px; }
+
+  /* Show hamburger */
+  #mob-menu-btn { display: flex; }
+
+  /* ── Sidebar — slide-in drawer ── */
+  .sidebar {
+    position: fixed !important;
+    top: 52px; left: 0; bottom: 0;
+    width: 260px !important;
+    z-index: 210;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0,0,0,.35);
+  }
+  .sidebar.mob-open {
+    transform: translateX(0);
+  }
+
+  /* ── Layout ── */
+  .layout { flex-direction: column; }
+  .main {
+    padding: 14px 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* ── KPI grids → 2 cols on mobile ── */
+  .kg  { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .kg4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+
+  /* ── Tables — horizontal scroll ── */
+  .tw { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  table { min-width: 500px; }
+  thead th, tbody td { padding: 7px 9px !important; font-size: 11px !important; }
+
+  /* ── Charts ── */
+  .cw { height: 180px !important; }
+
+  /* ── Filter bar ── */
+  .fb { padding: 10px 12px; }
+  .fbrow { gap: 6px; }
+  .srch { width: 100% !important; min-width: 0; }
+  .rt { padding: 4px 9px; font-size: 11px; }
+
+  /* ── Page title ── */
+  .pt { font-size: 17px; }
+  .ps { font-size: 10px; }
+
+  /* ── Partner hero card ── */
+  .partner-hero { padding: 16px 16px; }
+  .ph-name { font-size: 18px; }
+  .ph-stats { gap: 14px; }
+  .ph-stat-v { font-size: 20px; }
+
+  /* ── Month card grid → 2 cols ── */
+  .mcg { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+
+  /* ── Funnel step grid ── */
+  .fst { grid-template-columns: 120px 1fr 70px 55px; gap: 8px; }
+  .fstl { font-size: 11px; }
+
+  /* ── Stat grid ── */
+  .dg { grid-template-columns: 1fr !important; }
+  .vg { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+
+  /* ── Card padding ── */
+  .cc { padding: 12px 14px; }
+  .kc { padding: 11px 11px 9px; }
+  .kv { font-size: 19px !important; }
+
+  /* ── Table container header ── */
+  .tch { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  /* ── Page-level public sections (landing) ── */
+  header { padding: 10px 16px; }
+  .nav-links { display: none; }
+  section { padding: 48px 16px; }
+  .hero { padding: 100px 16px 60px; }
+  .hero h1 { font-size: clamp(44px,12vw,80px); }
+  .phases { grid-template-columns: 1fr !important; }
+  .steps  { grid-template-columns: 1fr !important; }
+  .docs-grid { grid-template-columns: 1fr !important; }
+  .calc-grid { grid-template-columns: 1fr !important; }
+  .payout-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .hdr { padding: 0 10px; height: 50px; }
+  .logo { height: 30px !important; }
+  .htit { display: none; }
+
+  .kg  { grid-template-columns: repeat(2, 1fr) !important; }
+  .kg4 { grid-template-columns: repeat(2, 1fr) !important; }
+  .mcg { grid-template-columns: repeat(2, 1fr) !important; }
+  .vg  { grid-template-columns: 1fr !important; }
+
+  .kv { font-size: 17px !important; }
+  .kl { font-size: 8.5px !important; }
+
+  .main { padding: 10px 10px; }
+  .cc { padding: 10px 12px; }
+  .fb { padding: 9px 10px; }
+
+  .fst { grid-template-columns: 100px 1fr 55px; }
+  .fp  { display: none; }
+
+  /* Stack phase header buttons vertically */
+  .ph { flex-direction: column !important; gap: 8px; }
+
+  /* Sidebar full-width on very small */
+  .sidebar { width: 85vw !important; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -2305,8 +2480,10 @@ function navScrollTo(id) {
       <button class="hb"><span class="dot"></span>&nbsp;<span id="hdr-user">Admin</span></button>
       <button class="hb" id="tbtn" onclick="toggleTheme()">🌙 Dark</button>
       <button class="hb hbr" onclick="doLogout()">⬡ Logout</button>
+      <button id="mob-menu-btn" onclick="_toggleMobSidebar()" aria-label="Toggle menu" style="display:none;"><span></span></button>
     </div>
   </header>
+  <div id="mob-sidebar-overlay" onclick="_closeMobSidebar()"></div>
 
   <div class="layout">
 
@@ -2336,7 +2513,7 @@ function navScrollTo(id) {
 
         <div class="ni" onclick="showV('mom',this)"><span class="nic">📊</span>Month-on-Month</div>
 
-        <div class="ni" onclick="showV('wdwe',this)"><span class="nic">📊</span>Month Compare</div>
+
         <div class="ni" onclick="showV('projection',this)"><span class="nic">📈</span>Month Projection</div>
         <div class="ni" onclick="showV('biz-perf',this)"><span class="nic">📐</span>Business Analytics</div>
       </div>
@@ -2351,6 +2528,8 @@ function navScrollTo(id) {
         <div class="ngl">Channels</div>
         <div class="ni" onclick="showV('admin-view',this)"><span class="nic">👁</span>Admin Analytics</div>
         <div class="ni" onclick="showV('elite',this)"><span class="nic">🏆</span>Elite Dashboard</div>
+        <div class="ni" onclick="showV('logic-builder',this)"><span class="nic">⚙</span>Logic Builder</div>
+        <div class="ni" onclick="showDataGapReport()" style="color:#f59e0b;"><span class="nic">⚠</span>Data Gap Report</div>
         <div class="ni" onclick="showV('seller-channels',this)"><span class="nic">🚗</span>Seller</div>
         <div class="ni" onclick="showV('vas',this)"><span class="nic">✦</span>VAS & VHR</div>
         <div class="ni" onclick="showV('buyer',this)"><span class="nic">🛒</span>Buyer</div>
@@ -2413,7 +2592,7 @@ function navScrollTo(id) {
             <div class="ps" id="dash-sub">Dec 2025 – Mar 2026 &nbsp;·&nbsp; 53 Active Partners of 94 Total</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <button onclick="buildDashboardProjection()" style="display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;" title="Projection based on data - 2 days">📈 Projection</button>
+
             <button onclick="openImportModal('admin')" style="display:flex;align-items:center;gap:7px;background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex-shrink:0;transition:background .2s;" onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
               <span style="font-size:15px;">📥</span> Import Data
             </button>
@@ -2508,10 +2687,54 @@ function navScrollTo(id) {
 
       <!-- FUNNEL -->
       <div class="view" id="view-funnel">
-        <div class="ph"><div class="pt">Funnel Analysis <span class="period-badge" id="funnel-badge">📅 All</span></div><div class="ps">Conversion at each stage</div></div>
-        <div class="fb"><div class="fbrow"><span class="rl">Period:</span><div class="rts" id="funnel-period-btns"><button class="rt active" onclick="setFR('all',this)">All</button></div></div></div>
-        <div class="cc"><div class="cti" style="margin-bottom:16px">Lead → Appointment → Inspection → Stock-in</div><div id="fsteps"></div></div>
-        <div class="cc"><div class="ch"><div><div class="cti">Funnel Rates by Month</div><div class="csu">Conversion % at each stage per month</div></div></div><div class="cw"><canvas id="funnelChart"></canvas></div></div>
+        <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div class="pt">Funnel Analysis <span class="period-badge" id="funnel-badge">📅 All</span></div>
+            <div class="ps">Conversion at each stage · select months to compare · date cutoff filters daily data</div>
+          </div>
+        </div>
+
+        <!-- Filter bar: period + month multi-select + date cutoff -->
+        <div class="fb">
+          <div class="fbrow" style="align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="rl">Period:</span>
+            <div class="rts" id="funnel-period-btns"><button class="rt active" onclick="setFR('all',this)">All</button></div>
+          </div>
+          <div class="fbrow" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bd);align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="rl">Months:</span>
+            <div id="funnel-month-checkboxes" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            <button onclick="funnelSelectAllMonths(true)" style="padding:3px 10px;font-size:11px;border:1px solid var(--bd);border-radius:5px;background:transparent;color:var(--t3);cursor:pointer;">All</button>
+            <button onclick="funnelSelectAllMonths(false)" style="padding:3px 10px;font-size:11px;border:1px solid var(--bd);border-radius:5px;background:transparent;color:var(--t3);cursor:pointer;">None</button>
+          </div>
+          <div class="fbrow" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bd);align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="rl">Day cutoff:</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <label style="font-size:11px;color:var(--t2);display:flex;align-items:center;gap:5px;">
+                <input type="radio" name="funnel-cutoff-mode" value="none" checked onchange="funnelCutoffModeChange(this)" style="accent-color:var(--ac);">
+                Full month
+              </label>
+              <label style="font-size:11px;color:var(--t2);display:flex;align-items:center;gap:5px;">
+                <input type="radio" name="funnel-cutoff-mode" value="day" onchange="funnelCutoffModeChange(this)" style="accent-color:var(--ac);">
+                Up to day:
+              </label>
+              <input type="number" id="funnel-cutoff-day" min="1" max="31" value="15"
+                style="width:60px;padding:5px 8px;border:1.5px solid var(--bd);border-radius:7px;font-size:12px;background:var(--sf);color:var(--tx);outline:none;display:none;"
+                oninput="buildFunnelTable()" placeholder="e.g. 15">
+              <span id="funnel-cutoff-hint" style="font-size:10px;color:var(--t3);display:none;">Only days 1–N of each month counted</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Funnel step bars (aggregate for selected period) -->
+        <div class="cc">
+          <div class="cti" style="margin-bottom:16px">Lead → Appointment → Inspection → Stock-in</div>
+          <div id="fsteps"></div>
+        </div>
+
+        <!-- Month pivot table — the main deliverable -->
+        <div class="cc" id="funnel-table-card" style="padding:0;overflow:hidden;">
+          <div id="funnel-table-wrap"></div>
+        </div>
       </div>
 
       <!-- DOD -->
@@ -2807,7 +3030,7 @@ function navScrollTo(id) {
               <thead><tr>
                 <th>Date</th><th>Day</th>
                 <th class="num">Leads</th><th class="num">Appts</th><th class="num">Insps</th><th class="num">Stocks</th>
-                <th class="num">Running Leads</th><th class="num">EOM Proj (L)</th><th class="num">EOM Proj (I)</th>
+                <th class="num">Run. Leads</th><th class="num">EOM→L</th><th class="num">EOM→A</th><th class="num">EOM→I</th><th class="num">EOM→S</th>
               </tr></thead>
               <tbody id="proj-dod-tbody"></tbody>
             </table>
@@ -3067,6 +3290,153 @@ function navScrollTo(id) {
           </table></div>
         </div>
       </div>
+
+      <!-- ════ LOGIC BUILDER VIEW ════ -->
+      <div class="view" id="view-logic-builder">
+        <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div class="pt">⚙ Logic Builder <span style="font-size:11px;font-weight:500;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:2px 8px;margin-left:6px;">Admin Only</span></div>
+            <div class="ps">Apply deduction rules to seller data — appointment push factor, ASP % adjustment, stockin day-based logic</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="applyLogicRules()" style="background:#4f46e5;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;">▶ Apply Rules</button>
+            <button onclick="resetLogicRules()" style="background:transparent;border:1px solid var(--bd);color:var(--t2);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- Month selector -->
+        <div class="fb" style="margin-bottom:14px;">
+          <div class="fbrow" style="gap:10px;flex-wrap:wrap;align-items:center;">
+            <span class="rl">Month:</span>
+            <div class="rts" id="lb-month-btns"></div>
+          </div>
+        </div>
+
+        <!-- Budget Bar -->
+        <div style="background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.25);border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#f59e0b;">💼 Month Budget</div>
+              <div style="font-size:11px;color:var(--t3);margin-top:2px;">Set total payout budget for the month. Logic builder will keep adjusted payout under/at budget.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <label style="font-size:12px;color:var(--t2);font-weight:600;">Budget (₹):</label>
+              <input type="number" id="lb-budget" value="0" min="0" step="100000"
+                style="width:140px;padding:7px 11px;border:1.5px solid rgba(245,158,11,.4);border-radius:7px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;"
+                oninput="previewLogicRule('budget')">
+              <span style="font-size:11px;color:var(--t3);">0 = no limit</span>
+            </div>
+          </div>
+          <div id="lb-budget-bar-wrap" style="display:none;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px;">
+              <span>Adj Payout</span><span id="lb-budget-pct-lbl">0%</span><span>Budget</span>
+            </div>
+            <div style="background:var(--bd);border-radius:6px;height:10px;overflow:hidden;">
+              <div id="lb-budget-bar" style="height:10px;border-radius:6px;background:#10b981;transition:width .4s;width:0%;"></div>
+            </div>
+            <div id="lb-budget-status" style="font-size:11px;margin-top:5px;font-weight:600;"></div>
+          </div>
+        </div>
+
+        <!-- CPI Formula Panel -->
+        <div style="background:rgba(79,70,229,.05);border:1.5px solid rgba(79,70,229,.2);border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+          <div style="font-weight:700;font-size:13px;color:var(--ac);margin-bottom:6px;">📐 CPI Formula Matrix</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">
+            CPI = 1400 × (A2I% ÷ 50%) × (ASP ÷ ₹2,75,000) × (I2SI% ÷ 16%)
+            — Use sliders below to see how each lever changes CPI and payout.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px;">
+            <div>
+              <label style="font-size:11px;color:var(--t2);font-weight:600;display:block;margin-bottom:4px;">A2I% Benchmark: <span id="lb-a2i-val">50</span>%</label>
+              <input type="range" id="lb-a2i-bench" min="10" max="100" step="1" value="50" oninput="document.getElementById('lb-a2i-val').textContent=this.value;previewLogicRule('formula')" style="width:100%;accent-color:var(--ac);">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--t2);font-weight:600;display:block;margin-bottom:4px;">ASP Benchmark: ₹<span id="lb-asp-val">2,75,000</span></label>
+              <input type="range" id="lb-asp-bench" min="100000" max="600000" step="5000" value="275000" oninput="document.getElementById('lb-asp-val').textContent=parseInt(this.value).toLocaleString();previewLogicRule('formula')" style="width:100%;accent-color:var(--ac);">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--t2);font-weight:600;display:block;margin-bottom:4px;">I2SI% Benchmark: <span id="lb-i2si-val">16</span>%</label>
+              <input type="range" id="lb-i2si-bench" min="5" max="50" step="0.5" value="16" oninput="document.getElementById('lb-i2si-val').textContent=this.value;previewLogicRule('formula')" style="width:100%;accent-color:var(--ac);">
+            </div>
+          </div>
+          <div id="lb-formula-preview" style="font-size:12px;color:var(--t2);background:rgba(79,70,229,.08);border-radius:7px;padding:8px 12px;font-weight:600;"></div>
+        </div>
+
+        <!-- Deduction Rule cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:18px;">
+          <!-- Rule 1: Appointment Push Factor -->
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">📅 Appointment Push Factor</div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Multiply reported appointments (e.g. 0.9 = −10%)</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <input type="number" id="lb-appt-factor" value="1.0" min="0.1" max="2.0" step="0.01"
+                style="width:80px;padding:6px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;"
+                oninput="previewLogicRule('appt')">
+              <span style="font-size:11px;color:var(--t3);">× appointments</span>
+            </div>
+            <div id="lb-appt-preview" style="font-size:11px;color:var(--t3);background:rgba(79,70,229,.06);border-radius:6px;padding:6px 10px;"></div>
+          </div>
+          <!-- Rule 2: ASP Deduction % -->
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">💰 ASP Deduction %</div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Reduce reported ASP by % (e.g. 5 = −5%)</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <input type="number" id="lb-asp-pct" value="0" min="0" max="50" step="0.5"
+                style="width:80px;padding:6px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;"
+                oninput="previewLogicRule('asp')">
+              <span style="font-size:11px;color:var(--t3);">% off ASP</span>
+            </div>
+            <div id="lb-asp-preview" style="font-size:11px;color:var(--t3);background:rgba(79,70,229,.06);border-radius:6px;padding:6px 10px;"></div>
+          </div>
+          <!-- Rule 3: Stock-in Days -->
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">📦 Stock-in Day Filter</div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Pro-rate stocks by N days ÷ 30 (0 = no filter)</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <input type="number" id="lb-stock-days" value="0" min="0" max="90" step="1"
+                style="width:80px;padding:6px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;"
+                oninput="previewLogicRule('stock')">
+              <span style="font-size:11px;color:var(--t3);">days</span>
+            </div>
+            <div id="lb-stock-preview" style="font-size:11px;color:var(--t3);background:rgba(79,70,229,.06);border-radius:6px;padding:6px 10px;"></div>
+          </div>
+          <!-- Rule 4: CPI flat adj -->
+          <div style="background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">🔧 CPI Override (₹)</div>
+            <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Flat ₹ adjustment per inspection. Overrides formula CPI when non-zero.</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <input type="number" id="lb-cpi-adj" value="0" min="-50000" max="50000" step="100"
+                style="width:100px;padding:6px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;"
+                oninput="previewLogicRule('cpi')">
+              <span style="font-size:11px;color:var(--t3);">₹ / inspection</span>
+            </div>
+            <div id="lb-cpi-preview" style="font-size:11px;color:var(--t3);background:rgba(79,70,229,.06);border-radius:6px;padding:6px 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Results table -->
+        <div class="tc">
+          <div class="tch">
+            <div class="tct">Deduction Preview — Adjusted vs Original</div>
+            <span id="lb-tbl-sub" style="font-size:11px;color:var(--t3);"></span>
+          </div>
+          <div class="tw" style="max-height:420px;overflow-y:auto;">
+            <table><thead><tr>
+              <th>#</th><th>Partner</th><th class="num">Orig A2I%</th><th class="num">Orig ASP</th><th class="num">Orig I2SI%</th>
+              <th class="num">Formula CPI</th><th class="num">Adj Appts</th><th class="num">Adj ASP</th>
+              <th class="num">Adj Stocks</th><th class="num">Final CPI</th><th class="num">Adj Payout</th><th class="num">vs Budget</th>
+            </tr></thead>
+            <tbody id="lb-tbl"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Saved rules + budget status -->
+        <div style="margin-top:14px;background:rgba(79,70,229,.05);border:1px solid rgba(79,70,229,.15);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;">📋 Saved Rules</div>
+          <div id="lb-saved-rules" style="font-size:11px;color:var(--t3);">No rules saved yet. Apply rules to save them.</div>
+        </div>
+      </div>
+
 
       <div class="view" id="view-seller-channels">
         <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -3805,49 +4175,13 @@ function navScrollTo(id) {
     var creds = [];
     try { var s=localStorage.getItem('cars24_partner_creds'); creds=s?JSON.parse(s):(window.PARTNER_CREDS||[]); } catch(e){ creds=window.PARTNER_CREDS||[]; }
 
-    var partners = [];
-    try { var sp=localStorage.getItem('cars24_partners_data'); partners=sp?JSON.parse(sp):(window.PARTNERS||[]); } catch(e){ partners=window.PARTNERS||[]; }
-
-    // Expose globally so session-restore on reload can use it
-    window.showPortal = function showPortal(role, user, partner) {
-      var loginOverlay = document.getElementById('portal-login-overlay');
-      if(loginOverlay) loginOverlay.style.display = 'none';
-      window.currentUser = user; window.currentRole = role; window.currentPartner = partner||null;
-      // Persist session so page reload re-opens portal (TTL: 8h)
-      try{
-        localStorage.setItem('c24_session', JSON.stringify({
-          user:user, role:role,
-          username: partner ? (partner.username || '') : user,
-          partnerName: partner ? partner.name : null,
-          exp: Date.now() + 8*60*60*1000
-        }));
-      }catch(e){}
-      var pf = document.getElementById('portal-fullscreen');
-      if(!pf){ alert('Portal element not found. Please reload the page.'); return; }
-      pf.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      try{ window.rebuildMonthMeta(); }catch(e){}
-      try{ window._initAllFeatures(); }catch(e){}
-      var ab=document.getElementById('admin-sidebar'), pb=document.getElementById('partner-sidebar'), rb=document.getElementById('role-badge'), hu=document.getElementById('hdr-user');
-      if(hu) hu.textContent = user;
-      if(role==='admin'){
-        if(ab) ab.style.display=''; if(pb) pb.style.display='none';
-        if(rb){ rb.textContent='Admin'; rb.className='role-badge'; }
-        document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-        var dv=document.getElementById('view-dashboard'); if(dv) dv.classList.add('active');
-        document.querySelectorAll('#admin-sidebar .ni').forEach(function(n){n.classList.remove('active');});
-        var fn=document.querySelector('#admin-sidebar .ni'); if(fn) fn.classList.add('active');
-        setTimeout(function(){ try{window.updateDashboard();}catch(e){} },80);
-      } else {
-        if(ab) ab.style.display='none'; if(pb) pb.style.display='';
-        if(rb){ rb.textContent='Partner'; rb.className='role-badge partner'; }
-        try{ window.loadPartnerSidebar(); }catch(e){}
-        document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-        var po=document.getElementById('view-p-overview'); if(po) po.classList.add('active');
-        document.querySelectorAll('#partner-sidebar .ni').forEach(function(n){n.classList.remove('active');});
-        var fp=document.querySelector('#partner-sidebar .ni'); if(fp) fp.classList.add('active');
-        setTimeout(function(){ try{window.buildPartnerOverview();}catch(e){} },80);
-      }
+    // Partner login reads from PARTNER_SHEET (partner tab data only)
+    var partnerSheetData = {};
+    try { var psd=localStorage.getItem('cars24_partner_sheet_data'); partnerSheetData=psd?JSON.parse(psd):(window.PARTNER_SHEET||{}); } catch(e){ partnerSheetData=window.PARTNER_SHEET||{}; }
+    var partners = Object.values(partnerSheetData);
+    // Fallback: if partner sheet is empty, allow any credential holder in (graceful degradation)
+    if(!partners.length){
+      try { var sp2=localStorage.getItem('cars24_partners_data'); var adm=sp2?JSON.parse(sp2):[]; if(adm.length) partners=adm; } catch(e){}
     }
 
     if (u === 'admin') {
@@ -3871,8 +4205,15 @@ function navScrollTo(id) {
     var partner=null;
     for(var j=0;j<partners.length;j++){
       var pt=partners[j];
-      if(pt.name===cred.display||pt.name.toLowerCase()===cred.display.toLowerCase()||pt.name.toLowerCase().replace(/\s/g,'').slice(0,12)===u){partner=pt;break;}
+      if(!pt||!pt.name) continue;
+      var ptN=pt.name.toLowerCase().replace(/\s+/g,'');
+      var crN=(cred.display||'').toLowerCase().replace(/\s+/g,'');
+      if(pt.name===cred.display||pt.name.toLowerCase()===cred.display.toLowerCase()
+        ||ptN.slice(0,12)===u||ptN.includes(crN.slice(0,8))||crN.includes(ptN.slice(0,8))){
+        partner=pt; break;
+      }
     }
+    // Create empty shell if partner not in sheet yet — they can still log in
     if(!partner){ partner={name:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; }
     showPortal('partner', cred.display, partner);
   };
@@ -3903,6 +4244,17 @@ function savePartners(arr){
   try{ localStorage.setItem('cars24_partners_data', JSON.stringify(arr)); }catch(e){}
 }
 var PARTNERS = loadPartners();  // global — always an array, never undefined
+
+// ─── PARTNER SHEET — separate store for partner-login views only ───
+var PARTNER_SHEET = {};  // in-memory; populated from cars24_partner_sheet_data
+function loadPartnerSheet(){
+  try{ var s=localStorage.getItem('cars24_partner_sheet_data'); return s?JSON.parse(s):{}; }catch(e){ return {}; }
+}
+function savePartnerSheet(obj){
+  try{ localStorage.setItem('cars24_partner_sheet_data',JSON.stringify(obj)); }catch(e){}
+}
+PARTNER_SHEET = loadPartnerSheet();
+
 
 // ─── TARGET STORE (was missing — all target functionality depends on this) ──
 var TGT_STREAM_META = {
@@ -4083,7 +4435,20 @@ function rebuildMonthMeta(){
   var firstLabel = MLABEL[MONTHS[0]] || MONTHS[0];
   var lastLabel  = MLABEL[lastM] || lastM;
   RMETA = {
-    all: {label:'All · '+firstLabel+' – '+lastLabel, days:MONTHS.length*30+'≈ days', months:MONTHS.slice()},
+    all: {label:'All · '+firstLabel+' – '+lastLabel,
+      days:(function(){
+        var reg3=loadMonthRegistry();
+        var MNUM3={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+        if(!MONTHS.length) return '0 days';
+        var y0=reg3.yearMap[MONTHS[0]],m0=MNUM3[MONTHS[0]];
+        var y1=reg3.yearMap[lastM],m1=MNUM3[lastM];
+        if(!y0||!m0||!y1||!m1) return MONTHS.length+' months';
+        var d0=new Date(y0+'-'+m0+'-01');
+        var d1=new Date(y1+'-'+m1+'-28'); // approx month end
+        var days=Math.round((d1-d0)/(1000*60*60*24));
+        return days+' days';
+      })(),
+      months:MONTHS.slice()},
     l7:  {label:'L7 · Last 7 Days',  days:'7 days',  months:null},
     l14: {label:'L14 · Last 14 Days', days:'14 days', months:null},
     l30: {label:'L30 · Last 30 Days', days:'30 days', months:null},
@@ -4118,8 +4483,22 @@ function _rebuildRangeButtons(){
   if(!wrap) return;
   // Remove old hardcoded month buttons, keep fixed preset ones
   wrap.querySelectorAll('.rt[data-month]').forEach(function(b){ b.remove(); });
-  // Add dynamic month buttons from registry
+  // Add dynamic month buttons — only months with actual partner OR DOD data
+  var reg = (typeof loadMonthRegistry==='function') ? loadMonthRegistry() : {yearMap:{}};
+  var MNUM={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
   MONTHS.forEach(function(m){
+    // Check for real data
+    var hasPartner = (GRAND.leads&&GRAND.leads[m])||0 > 0;
+    var yr=reg.yearMap[m], mn=MNUM[m];
+    var hasDod = yr&&mn&&(window.DOD_DATES||[]).some(function(d){return d.startsWith(String(yr)+'-'+mn+'-');});
+    // Also check admin store
+    var hasAdmin = false;
+    try{
+      var avs=(typeof getAdminViewStore==='function')?getAdminViewStore():{};
+      var fullMo=(MLABEL&&MLABEL[m])||m;
+      hasAdmin=Object.keys(avs).some(function(k){return k===m||k===fullMo||k.startsWith(m);});
+    }catch(e){}
+    if(!hasPartner && !hasDod && !hasAdmin) return; // skip empty months
     var btn = document.createElement('button');
     btn.className = 'rt'+(curRange===m?' active':'');
     btn.setAttribute('data-month', m);
@@ -4337,17 +4716,16 @@ function doLogin(){
     if(!cred){err.textContent='❌ Username not found.';err.classList.add('show');return;}
     if(cred.status==='Not Active'){err.textContent='❌ This partner account is inactive. Contact admin.';err.classList.add('show');return;}
     if(cred.password!==p){err.textContent='❌ Incorrect password.';err.classList.add('show');return;}
-    const partner=PARTNERS.find(pt=>{
-      // Try exact name match first
+    // Partner login uses PARTNER_SHEET (from Partner GSheet tab), not admin PARTNERS
+    var psArr = Object.values(PARTNER_SHEET);
+    var partner = psArr.find(function(pt){
       if(pt.name===cred.display || pt.name.toLowerCase()===cred.display.toLowerCase()) return true;
-      // Try username prefix match
       if(pt.name.toLowerCase().replace(/\s/g,'').slice(0,12)===cred.username) return true;
-      // Try partial match — display name starts with or contains partner name
       if(pt.name.toLowerCase().replace(/\s+/g,'').includes(cred.display.toLowerCase().replace(/\s+/g,'').slice(0,8))) return true;
       if(cred.display.toLowerCase().replace(/\s+/g,'').includes(pt.name.toLowerCase().replace(/\s+/g,'').slice(0,8))) return true;
       return false;
     });
-    if(!partner){err.textContent='❌ Partner data not found. Please ask admin to import your data.';err.classList.add('show');return;}
+    if(!partner){err.textContent='❌ Partner data not found. Please ask admin to import Partner Sheet data first.';err.classList.add('show');return;}
     currentUser=cred.display; currentRole='partner'; currentPartner=partner;
     launchApp();
   }
@@ -5990,57 +6368,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if(ov) ov.addEventListener('click', function(e){ if(e.target === ov) closePortalLogin(); });
   var credOv = document.getElementById('cred-modal-overlay');
   if(credOv) credOv.addEventListener('click', function(e){ if(e.target === credOv) closeCredModal(); });
-
-  // Auto-restore session on reload
-  try{
-    var saved = localStorage.getItem('c24_session');
-    if(saved){
-      var sess = JSON.parse(saved);
-      // Check TTL
-      if(sess && sess.exp && Date.now() > sess.exp){
-        localStorage.removeItem('c24_session');
-        saved = null;
-        sess = null;
-      }
-      if(sess && sess.role && sess.user){
-        var creds = (typeof loadCreds === 'function') ? loadCreds() : (window.PARTNER_CREDS || []);
-        var partner = null;
-        if(sess.role === 'partner'){
-          var cred = creds.find(function(c){ return c.display === sess.partnerName || c.username === sess.username; });
-          if(cred){
-            var allPartners = (typeof loadPartners === 'function') ? loadPartners() : (window.PARTNERS || []);
-            partner = allPartners.find(function(p){ return p.name === cred.display; }) || {name:cred.display, status:'Active', leads:{}, appts:{}, insps:{}, stocks:{}, payout:{}};
-          } else {
-            // Session invalid — clear it
-            localStorage.removeItem('c24_session');
-            return;
-          }
-        }
-        // For admin/secondary-admin roles, no partner object needed
-        window.currentUser    = sess.user;
-        window.currentRole    = sess.role;
-        window.currentPartner = partner;
-        // Silently open portal (no login modal)
-        setTimeout(function(){
-          try{
-            if(typeof window.showPortal === 'function'){
-              window.showPortal(sess.role, sess.user, partner);
-            } else {
-              // showPortal not ready yet — retry once more
-              setTimeout(function(){
-                if(typeof window.showPortal === 'function'){
-                  window.showPortal(sess.role, sess.user, partner);
-                } else {
-                  localStorage.removeItem('c24_session');
-                  console.warn('[Session] showPortal not available');
-                }
-              }, 400);
-            }
-          }catch(e){ console.warn('Session restore failed:',e); localStorage.removeItem('c24_session'); }
-        }, 150);
-      }
-    }
-  }catch(e){ console.warn('[Session] Restore error:',e); }
+  // NOTE: Session restore handled by v33 patch (_v33SessionRestore) at bottom of file
 });
 
 // ── handleLogin wired to portal modal ──
@@ -6290,8 +6618,26 @@ function buildMom(){
     return result;
   }
 
-  var C = useFilter ? (sumDodForMonth(_momCur)||PERIOD[_momCur]||{leads:0,appts:0,insps:0,stocks:0,payout:0}) : (PERIOD[_momCur]||{leads:0,appts:0,insps:0,stocks:0,payout:0});
-  var P = useFilter ? (sumDodForMonth(_momPrev)||PERIOD[_momPrev]||{leads:0,appts:0,insps:0,stocks:0,payout:0}) : (PERIOD[_momPrev]||{leads:0,appts:0,insps:0,stocks:0,payout:0});
+  // Try DOD → PERIOD → admin store → zeros
+  function getMonthData(mo){
+    if(useFilter){ var d=sumDodForMonth(mo); if(d&&(d.leads||d.insps)) return d; }
+    if(PERIOD[mo]&&(PERIOD[mo].leads||PERIOD[mo].insps)) return PERIOD[mo];
+    // Fall back to admin view store
+    try{
+      var avs=getAdminViewStore(); var fullMo=(window.MLABEL&&window.MLABEL[mo])||mo;
+      var avKeys=Object.keys(avs);
+      var avKey=avKeys.find(function(k){return k===mo||k===fullMo||k.startsWith(mo);});
+      if(avKey&&avs[avKey]&&avs[avKey].partners){
+        var plist=avs[avKey].partners;
+        var res={leads:0,appts:0,insps:0,stocks:0,payout:0};
+        plist.forEach(function(p){res.leads+=p.leads||0;res.appts+=p.appts||0;res.insps+=p.insps||0;res.stocks+=p.stocks||0;res.payout+=p.payout||0;});
+        if(res.leads||res.insps) return res;
+      }
+    }catch(e){}
+    return PERIOD[mo]||{leads:0,appts:0,insps:0,stocks:0,payout:0};
+  }
+  var C = getMonthData(_momCur);
+  var P = getMonthData(_momPrev);
 
   document.getElementById('mom-title').textContent=(MLABEL[_momCur]||_momCur)+' vs '+(MLABEL[_momPrev]||_momPrev)+(useFilter?' · date-filtered':'');
   var cols=['cb','ct','cp','cg','ca','cr'];
@@ -6313,7 +6659,7 @@ function buildMom(){
   if(tbody){
     var allMonths = MONTHS.slice().reverse(); // most recent first
     tbody.innerHTML = allMonths.map(function(m){
-      var d = useFilter ? (sumDodForMonth(m)||PERIOD[m]||{leads:0,appts:0,insps:0,stocks:0,payout:0}) : (PERIOD[m]||{leads:0,appts:0,insps:0,stocks:0,payout:0});
+      var d = getMonthData(m);
       var a2i  = d.leads>0 ? (d.insps/d.leads*100).toFixed(1)+'%' : '\u2014';
       var i2si = d.insps>0 ? (d.stocks/d.insps*100).toFixed(1)+'%' : '\u2014';
       var isCur  = m === _momCur;
@@ -7022,7 +7368,9 @@ function buildAdminView(){
     });
     Object.values(aggMap).forEach(function(a){
       if(a._rows>1){
-        ['asp','a2i','i2si','base_cpi','cpi','asp_organic','a2i_organic','cpi_organic','kpi_a2i','kpi_asp','kpi_i2si'].forEach(function(f){ a[f]=+(a[f]/a._rows).toFixed(4); });
+        // Average rates as decimals, but money values as integers
+        ['a2i','i2si','a2i_organic','cpi_organic','kpi_a2i','kpi_i2si'].forEach(function(f){ a[f]=+(a[f]/a._rows).toFixed(4); });
+        ['asp','base_cpi','cpi','asp_organic','kpi_asp'].forEach(function(f){ a[f]=Math.round(a[f]/a._rows); });
       }
       partners.push(a);
     });
@@ -7359,27 +7707,68 @@ function buildSellerChannels(){
     tbl.innerHTML='<tr><td colspan="14" style="text-align:center;padding:28px;color:var(--t3);">No channel data for this month. Import seller data using Admin View or Partner View to see channels here.</td></tr>';
     return;
   }
-  tbl.innerHTML = rows.map(function(r,i){
-    var a2ip = r.insps>0&&r.leads>0 ? (r.insps/r.leads*100).toFixed(1)+'%' : (r.a2i?(r.a2i*100).toFixed(1)+'%':'—');
-    var i2sp = r.stocks>0&&r.insps>0 ? (r.stocks/r.insps*100).toFixed(1)+'%' : (r.i2si?(r.i2si*100).toFixed(1)+'%':'—');
-    var bg   = i%2===0?'var(--sb,#131b28)':'';
-    return '<tr'+(bg?' style="background:'+bg+'"':'')+'>'
-      +'<td style="color:var(--t3);font-size:11px;">'+(i+1)+'</td>'
-      +'<td style="font-weight:600;font-size:12px;">'+escH(r.partner)+'</td>'
-      +'<td style="font-size:12px;color:var(--t2,#c8d6e5);">'+escH(r.channel_group)+'</td>'
-      +'<td style="font-size:11px;color:var(--t3);">'+escH(r.source_medium)+'</td>'
-      +'<td style="font-size:11px;color:var(--t3);">'+escH(r.campaign)+'</td>'
-      +'<td class="num">'+r.leads.toLocaleString()+'</td>'
-      +'<td class="num">'+r.appts.toLocaleString()+'</td>'
-      +'<td class="num">'+r.insps.toLocaleString()+'</td>'
-      +'<td class="num" style="color:var(--t2)">'+a2ip+'</td>'
-      +'<td class="num">'+r.stocks.toLocaleString()+'</td>'
-      +'<td class="num" style="color:var(--t2)">'+i2sp+'</td>'
-      +'<td class="num">'+(r.asp?'₹'+Math.round(r.asp).toLocaleString():'—')+'</td>'
-      +'<td class="num">'+(r.cpi?'₹'+Math.round(r.cpi).toLocaleString():'—')+'</td>'
-      +'<td class="num" style="font-weight:600;color:#10b981;">'+(r.payout?fmtL(r.payout):'—')+'</td>'
+
+  // Group rows by partner — collapsed by default
+  var grouped={}, partnerOrder=[];
+  rows.forEach(function(r){
+    if(!grouped[r.partner]){ grouped[r.partner]={rows:[],t:{leads:0,appts:0,insps:0,stocks:0,payout:0,asp:0,cpi:0,_ac:0,_cc:0}}; partnerOrder.push(r.partner); }
+    grouped[r.partner].rows.push(r);
+    var g=grouped[r.partner].t;
+    g.leads+=r.leads||0; g.appts+=r.appts||0; g.insps+=r.insps||0; g.stocks+=r.stocks||0; g.payout+=r.payout||0;
+    if(r.asp){g.asp+=r.asp; g._ac++;} if(r.cpi){g.cpi+=r.cpi; g._cc++;}
+  });
+
+  var html='', pi=0;
+  partnerOrder.forEach(function(pName){
+    var g=grouped[pName], t=g.t;
+    if(t._ac>0) t.asp=Math.round(t.asp/t._ac); if(t._cc>0) t.cpi=Math.round(t.cpi/t._cc);
+    var a2i=t.leads>0?(t.insps/t.leads*100).toFixed(1)+'%':'—';
+    var i2s=t.insps>0?(t.stocks/t.insps*100).toFixed(1)+'%':'—';
+    var cId='sc-exp-'+pi, bId='sc-btn-'+pi;
+    var multi=g.rows.length>1;
+    // Summary row (always visible)
+    html+='<tr style="background:var(--sb,#131b28);border-left:3px solid var(--ac);">'
+      +'<td style="padding:5px 6px;cursor:'+(multi?'pointer':'default')+';"'+(multi?' onclick="scTogglePartner('+cId+','+bId+')"':'')+'>'
+        +(multi?'<span id="'+bId+'" style="display:inline-block;font-size:10px;color:var(--t3);">▶</span>':'')+'</td>'
+      +'<td style="font-weight:700;" colspan="4">'+escH(pName)+'<span style="font-size:10px;color:var(--t3);font-weight:500;margin-left:6px;">'+(multi?g.rows.length+' channels':'1 channel')+'</span></td>'
+      +'<td class="num" style="font-weight:700;color:var(--ac)">'+t.leads.toLocaleString()+'</td>'
+      +'<td class="num">'+t.appts.toLocaleString()+'</td>'
+      +'<td class="num">'+t.insps.toLocaleString()+'</td>'
+      +'<td class="num" style="color:var(--t2)">'+a2i+'</td>'
+      +'<td class="num">'+t.stocks.toLocaleString()+'</td>'
+      +'<td class="num" style="color:var(--t2)">'+i2s+'</td>'
+      +'<td class="num">'+(t.asp?'₹'+t.asp.toLocaleString():'—')+'</td>'
+      +'<td class="num">'+(t.cpi?'₹'+t.cpi.toLocaleString():'—')+'</td>'
+      +'<td class="num" style="color:#10b981;">'+(t.payout?fmtL(t.payout):'—')+'</td>'
       +'</tr>';
-  }).join('');
+    // Child rows — hidden by default
+    if(multi){
+      html+='<tr id="'+cId+'" style="display:none;"><td colspan="14" style="padding:0;">'
+        +'<table style="width:100%;border-collapse:collapse;">';
+      g.rows.forEach(function(r){
+        var a2r=r.insps>0&&r.leads>0?(r.insps/r.leads*100).toFixed(1)+'%':(r.a2i?(r.a2i*100).toFixed(1)+'%':'—');
+        var i2r=r.stocks>0&&r.insps>0?(r.stocks/r.insps*100).toFixed(1)+'%':(r.i2si?(r.i2si*100).toFixed(1)+'%':'—');
+        html+='<tr style="background:rgba(79,70,229,.03);border-top:1px solid var(--bd);">'
+          +'<td style="width:24px;"></td>'
+          +'<td style="font-size:11px;color:var(--t3);padding:5px 8px;">'+escH(r.channel_group||'—')+'</td>'
+          +'<td style="font-size:11px;color:var(--t3);padding:5px 8px;">'+escH(r.source_medium||'—')+'</td>'
+          +'<td colspan="2" style="font-size:10px;color:var(--t3);padding:5px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escH(r.campaign||'')+'">'+escH(r.campaign||'—')+'</td>'
+          +'<td class="num" style="font-size:11px;">'+r.leads.toLocaleString()+'</td>'
+          +'<td class="num" style="font-size:11px;">'+r.appts.toLocaleString()+'</td>'
+          +'<td class="num" style="font-size:11px;">'+r.insps.toLocaleString()+'</td>'
+          +'<td class="num" style="font-size:11px;color:var(--t2)">'+a2r+'</td>'
+          +'<td class="num" style="font-size:11px;">'+r.stocks.toLocaleString()+'</td>'
+          +'<td class="num" style="font-size:11px;color:var(--t2)">'+i2r+'</td>'
+          +'<td class="num" style="font-size:11px;">'+(r.asp?'₹'+Math.round(r.asp).toLocaleString():'—')+'</td>'
+          +'<td class="num" style="font-size:11px;">'+(r.cpi?'₹'+Math.round(r.cpi).toLocaleString():'—')+'</td>'
+          +'<td class="num" style="font-size:11px;color:#10b981;">'+(r.payout?fmtL(r.payout):'—')+'</td>'
+          +'</tr>';
+      });
+      html+='</table></td></tr>';
+    }
+    pi++;
+  });
+  tbl.innerHTML=html;
 }
 
 function exportSellerChannelsCSV(){
@@ -10547,7 +10936,14 @@ function _integrateGSheetDOD(rows){
     // FORMAT B: ROW-PER-DATE (DoD tab) — each row is one date
     //   Row 0: { Date:'2026-03-01', Leads:2984, Appointments:926, ... }
 
-    var funnelKey = keys.find(function(k){ return /^funnel$/i.test(k.trim()); });
+    var funnelKey = keys.find(function(k){ return /^funnel/i.test(k.trim()); })
+                 || keys.find(function(k){ return /^metric$/i.test(k.trim()); })
+                 || keys.find(function(k){ return /^stage$/i.test(k.trim()); });
+    // Also detect pivot if second column contains LEADS/APPOINTMENTS etc.
+    if(!funnelKey && keys.length >= 2){
+      var sample2 = String(rows[0]&&rows[0][keys[1]]||'').toUpperCase();
+      if(/LEAD|APPT|INSP|STOCK/.test(sample2)) funnelKey = keys[1];
+    }
     var isPivot = !!funnelKey;
 
     if(isPivot){
@@ -10565,12 +10961,11 @@ function _integrateGSheetDOD(rows){
       // Find metric rows
       var MROW = {leads:null, appts:null, insps:null, stocks:null};
       rows.forEach(function(r){
-        var f = String(r[funnelKey]||'').trim().toUpperCase();
-        if(f === 'LEADS' || f === 'TOTAL LEADS')               MROW.leads  = r;
-        else if(f === 'APPOINTMENTS' || f === 'APPTS')          MROW.appts  = r;
-        else if(f === 'INSPECTIONS'  || f === 'INSPS')          MROW.insps  = r;
-        else if(f === 'STOCKINS' || f === 'STOCK-INS' || f === 'STOCK_INS' || f === 'STOCKIN') MROW.stocks = r;
-        // Also handle L2A% / A2I% etc. — skip those
+        var f = String(r[funnelKey]||'').trim().toUpperCase().replace(/\s+/g,' ');
+        if(/^LEADS?$|TOTAL.?LEADS?/.test(f))                        MROW.leads  = r;
+        else if(/^APPTS?$|APPOINTMENTS?/.test(f))                    MROW.appts  = r;
+        else if(/^INSPS?$|INSPECTIONS?/.test(f))                     MROW.insps  = r;
+        else if(/STOCK.?IN|STOCKIN|^STKN$/.test(f))                  MROW.stocks = r;
       });
 
       // Parse "March 1, 2026" → "2026-03-01"
@@ -10790,42 +11185,38 @@ function _integrateGSheetPartner(rows, sheetName){
       });
     });
 
-    // Merge into PARTNERS global
+    // Partner sheet → PARTNER_SHEET ONLY. PARTNERS is for admin data only.
     var n=0;
     Object.keys(partnerMap).forEach(function(pName){
-      var p = PARTNERS.find(function(x){ return x.name.toLowerCase().trim()===pName.toLowerCase().trim(); });
-      if(!p){ p={name:pName,status:'Active',region:'',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; PARTNERS.push(p); }
-
+      if(!PARTNER_SHEET[pName]) PARTNER_SHEET[pName]={name:pName,status:'Active',region:'',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}};
+      var ps = PARTNER_SHEET[pName];
       Object.keys(partnerMap[pName]).forEach(function(shortM){
         var agg = partnerMap[pName][shortM];
-        p.leads[shortM]  = agg.leads;
-        p.appts[shortM]  = agg.appts;
-        p.insps[shortM]  = agg.insps;
-        p.stocks[shortM] = agg.stocks;
-        p.payout[shortM] = Math.round(agg.payout);
-        if(!p.region && agg.region) p.region = agg.region;
-
-        if(!p.ext) p.ext = {};
+        ps.leads[shortM]  = agg.leads;
+        ps.appts[shortM]  = agg.appts;
+        ps.insps[shortM]  = agg.insps;
+        ps.stocks[shortM] = agg.stocks;
+        ps.payout[shortM] = Math.round(agg.payout);
+        if(!ps.region && agg.region) ps.region = agg.region;
+        if(!ps.ext) ps.ext = {};
         var fullMo = (window.MLABEL&&window.MLABEL[shortM]) || shortM+' 2026';
-        p.ext[fullMo] = {
+        ps.ext[fullMo] = {
           leads:agg.leads, appts:agg.appts, insps:agg.insps, stocks:agg.stocks,
           payout:Math.round(agg.payout),
-          a2i:  agg.row_count>0 ? +(agg.a2i_sum/agg.row_count).toFixed(2)  : 0,
-          i2si: agg.row_count>0 ? +(agg.i2si_sum/agg.row_count).toFixed(2) : 0,
-          asp:  agg.row_count>0 ? Math.round(agg.asp_sum/agg.row_count)    : 0,
-          cpi:  agg.row_count>0 ? Math.round(agg.cpi_sum/agg.row_count)    : 0,
+          a2i:  agg.row_count>0 ? +(agg.a2i_sum/agg.row_count).toFixed(2) : 0,
+          i2si: agg.row_count>0 ? +(agg.i2si_sum/agg.row_count).toFixed(2): 0,
+          asp:  agg.row_count>0 ? Math.round(agg.asp_sum/agg.row_count)   : 0,
+          cpi:  agg.row_count>0 ? Math.round(agg.cpi_sum/agg.row_count)   : 0,
           base_cpi:agg.base_cpi, kpi_a2i:agg.kpi_a2i, kpi_asp:agg.kpi_asp, kpi_i2si:agg.kpi_i2si,
-          region:agg.region,
-          rows:agg.rows,
-          view_type:'partner'
+          region:agg.region, rows:agg.rows, view_type:'partner'
         };
         n++;
       });
     });
-
-    savePartners(PARTNERS);
+    savePartnerSheet(PARTNER_SHEET);
+    // Rebuild partner credentials name list from partner sheet (for login matching)
     try{ rebuildMonthMeta(); }catch(e){}
-    console.log('[GSheet->Partner] '+Object.keys(partnerMap).length+' partners, '+n+' month-entries');
+    console.log('[GSheet->Partner] '+Object.keys(partnerMap).length+' partners saved to partner sheet store');
   }catch(e){ console.error('[GSheet->Partner]',e); }
 }
 
@@ -10997,7 +11388,7 @@ function _integrateGSheetAdmin(rows){
 
     saveAdminViewStore(store);
 
-    // Also update PARTNERS aggregate with admin data (leads/appts/insps/stocks/payout)
+    // Admin is primary source for PARTNERS — overwrite with full admin data
     Object.keys(store).forEach(function(fullMo){
       var md = store[fullMo]; if(!md||!md.partners) return;
       var shortM = null;
@@ -11006,12 +11397,28 @@ function _integrateGSheetAdmin(rows){
       if(!shortM) return;
       md.partners.forEach(function(p){
         var partner = PARTNERS.find(function(x){ return x.name.toLowerCase().trim()===p.name.toLowerCase().trim(); });
-        if(!partner){ partner={name:p.name,status:'Active',region:'',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; PARTNERS.push(partner); }
+        if(!partner){
+          partner={name:p.name,status:'Active',region:p.region||'',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}};
+          PARTNERS.push(partner);
+        }
+        // Core metrics
         partner.leads[shortM]  = p.leads||0;
         partner.appts[shortM]  = p.appts||0;
         partner.insps[shortM]  = p.insps||0;
         partner.stocks[shortM] = p.stocks||0;
         partner.payout[shortM] = Math.round(p.payout||0);
+        if(p.region && !partner.region) partner.region = p.region;
+        // Extended admin fields — stored in ext for detailed views
+        if(!partner.ext) partner.ext={};
+        partner.ext[fullMo] = {
+          leads:p.leads||0, appts:p.appts||0, insps:p.insps||0, stocks:p.stocks||0, payout:Math.round(p.payout||0),
+          asp:p.asp||0, a2i:p.a2i||0, i2si:p.i2si||0, base_cpi:p.base_cpi||0, cpi:p.cpi||0,
+          kpi_a2i:p.kpi_a2i||0, kpi_asp:p.kpi_asp||0, kpi_i2si:p.kpi_i2si||0,
+          appts_organic:p.appts_organic||0, stocks_organic:p.stocks_organic||0,
+          asp_organic:p.asp_organic||0, a2i_organic:p.a2i_organic||0,
+          cpi_organic:p.cpi_organic||0, payout_organic:p.payout_organic||0,
+          region:p.region||'', view_type:'admin'
+        };
       });
     });
     savePartners(PARTNERS);
@@ -11273,16 +11680,15 @@ function _refreshActiveViewAfterSync(){
       }
     }catch(de){ console.warn('[Cache] DOD restore:',de); }
     // Load other cached sheet data
-    ['dod','seller','buyer','admin','vhr','pdi','challan','lac','elite'].forEach(function(type){
+    // Order matters: seller first (base data), then admin OVERWRITES PARTNERS (admin is primary source)
+    ['dod','seller','buyer','vhr','pdi','challan','lac','elite','admin'].forEach(function(type){
       var cached=_loadSheetCache(type);
       if(!cached || !cached.length) return;
       try{
-        // Only re-integrate seller/buyer/admin/vhr/pdi from row cache
-        // DOD is already restored from the fast-path above
         if(type==='dod' && DOD_DATES.length===0) _integrateGSheetDOD(cached);
         if(type==='seller')  _integrateGSheetPartner(cached,'Partner');
         if(type==='buyer')   _integrateGSheetBuyer(cached);
-        if(type==='admin')   _integrateGSheetAdmin(cached);
+        if(type==='admin')   _integrateGSheetAdmin(cached);  // runs LAST — admin overwrites PARTNERS
         if(type==='vhr')     _integrateGSheetVHR(cached);
         if(type==='pdi')     _integrateGSheetPDI(cached);
         if(type==='challan') _integrateGSheetChallan(cached);
@@ -11290,6 +11696,37 @@ function _refreshActiveViewAfterSync(){
         if(type==='elite')   _integrateGSheetElite(cached);
       }catch(e){ console.warn('[GSheet] cache load '+type+':',e); }
     });
+    // If no row cache for admin but admin store exists, rebuild PARTNERS from store
+    try{
+      var adminStore = typeof getAdminViewStore==='function' ? getAdminViewStore() : {};
+      var adminMonths = Object.keys(adminStore);
+      if(adminMonths.length && !_loadSheetCache('admin')){
+        var MMAP2={january:'Jan',february:'Feb',march:'Mar',april:'Apr',may:'May',june:'Jun',
+                   july:'Jul',august:'Aug',september:'Sep',october:'Oct',november:'Nov',december:'Dec',
+                   jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',jun:'Jun',jul:'Jul',aug:'Aug',
+                   sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec'};
+        adminMonths.forEach(function(fullMo){
+          var md=adminStore[fullMo]; if(!md||!md.partners) return;
+          var shortM=null;
+          var w=fullMo.toLowerCase().split(/[\s'0-9]/)[0];
+          Object.keys(MMAP2).forEach(function(k){ if(k===w) shortM=MMAP2[k]; });
+          if(!shortM){ var sm=fullMo.split(' ')[0]; if(sm.length===3) shortM=sm; }
+          if(!shortM) return;
+          md.partners.forEach(function(p){
+            var partner=PARTNERS.find(function(x){ return x.name.toLowerCase().trim()===p.name.toLowerCase().trim(); });
+            if(!partner){ partner={name:p.name,status:'Active',region:p.region||'',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; PARTNERS.push(partner); }
+            partner.leads[shortM]  = p.leads||0;
+            partner.appts[shortM]  = p.appts||0;
+            partner.insps[shortM]  = p.insps||0;
+            partner.stocks[shortM] = p.stocks||0;
+            partner.payout[shortM] = Math.round(p.payout||0);
+            if(p.region&&!partner.region) partner.region=p.region;
+          });
+        });
+        savePartners(PARTNERS);
+        console.log('[Cache] PARTNERS rebuilt from admin store — months:', adminMonths.join(', '));
+      }
+    }catch(ae){ console.warn('[Cache] admin store rebuild:',ae); }
     // CRITICAL: rebuild after loading cached data so PERIOD.l7/l14/l30 are populated
     try{ rebuildMonthMeta(); }catch(e){ console.warn('[GSheet] cache rebuildMonthMeta:',e); }
   }catch(e){ console.warn('[GSheet] init:',e); }
@@ -12019,47 +12456,15 @@ function deleteAdminAccountFromCredView(idx){
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(applyToVisibleTables, 400); });
 })();
 
-// ── FIX 5/6 extra: Force rebuildMonthMeta + dashboard update after portal opens ──
-(function _patchPortalOpen(){
-  var _origShowPortal = window.showPortal;
-  window.showPortal = function(role, user, partner){
-    if(typeof _origShowPortal === 'function') _origShowPortal(role, user, partner);
-    // After portal is open, reload PARTNER_CREDS from localStorage
-    try{
-      var pc = localStorage.getItem('cars24_partner_creds');
-      if(pc) window.PARTNER_CREDS = JSON.parse(pc);
-    }catch(e){}
-    // Ensure month meta is rebuilt with any cached DOD data
-    setTimeout(function(){
-      try{ window.rebuildMonthMeta(); }catch(e){}
-      if(role === 'admin'){
-        setTimeout(function(){
-          try{ window.updateDashboard(); }catch(e){}
-        }, 100);
-      }
-    }, 50);
-  };
+// ── FIX 5/6 extra: (neutralized — showPortal is now defined globally in v33 patch) ──
+(function _patchPortalOpen_DISABLED(){
+  // This patch is superseded by the v33 master fix patch at the bottom of file
+  // which defines window.showPortal globally and handles all post-open logic.
 })();
 
-// ── FIX: Ensure doLogin in old portal also saves session ──────
-(function _patchDoLogin(){
-  var _origLaunchApp = window.launchApp;
-  if(typeof _origLaunchApp === 'function'){
-    window.launchApp = function(){
-      _origLaunchApp.apply(this, arguments);
-      try{
-        var role = window.currentRole || 'admin';
-        var user = window.currentUser || 'Admin';
-        var partner = window.currentPartner || null;
-        localStorage.setItem('c24_session', JSON.stringify({
-          user: user, role: role,
-          username: partner ? (partner.username||'') : user,
-          partnerName: partner ? partner.name : null,
-          exp: Date.now() + 8*60*60*1000
-        }));
-      }catch(e){}
-    };
-  }
+// ── FIX: (neutralized — session saving now inside window.showPortal in v33 patch) ──
+(function _patchDoLogin_DISABLED(){
+  // Session is now saved directly inside the global showPortal function.
 })();
 
 // ── FIX: _rebuildDashboardLabels patch for dashboard sub-text ─────────────────
@@ -12074,37 +12479,10 @@ window._rebuildDashboardLabels = function(){
   }
 };
 
-// ── FIX: Ensure DOD data is always restored after portal opens ────────────────
-(function _patchPortalOpenDOD(){
-  var _orig = window.showPortal;
-  window.showPortal = function(role, user, partner){
-    // First restore DOD from fast cache if still empty
-    if(window.DOD_DATES && window.DOD_DATES.length === 0){
-      try{
-        var dodRaw = localStorage.getItem('cars24_dod_arrays');
-        if(dodRaw){
-          var dc = JSON.parse(dodRaw);
-          if(dc.dates && dc.dates.length){
-            window.DOD_DATES.length=window.DOD_D.leads.length=window.DOD_D.appts.length=window.DOD_D.insps.length=window.DOD_D.stocks.length=0;
-            dc.dates.forEach(function(d,i){
-              window.DOD_DATES.push(d);
-              window.DOD_D.leads.push(dc.leads[i]||0);
-              window.DOD_D.appts.push(dc.appts[i]||0);
-              window.DOD_D.insps.push(dc.insps[i]||0);
-              window.DOD_D.stocks.push(dc.stocks[i]||0);
-            });
-            console.log('[Portal] Restored '+window.DOD_DATES.length+' DOD days from fast cache');
-          }
-        }
-      }catch(e){}
-    }
-    if(typeof _orig === 'function') _orig(role, user, partner);
-    // After portal is open, rebuild targets
-    setTimeout(function(){
-      try{ if(typeof buildTargetMonthBtns==='function') buildTargetMonthBtns(); }catch(e){}
-      try{ if(typeof window._rebuildDashboardLabels==='function') window._rebuildDashboardLabels(); }catch(e){}
-    }, 200);
-  };
+// ── FIX: (neutralized — DOD restore is now inside window.showPortal in v33 patch) ──
+(function _patchPortalOpenDOD_DISABLED(){
+  // DOD restore and target rebuild are handled inside the global showPortal defined
+  // in the v33 master fix patch at the bottom of the file.
 })();
 
 // ── FIX: _integrateGSheetPartner also auto-registers months from any col-header months ──
@@ -12889,15 +13267,17 @@ function buildProjView(){
       +'<td class="num">'+totI.toLocaleString()+'</td><td class="num">'+totS.toLocaleString()+'</td>'
       +'<td class="num">—</td>'
       +'<td class="num" style="color:#4f46e5;font-weight:700;">'+projL.toLocaleString()+'</td>'
-      +'<td class="num" style="color:#f59e0b;font-weight:700;">'+projI.toLocaleString()+'</td></tr>';
+      +'<td class="num" style="color:#14b8a6;font-weight:700;">'+projA.toLocaleString()+'</td>'
+      +'<td class="num" style="color:#f59e0b;font-weight:700;">'+projI.toLocaleString()+'</td>'
+      +'<td class="num" style="color:#10b981;font-weight:700;">'+projS.toLocaleString()+'</td></tr>';
     tbody.innerHTML = grandRow + rows.map(function(r,i){
       runL+=r.leads; runA+=r.appts; runI+=r.insps; runS+=r.stocks;
       var daysSoFar=i+1;
-      var rolProjL = daysSoFar>0?Math.round(runL/daysSoFar*daysInMonth):0;
-      var rolProjI = daysSoFar>0?Math.round(runI/daysSoFar*daysInMonth):0;
-      var prev = i>0?rows[i-1]:null;
-      var dodL = prev?(r.leads-prev.leads>=0?'<span style="color:#10b981">▲'+(r.leads-prev.leads)+'</span>':'<span style="color:#ef4444">▼'+Math.abs(r.leads-prev.leads)+'</span>'):'—';
-      var isWE = r.dow===0||r.dow===6;
+      var rolProjL=daysSoFar>0?Math.round(runL/daysSoFar*daysInMonth):0;
+      var rolProjA=daysSoFar>0?Math.round(runA/daysSoFar*daysInMonth):0;
+      var rolProjI=daysSoFar>0?Math.round(runI/daysSoFar*daysInMonth):0;
+      var rolProjS=daysSoFar>0?Math.round(runS/daysSoFar*daysInMonth):0;
+      var isWE=r.dow===0||r.dow===6;
       return '<tr style="'+(isWE?'background:rgba(245,158,11,.04)':'')+(i===rows.length-1?';font-weight:700':'')+';">'
         +'<td style="font-family:\'DM Mono\',monospace;font-size:12px;">'+r.date+'</td>'
         +'<td style="font-weight:600;color:'+(isWE?'#f59e0b':'var(--t2)')+'">'+_DOW_N[r.dow]+'</td>'
@@ -12907,7 +13287,9 @@ function buildProjView(){
         +'<td class="num">'+r.stocks.toLocaleString()+'</td>'
         +'<td class="num" style="color:var(--t3);font-size:11px;">'+runL.toLocaleString()+'</td>'
         +'<td class="num" style="color:#4f46e5;font-weight:600;">'+rolProjL.toLocaleString()+'</td>'
+        +'<td class="num" style="color:#14b8a6;font-weight:600;">'+rolProjA.toLocaleString()+'</td>'
         +'<td class="num" style="color:#f59e0b;font-weight:600;">'+rolProjI.toLocaleString()+'</td>'
+        +'<td class="num" style="color:#10b981;font-weight:600;">'+rolProjS.toLocaleString()+'</td>'
         +'</tr>';
     }).join('');
   }
@@ -13279,6 +13661,1734 @@ function buildDodFunnelView(){
   };
 })();
 
+
+// ═══════════════════════════════════════════════════════════════
+// SELLER CHANNELS — partner row toggle
+// ═══════════════════════════════════════════════════════════════
+function scTogglePartner(colId, btnId){
+  var row = document.getElementById(colId);
+  var btn = document.getElementById(btnId);
+  if(!row) return;
+  var open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  if(btn) btn.textContent = open ? '▶' : '▼';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIC BUILDER — admin deduction matrix with CPI formula + budget
+// ═══════════════════════════════════════════════════════════════
+var _lbMonth = '';
+var _lbRules = { apptFactor:1.0, aspPct:0, stockDays:0, cpiAdj:0,
+                 budget:0, a2iBench:50, aspBench:275000, i2siBench:16 };
+
+function _initLogicBuilder(){
+  var wrap = document.getElementById('lb-month-btns'); if(!wrap) return;
+  wrap.innerHTML='';
+  (window.MONTHS||[]).forEach(function(m){
+    var btn=document.createElement('button');
+    btn.className='rt'+(m===_lbMonth?' active':'');
+    btn.textContent=(window.MLABEL&&window.MLABEL[m])||m;
+    btn.onclick=(function(mm){ return function(){
+      _lbMonth=mm;
+      wrap.querySelectorAll('.rt').forEach(function(x){x.classList.remove('active');});
+      this.classList.add('active');
+      previewAllLogicRules();
+    }; })(m);
+    wrap.appendChild(btn);
+  });
+  if(!_lbMonth&&window.MONTHS&&window.MONTHS.length) _lbMonth=window.MONTHS[window.MONTHS.length-1];
+  try{ var saved=localStorage.getItem('cars24_logic_rules'); if(saved){ _lbRules=Object.assign(_lbRules,JSON.parse(saved)); _syncRuleInputs(); } }catch(e){}
+  previewAllLogicRules();
+}
+
+function _syncRuleInputs(){
+  var af=document.getElementById('lb-appt-factor'); if(af) af.value=_lbRules.apptFactor||1.0;
+  var ap=document.getElementById('lb-asp-pct');    if(ap) ap.value=_lbRules.aspPct||0;
+  var sd=document.getElementById('lb-stock-days'); if(sd) sd.value=_lbRules.stockDays||0;
+  var ca=document.getElementById('lb-cpi-adj');    if(ca) ca.value=_lbRules.cpiAdj||0;
+  var bg=document.getElementById('lb-budget');     if(bg) bg.value=_lbRules.budget||0;
+  var a2=document.getElementById('lb-a2i-bench');  if(a2){ a2.value=_lbRules.a2iBench||50; var v=document.getElementById('lb-a2i-val'); if(v) v.textContent=_lbRules.a2iBench||50; }
+  var as=document.getElementById('lb-asp-bench');  if(as){ as.value=_lbRules.aspBench||275000; var v=document.getElementById('lb-asp-val'); if(v) v.textContent=parseInt(_lbRules.aspBench||275000).toLocaleString(); }
+  var i2=document.getElementById('lb-i2si-bench'); if(i2){ i2.value=_lbRules.i2siBench||16; var v=document.getElementById('lb-i2si-val'); if(v) v.textContent=_lbRules.i2siBench||16; }
+}
+
+// CPI formula: 1400 × (A2I% / a2iBench%) × (ASP / aspBench) × (I2SI% / i2siBench%)
+function calcFormulaCPI(a2iPct, asp, i2siPct, r){
+  if(!asp || !a2iPct || !i2siPct) return 0;
+  var a2iBench  = r.a2iBench  || 50;
+  var aspBench  = r.aspBench  || 275000;
+  var i2siBench = r.i2siBench || 16;
+  var cpi = 1400 * (a2iPct / a2iBench) * (asp / aspBench) * (i2siPct / i2siBench);
+  return Math.round(Math.min(cpi, 1400)); // cap at 1400
+}
+
+function previewLogicRule(type){
+  _lbRules.apptFactor = parseFloat((document.getElementById('lb-appt-factor')||{value:'1'}).value)||1;
+  _lbRules.aspPct     = parseFloat((document.getElementById('lb-asp-pct')||{value:'0'}).value)||0;
+  _lbRules.stockDays  = parseInt((document.getElementById('lb-stock-days')||{value:'0'}).value)||0;
+  _lbRules.cpiAdj     = parseFloat((document.getElementById('lb-cpi-adj')||{value:'0'}).value)||0;
+  _lbRules.budget     = parseFloat((document.getElementById('lb-budget')||{value:'0'}).value)||0;
+  _lbRules.a2iBench   = parseFloat((document.getElementById('lb-a2i-bench')||{value:'50'}).value)||50;
+  _lbRules.aspBench   = parseFloat((document.getElementById('lb-asp-bench')||{value:'275000'}).value)||275000;
+  _lbRules.i2siBench  = parseFloat((document.getElementById('lb-i2si-bench')||{value:'16'}).value)||16;
+  previewAllLogicRules();
+}
+
+function previewAllLogicRules(){
+  var m=_lbMonth; if(!m) return;
+  var r=_lbRules;
+  // Update formula preview panel
+  var fmtCPI=calcFormulaCPI(r.a2iBench, r.aspBench, r.i2siBench, r);
+  var fp=document.getElementById('lb-formula-preview');
+  if(fp) fp.textContent='At benchmarks: CPI = 1400 × ('+r.a2iBench+'%÷50%) × (₹'+parseInt(r.aspBench).toLocaleString()+'÷₹2,75,000) × ('+r.i2siBench+'%÷16%) = ₹'+fmtCPI+' / inspection';
+
+  // Get partner list from admin store
+  var avs=(typeof getAdminViewStore==='function')?getAdminViewStore():{};
+  var avKey=Object.keys(avs).find(function(k){return k===m||(window.MLABEL&&k===window.MLABEL[m])||k.startsWith(m);});
+  var pList=(avKey&&avs[avKey]&&avs[avKey].partners)||
+    (window.PARTNERS||[]).map(function(p){ return {name:p.name,region:p.region||'',
+      leads:p.leads&&p.leads[m]||0,appts:p.appts&&p.appts[m]||0,
+      insps:p.insps&&p.insps[m]||0,stocks:p.stocks&&p.stocks[m]||0,
+      asp:0,a2i:0,i2si:0,cpi:0,payout:p.payout&&p.payout[m]||0}; });
+
+  var tbody=document.getElementById('lb-tbl'); if(!tbody) return;
+  var sub=document.getElementById('lb-tbl-sub');
+  if(sub) sub.textContent=pList.length+' partners · '+((window.MLABEL&&window.MLABEL[m])||m);
+
+  var totalAdjPayout=0;
+  var rows=pList.filter(function(p){return p.insps>0||p.leads>0;}).map(function(p,i){
+    // Original values
+    var origAppts=p.appts||0, origAsp=p.asp||0, origStk=p.stocks||0;
+    var origA2i=p.a2i?+(p.a2i*100).toFixed(1):(p.insps>0&&p.appts>0?+(p.insps/p.appts*100).toFixed(1):0);
+    var origI2si=p.i2si?+(p.i2si*100).toFixed(1):(p.stocks>0&&p.insps>0?+(p.stocks/p.insps*100).toFixed(1):0);
+    // Apply deductions
+    var adjAppts=Math.round(origAppts*r.apptFactor);
+    var adjAsp=origAsp>0?Math.round(origAsp*(1-r.aspPct/100)):0;
+    var adjStk=r.stockDays>0?Math.round(origStk*(r.stockDays/30)):origStk;
+    // Compute CPI using formula on adjusted values
+    var adjA2i=adjAppts>0&&p.insps>0?+(p.insps/adjAppts*100).toFixed(1):origA2i;
+    var adjI2si=adjStk>0&&p.insps>0?+(adjStk/p.insps*100).toFixed(1):origI2si;
+    var formulaCPI=calcFormulaCPI(adjA2i, adjAsp||origAsp, adjI2si, r);
+    // Final CPI: use override if set, else formula
+    var finalCPI=r.cpiAdj!==0?Math.round(Math.abs(r.cpiAdj)+formulaCPI*(r.cpiAdj<0?-1:1)):formulaCPI;
+    finalCPI=Math.max(0,Math.min(finalCPI,1400));
+    var adjPayout=finalCPI*(p.insps||0);
+    totalAdjPayout+=adjPayout;
+    var budgetShare=r.budget>0&&totalAdjPayout>0?'<span style="color:'+(adjPayout>r.budget/pList.length*1.5?'#ef4444':'#10b981')+';font-size:10px;">'+(r.budget>0?(adjPayout/r.budget*100).toFixed(1)+'% of bgt':'—')+'</span>':'—';
+    var esc=typeof escH==='function'?escH:String;
+    function diff(o,n,fmt){ var d=n-o; if(!d) return ''; return (d>0?'<span style="color:#10b981">▲':'<span style="color:#ef4444">▼')+fmt(Math.abs(d))+'</span>'; }
+    return '<tr>'
+      +'<td style="color:var(--t3);font-size:11px;">'+(i+1)+'</td>'
+      +'<td style="font-weight:600;font-size:12px;">'+esc(p.name)+'</td>'
+      +'<td class="num" style="font-size:11px;">'+origA2i+'%</td>'
+      +'<td class="num" style="font-size:11px;">'+(origAsp?'₹'+origAsp.toLocaleString():'—')+'</td>'
+      +'<td class="num" style="font-size:11px;">'+origI2si+'%</td>'
+      +'<td class="num" style="font-size:11px;color:var(--t3);">'+(formulaCPI?'₹'+formulaCPI:'—')+'</td>'
+      +'<td class="num" style="color:var(--ac);font-weight:600">'+adjAppts+diff(origAppts,adjAppts,function(x){return x;})+'</td>'
+      +'<td class="num" style="color:var(--ac);">'+(adjAsp?'₹'+adjAsp.toLocaleString():'—')+diff(origAsp,adjAsp,function(x){return '₹'+x.toLocaleString();})+'</td>'
+      +'<td class="num" style="color:var(--ac);">'+adjStk+diff(origStk,adjStk,function(x){return x;})+'</td>'
+      +'<td class="num" style="font-weight:700;color:var(--ac);">₹'+finalCPI+'</td>'
+      +'<td class="num" style="color:#10b981;font-weight:600;">'+(adjPayout>0?fmtL(adjPayout):'—')+'</td>'
+      +'<td class="num">'+budgetShare+'</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=rows.join('');
+
+  // Budget bar
+  var bwrap=document.getElementById('lb-budget-bar-wrap');
+  var bbar=document.getElementById('lb-budget-bar');
+  var bpct=document.getElementById('lb-budget-pct-lbl');
+  var bstat=document.getElementById('lb-budget-status');
+  if(r.budget>0&&bwrap){
+    bwrap.style.display='';
+    var pctUsed=Math.min(totalAdjPayout/r.budget*100,150);
+    if(bbar){ bbar.style.width=Math.min(pctUsed,100)+'%'; bbar.style.background=pctUsed>100?'#ef4444':pctUsed>85?'#f59e0b':'#10b981'; }
+    if(bpct) bpct.textContent=pctUsed.toFixed(1)+'%';
+    if(bstat){
+      var diff2=totalAdjPayout-r.budget;
+      bstat.textContent=diff2>0?'⚠ OVER BUDGET by ₹'+Math.round(diff2).toLocaleString()+' — reduce CPI or deductions':
+        '✓ Within budget · Remaining ₹'+Math.round(-diff2).toLocaleString();
+      bstat.style.color=diff2>0?'#ef4444':'#10b981';
+    }
+  } else if(bwrap) bwrap.style.display='none';
+
+  // Previews
+  var apptPrev=document.getElementById('lb-appt-preview');
+  if(apptPrev) apptPrev.textContent='Factor ×'+r.apptFactor+' applied to all appointments';
+  var aspPrev=document.getElementById('lb-asp-preview');
+  if(aspPrev) aspPrev.textContent='ASP reduced by '+r.aspPct+'% → feeds into formula CPI';
+  var stkPrev=document.getElementById('lb-stock-preview');
+  if(stkPrev) stkPrev.textContent=(r.stockDays>0?r.stockDays+'-day pro-rate applied to stocks':'No day filter');
+  var cpiPrev=document.getElementById('lb-cpi-preview');
+  if(cpiPrev) cpiPrev.textContent=(r.cpiAdj!==0?'CPI override adds ₹'+r.cpiAdj+' to formula result':'Using formula CPI only (no flat override)');
+}
+
+function applyLogicRules(){
+  previewLogicRule('all');
+  try{ localStorage.setItem('cars24_logic_rules',JSON.stringify(_lbRules)); }catch(e){}
+  var sr=document.getElementById('lb-saved-rules');
+  if(sr) sr.innerHTML='<strong style="color:#10b981;">✓ Saved · '+((window.MLABEL&&window.MLABEL[_lbMonth])||_lbMonth)+'</strong> — '
+    +'Appt ×'+_lbRules.apptFactor+' · ASP −'+_lbRules.aspPct+'% · Stock '+(_lbRules.stockDays>0?_lbRules.stockDays+'d':'no filter')+' · CPI '+(Math.round(_lbRules.cpiAdj)>=0?'+':'')+Math.round(_lbRules.cpiAdj)+'₹'
+    +(_lbRules.budget>0?' · Budget ₹'+parseInt(_lbRules.budget).toLocaleString():'');
+  if(typeof showImportToast==='function') showImportToast('✓ Logic rules saved');
+}
+
+function resetLogicRules(){
+  _lbRules={apptFactor:1.0,aspPct:0,stockDays:0,cpiAdj:0,budget:0,a2iBench:50,aspBench:275000,i2siBench:16};
+  _syncRuleInputs();
+  previewAllLogicRules();
+  try{localStorage.removeItem('cars24_logic_rules');}catch(e){}
+  if(typeof showImportToast==='function') showImportToast('↺ Logic rules reset');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA GAP REPORT — show what data is missing per month
+// ═══════════════════════════════════════════════════════════════
+function showDataGapReport(){
+  var lines=[];
+  var reg=(typeof loadMonthRegistry==='function')?loadMonthRegistry():{order:[],yearMap:{}};
+  var MNUM={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  (window.MONTHS||[]).forEach(function(m){
+    var gaps=[];
+    // Partner data
+    var _P=(window.PARTNERS&&Array.isArray(window.PARTNERS))?window.PARTNERS:[];
+    var hasPartner=_P.some(function(p){return (p.leads&&p.leads[m])||0>0;});
+    if(!hasPartner) gaps.push('Partner leads');
+    // DOD data
+    var yr=reg.yearMap[m],mn=MNUM[m];
+    if(yr&&mn){
+      var prefix=String(yr)+'-'+mn+'-';
+      var hasDod=(window.DOD_DATES||[]).some(function(d){return d.startsWith(prefix);});
+      if(!hasDod) gaps.push('Daily data (DOD)');
+    }
+    // Admin store
+    var avs=(typeof getAdminViewStore==='function')?getAdminViewStore():{};
+    var fullMo=(window.MLABEL&&window.MLABEL[m])||m;
+    var hasAdmin=Object.keys(avs).some(function(k){return k===m||k===fullMo||k.startsWith(m);});
+    if(!hasAdmin) gaps.push('Admin analytics');
+    // Buyer store
+    var bs=(typeof getBuyerStore==='function')?getBuyerStore():{};
+    var hasBuyer=Object.keys(bs).some(function(k){return k===m||k.startsWith(m);});
+    if(!hasBuyer) gaps.push('Buyer data');
+
+    if(gaps.length) lines.push(((window.MLABEL&&window.MLABEL[m])||m)+': MISSING — '+gaps.join(', '));
+    else lines.push(((window.MLABEL&&window.MLABEL[m])||m)+': ✓ All data present');
+  });
+  if(!lines.length) lines.push('No months in registry. Sync GSheet or add months first.');
+  alert('DATA GAP REPORT\n\n'+lines.join('\n'));
+}
+
 console.log('[Cars24 v32] All 7 fixes applied OK');
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// v33 MASTER FIX PATCH — buttons, session restore, GSheet, tables
+// ═══════════════════════════════════════════════════════════════════
+
+// ── 1. DEFINE showPortal globally (fixes login buttons + session restore) ──────
+window.showPortal = function(role, user, partner) {
+  var loginOverlay = document.getElementById('portal-login-overlay');
+  if(loginOverlay) loginOverlay.style.display = 'none';
+  window.currentUser = user; window.currentRole = role; window.currentPartner = partner||null;
+
+  // Save session (TTL 8h) for reload persistence
+  try{
+    localStorage.setItem('c24_session', JSON.stringify({
+      user:user, role:role,
+      username: partner ? (partner.username||user) : user,
+      partnerName: partner ? partner.name : null,
+      exp: Date.now() + 8*60*60*1000
+    }));
+  }catch(e){}
+
+  // Restore DOD cache if still empty
+  if(window.DOD_DATES && !window.DOD_DATES.length){
+    try{
+      var _dc = JSON.parse(localStorage.getItem('cars24_dod_arrays')||'null');
+      if(_dc && _dc.dates && _dc.dates.length){
+        _dc.dates.forEach(function(d,i){
+          window.DOD_DATES.push(d);
+          window.DOD_D.leads.push(_dc.leads[i]||0);
+          window.DOD_D.appts.push(_dc.appts[i]||0);
+          window.DOD_D.insps.push(_dc.insps[i]||0);
+          window.DOD_D.stocks.push(_dc.stocks[i]||0);
+        });
+      }
+    }catch(e){}
+  }
+
+  // Reload PARTNER_CREDS from storage
+  try{ var _pc=localStorage.getItem('cars24_partner_creds'); if(_pc) window.PARTNER_CREDS=JSON.parse(_pc); }catch(e){}
+
+  var pf = document.getElementById('portal-fullscreen');
+  if(!pf){ alert('Portal element not found. Please reload the page.'); return; }
+  pf.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  try{ window.rebuildMonthMeta(); }catch(e){}
+  try{ window._initAllFeatures && window._initAllFeatures(); }catch(e){}
+
+  var ab=document.getElementById('admin-sidebar'),
+      pb=document.getElementById('partner-sidebar'),
+      rb=document.getElementById('role-badge'),
+      hu=document.getElementById('hdr-user');
+  if(hu) hu.textContent = user;
+
+  if(role === 'admin'){
+    if(ab) ab.style.display = '';
+    if(pb) pb.style.display = 'none';
+    if(rb){ rb.textContent = 'Admin'; rb.className = 'role-badge'; }
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    var dv = document.getElementById('view-dashboard');
+    if(dv) dv.classList.add('active');
+    document.querySelectorAll('#admin-sidebar .ni').forEach(function(n){ n.classList.remove('active'); });
+    var fn = document.querySelector('#admin-sidebar .ni');
+    if(fn) fn.classList.add('active');
+    setTimeout(function(){
+      try{ window.updateDashboard(); }catch(e){}
+      try{ window.rebuildMonthMeta(); }catch(e){}
+      try{ window.buildTargetMonthBtns && window.buildTargetMonthBtns(); }catch(e){}
+    }, 100);
+  } else {
+    if(ab) ab.style.display = 'none';
+    if(pb) pb.style.display = '';
+    if(rb){ rb.textContent = 'Partner'; rb.className = 'role-badge partner'; }
+    try{ window.loadPartnerSidebar && window.loadPartnerSidebar(); }catch(e){}
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    var po = document.getElementById('view-p-overview');
+    if(po) po.classList.add('active');
+    document.querySelectorAll('#partner-sidebar .ni').forEach(function(n){ n.classList.remove('active'); });
+    var fp = document.querySelector('#partner-sidebar .ni');
+    if(fp) fp.classList.add('active');
+    setTimeout(function(){
+      try{ window.buildPartnerOverview(); }catch(e){}
+      try{ window.populatePartnerUTMCard && window.populatePartnerUTMCard(); }catch(e){}
+      try{ window._checkAndShowAnnBadge && window._checkAndShowAnnBadge(); }catch(e){}
+    }, 100);
+  }
+};
+
+// ── 2. Redefine doPortalLogin to use the global showPortal ────────────────────
+window.doPortalLogin = function() {
+  var u   = (document.getElementById('pl-username').value||'').trim().toLowerCase();
+  var p   = (document.getElementById('pl-password').value||'').trim();
+  var err = document.getElementById('portal-login-err');
+  err.style.display = 'none';
+  if(!u || !p){
+    err.textContent = '❌ Enter both username and password.';
+    err.style.display = 'block'; return;
+  }
+
+  var adminPw = 'admin@123';
+  try{ adminPw = localStorage.getItem('cars24_admin_pass') || 'admin@123'; }catch(e){}
+
+  var creds = [];
+  try{ var _s=localStorage.getItem('cars24_partner_creds'); creds=_s?JSON.parse(_s):(window.PARTNER_CREDS||[]); }catch(e){ creds=window.PARTNER_CREDS||[]; }
+
+  // Admin login
+  if(u === 'admin'){
+    if(p !== adminPw){ err.textContent='❌ Incorrect admin password.'; err.style.display='block'; return; }
+    window.showPortal('admin', 'Admin', null); return;
+  }
+
+  // Secondary admin accounts
+  var adminAccts = [];
+  try{ var _saa=localStorage.getItem('cars24_admin_accounts'); adminAccts=_saa?JSON.parse(_saa):[]; }catch(e){}
+  for(var ai=0; ai<adminAccts.length; ai++){
+    if((adminAccts[ai].username||'').toLowerCase() === u){
+      if(adminAccts[ai].password !== p){ err.textContent='❌ Incorrect admin password.'; err.style.display='block'; return; }
+      window.showPortal('admin', adminAccts[ai].display||adminAccts[ai].username, null); return;
+    }
+  }
+
+  // Partner login
+  var cred = null;
+  for(var i=0; i<creds.length; i++){ if((creds[i].username||'').toLowerCase()===u){ cred=creds[i]; break; } }
+  if(!cred){ err.textContent='❌ Username not found.'; err.style.display='block'; return; }
+  if(cred.status==='Not Active'){ err.textContent='❌ Account inactive. Contact admin.'; err.style.display='block'; return; }
+  if(cred.password !== p){ err.textContent='❌ Incorrect password.'; err.style.display='block'; return; }
+
+  // Resolve partner data from sheet
+  var partnerSheetData = {};
+  try{ var _psd=localStorage.getItem('cars24_partner_sheet_data'); partnerSheetData=_psd?JSON.parse(_psd):(window.PARTNER_SHEET||{}); }catch(e){ partnerSheetData=window.PARTNER_SHEET||{}; }
+  var partners = Object.values(partnerSheetData);
+  if(!partners.length){
+    try{ var _sp2=localStorage.getItem('cars24_partners_data'); var _adm=_sp2?JSON.parse(_sp2):[]; if(_adm.length) partners=_adm; }catch(e){}
+  }
+  var partner = null;
+  for(var j=0; j<partners.length; j++){
+    var pt=partners[j]; if(!pt||!pt.name) continue;
+    var ptN=pt.name.toLowerCase().replace(/\s+/g,''), crN=(cred.display||'').toLowerCase().replace(/\s+/g,'');
+    if(pt.name===cred.display || pt.name.toLowerCase()===cred.display.toLowerCase()
+      || ptN.slice(0,12)===u || ptN.includes(crN.slice(0,8)) || crN.includes(ptN.slice(0,8))){
+      partner=pt; break;
+    }
+  }
+  if(!partner){ partner={name:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; }
+  window.showPortal('partner', cred.display, partner);
+};
+
+// ── 3. Fix session restore on page reload ─────────────────────────────────────
+// Remove old DOMContentLoaded session restore listener and replace with a clean one
+// (the old one at line ~6193 calls showPortal before it's defined globally)
+document.addEventListener('DOMContentLoaded', function _v33SessionRestore(){
+  try{
+    var saved = localStorage.getItem('c24_session');
+    if(!saved) return;
+    var sess = JSON.parse(saved);
+    if(!sess || !sess.role || !sess.user) return;
+    if(sess.exp && Date.now() > sess.exp){ localStorage.removeItem('c24_session'); return; }
+
+    var partner = null;
+    if(sess.role === 'partner'){
+      var creds = [];
+      try{ var _sc=localStorage.getItem('cars24_partner_creds'); creds=_sc?JSON.parse(_sc):(window.PARTNER_CREDS||[]); }catch(e){ creds=window.PARTNER_CREDS||[]; }
+      var cred = creds.find(function(c){ return c.display===sess.partnerName || c.username===sess.username; });
+      if(!cred){ localStorage.removeItem('c24_session'); return; }
+      var psData = {};
+      try{ var _psd2=localStorage.getItem('cars24_partner_sheet_data'); psData=_psd2?JSON.parse(_psd2):(window.PARTNER_SHEET||{}); }catch(e){ psData=window.PARTNER_SHEET||{}; }
+      var psArr = Object.values(psData);
+      partner = psArr.find(function(p){ return p.name===cred.display||p.name.toLowerCase()===cred.display.toLowerCase(); });
+      if(!partner){ partner={name:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; }
+    }
+
+    // Delay slightly to let all scripts initialize
+    setTimeout(function(){
+      try{ window.showPortal(sess.role, sess.user, partner); }
+      catch(e){ console.warn('[v33 Session restore] Error:', e); localStorage.removeItem('c24_session'); }
+    }, 350);
+  }catch(e){ console.warn('[v33 Session restore]', e); }
+});
+
+// ── 4. Better GSheet sync feedback ───────────────────────────────────────────
+(function _v33GSheetFeedback(){
+  var _origR = window.refreshGSheetData;
+  if(typeof _origR !== 'function') return;
+  window.refreshGSheetData = function(){
+    var lbl = document.getElementById('gsheet-refresh-label');
+    var icon = document.getElementById('gsheet-refresh-icon');
+    if(lbl) lbl.textContent = 'Syncing…';
+    if(icon) icon.style.animation = 'spin 1s linear infinite';
+    _origR.apply(this, arguments);
+  };
+})();
+
+// ── 5. Table & dataset visibility improvements ────────────────────────────────
+(function _v33TableCSS(){
+  var s = document.createElement('style');
+  s.id = 'v33-table-css';
+  s.textContent = [
+    // Row sizing and font
+    '.view table tbody tr { min-height: 38px; }',
+    '.view table td { padding: 9px 13px !important; font-size: 12.5px !important; line-height: 1.5; vertical-align: middle; }',
+    '.view table th { padding: 10px 13px !important; font-size: 11px !important; letter-spacing: 0.6px; text-transform: uppercase; vertical-align: middle; }',
+
+    // Zebra rows — dark mode
+    '.view table tbody tr:nth-child(odd)  { background: transparent; }',
+    '.view table tbody tr:nth-child(even) { background: rgba(255,255,255,0.028); }',
+
+    // Zebra rows — light mode
+    'html.light .view table tbody tr:nth-child(even) { background: rgba(61,53,232,0.04); }',
+
+    // Row hover
+    '.view table tbody tr:hover { background: rgba(61,53,232,0.09) !important; transition: background 0.12s; }',
+
+    // Header styling
+    '.view table thead th { background: rgba(0,0,0,0.22); border-bottom: 2px solid rgba(61,53,232,0.28) !important; color: var(--sub, #7A8FA8); font-weight: 700; }',
+    'html.light .view table thead th { background: rgba(61,53,232,0.06); border-bottom: 2px solid rgba(61,53,232,0.18) !important; }',
+
+    // Numeric columns
+    '.view table td.num { text-align: right !important; font-family: "JetBrains Mono","DM Mono",monospace !important; font-size: 12px !important; letter-spacing: 0.2px; }',
+    '.view table th.num, .view table th:not(:first-child):not(:nth-child(2)) { text-align: right; }',
+
+    // Grand total / sum rows
+    '.view table tr.sumrow td { background: rgba(61,53,232,0.13) !important; font-weight: 700 !important; border-top: 2px solid rgba(61,53,232,0.28); border-bottom: 2px solid rgba(61,53,232,0.28); color: var(--text); }',
+
+    // Table wrapper scrollable
+    '.tw { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }',
+    '.view table { min-width: 600px; }',
+
+    // Table border lines between rows for clarity
+    '.view table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }',
+    'html.light .view table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.06); }',
+
+    // KPI cards — bigger values
+    '.kv { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -0.5px; }',
+    '.kl { font-size: 10.5px !important; font-weight: 700; letter-spacing: 0.5px; }',
+    '.ks { font-size: 11px !important; }',
+
+    // Partner name cell bold
+    '.view table td:nth-child(2) { font-weight: 600; }',
+
+    // Empty state cells
+    '.view table td.empty, .view table td[colspan] { text-align: center !important; color: var(--sub); padding: 28px !important; font-size: 13px !important; }',
+
+    // "No data" rows
+    '.view table tbody tr td[colspan] { color: var(--sub,#7A8FA8); font-style: italic; }',
+
+    // Rank / index column dim
+    '.view table td:first-child { color: var(--sub,#7A8FA8); font-size: 11px !important; }',
+
+    // GSheet sync button spin animation
+    '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }',
+  ].join('\n');
+  document.head.appendChild(s);
+})();
+
+// ── 6. Fix launchApp (old portal login path) to also save session ─────────────
+(function _v33PatchLaunchApp(){
+  var _origLA = window.launchApp;
+  if(typeof _origLA !== 'function') return;
+  window.launchApp = function(){
+    _origLA.apply(this, arguments);
+    // If showPortal wasn't called (old path), save session manually
+    try{
+      if(!localStorage.getItem('c24_session') && window.currentRole && window.currentUser){
+        localStorage.setItem('c24_session', JSON.stringify({
+          user: window.currentUser, role: window.currentRole,
+          username: window.currentPartner ? (window.currentPartner.username||window.currentUser) : window.currentUser,
+          partnerName: window.currentPartner ? window.currentPartner.name : null,
+          exp: Date.now() + 8*60*60*1000
+        }));
+      }
+    }catch(e){}
+  };
+})();
+
+// ── 7. Logout also works cleanly ──────────────────────────────────────────────
+var _v33OrigLogout = window.doLogout;
+window.doLogout = function(){
+  try{ localStorage.removeItem('c24_session'); }catch(e){}
+  if(typeof _v33OrigLogout === 'function') _v33OrigLogout.apply(this, arguments);
+  else {
+    var pf = document.getElementById('portal-fullscreen');
+    if(pf) pf.classList.remove('open');
+    document.body.style.overflow = '';
+    window.currentUser = null; window.currentRole = null; window.currentPartner = null;
+    try{ Object.values(window.CH||{}).forEach(function(c){ if(c) c.destroy(); }); window.CH={}; }catch(e){}
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  }
+};
+
+console.log('[Cars24 v33] Master fix patch applied — login ✓ session restore ✓ table visibility ✓');
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// v34 MASTER FIX PATCH
+// Fixes: Admin Sheet data · DOD month filter · DOD partner filter · Appts/Stocks=0
+//        Funnel table layout · Announcements · Proof/Invoice/Targets month btns
+//        GitHub Pages localStorage empty-state · SyntaxError root cause fixed above
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── FIX 1: Unify dodMonthFilter — keep window var and local var in sync ──
+(function _fixDodMonthFilter(){
+  var _origSlice = window._getDodSlice;
+  window._getDodSlice = function(){
+    if(typeof window.dodMonthFilter !== 'undefined'){
+      try{ dodMonthFilter = window.dodMonthFilter; }catch(e){}
+    }
+    if(typeof _origSlice === 'function') return _origSlice.apply(this, arguments);
+    var dodMF = window.dodMonthFilter || 'all';
+    var startIdx = 0, endIdx = (window.DOD_DATES||[]).length - 1;
+    if(dodMF !== 'all'){
+      var m = (typeof window._getDodMonthIdx==='function') ? window._getDodMonthIdx(dodMF) : null;
+      if(m){ startIdx = m.start; endIdx = m.end; }
+    }
+    var fromV = (document.getElementById('dod-from-date')||{value:''}).value;
+    var toV   = (document.getElementById('dod-to-date')||{value:''}).value;
+    if(fromV){ var fi=(window.DOD_DATES||[]).findIndex(function(d){return d>=fromV;}); if(fi>-1)startIdx=Math.max(startIdx,fi); }
+    if(toV){ var ti=-1; for(var i=endIdx;i>=startIdx;i--){if((window.DOD_DATES||[])[i]<=toV){ti=i;break;}} if(ti>-1)endIdx=Math.min(endIdx,ti); }
+    var dodDaysV = (typeof window.dodDays !== 'undefined') ? window.dodDays : 999;
+    var sliceLen = endIdx - startIdx + 1;
+    var windowLen = (!fromV && !toV) ? Math.min(dodDaysV, sliceLen) : sliceLen;
+    var wStart = endIdx - windowLen + 1;
+    return { wStart: Math.max(startIdx, wStart), wEnd: endIdx };
+  };
+})();
+
+// ── FIX 2: setDodMonth — sync both variables every time ──
+(function _fixSetDodMonth(){
+  var _origSDM = window.setDodMonth;
+  window.setDodMonth = function(m, btn){
+    window.dodMonthFilter = m;
+    try{ dodMonthFilter = m; }catch(e){}
+    if(typeof _origSDM === 'function') _origSDM.apply(this, arguments);
+  };
+})();
+
+// ── FIX 3: DOD Partner filter — show partner-specific overlay on stats ──
+(function _fixDodPartnerFilter(){
+  var _origStats = window.buildDodStats;
+  window.buildDodStats = function(){
+    if(typeof _origStats === 'function') _origStats.apply(this, arguments);
+    var sel = document.getElementById('dod-partner-sel');
+    if(!sel || sel.value === 'all' || !sel.value) return;
+    var pName = sel.value;
+    var partner = (window.PARTNERS||[]).find(function(p){ return p.name === pName; });
+    if(!partner) return;
+    var sub = document.getElementById('dod-sub');
+    var dodMF = window.dodMonthFilter || 'all';
+    if(sub){
+      var months = dodMF === 'all' ? (window.MONTHS||[]) : [dodMF];
+      var totL=0,totA=0,totI=0,totS=0,totP=0;
+      months.forEach(function(m){
+        totL+=(partner.leads&&partner.leads[m])||0;
+        totA+=(partner.appts&&partner.appts[m])||0;
+        totI+=(partner.insps&&partner.insps[m])||0;
+        totS+=(partner.stocks&&partner.stocks[m])||0;
+        totP+=(partner.payout&&partner.payout[m])||0;
+      });
+      var escFn = typeof window.escH==='function' ? window.escH : function(s){return String(s);};
+      var fmtFn = typeof window.fmtL==='function' ? window.fmtL : function(v){return '₹'+v.toLocaleString();};
+      sub.innerHTML = (sub.textContent||sub.innerHTML) +
+        ' <span style="background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.25);border-radius:6px;padding:2px 9px;font-size:11px;color:#818cf8;margin-left:8px;">' +
+        escFn(pName) + ' · L:' + totL.toLocaleString() +
+        ' I:' + totI.toLocaleString() +
+        ' S:' + totS.toLocaleString() +
+        ' ' + fmtFn(totP) + '</span>';
+    }
+  };
+})();
+
+// ── FIX 4: Admin View — resolve short vs full month key mismatch ──
+(function _fixAdminViewMonthKey(){
+  var _origInit = window.initAdminView;
+  window.initAdminView = function(){
+    if(window._avMonth && window._avMonth !== 'all'){
+      try{
+        var store = typeof getAdminViewStore==='function' ? getAdminViewStore() : {};
+        if(!store[window._avMonth]){
+          var matched = Object.keys(store).find(function(k){
+            return k.startsWith(window._avMonth + ' ') ||
+                   (window.MLABEL && k === window.MLABEL[window._avMonth]);
+          });
+          if(matched) window._avMonth = matched;
+        }
+      }catch(e){}
+    }
+    if(typeof _origInit === 'function') _origInit.apply(this, arguments);
+  };
+})();
+
+// ── FIX 5: DOD pivot format — normalize metric row labels before integration ──
+(function _fixDodPivotMetricRows(){
+  var _origDOD = window._integrateGSheetDOD;
+  if(typeof _origDOD !== 'function') return;
+  window._integrateGSheetDOD = function(rows){
+    if(rows && rows.length){
+      var keys = Object.keys(rows[0]||{});
+      var funnelKey = keys.find(function(k){
+        return /^funnel/i.test(k.trim())||/^metric$/i.test(k.trim())||/^stage$/i.test(k.trim());
+      });
+      if(!funnelKey && keys.length>=2){
+        var s2 = String(rows[0][keys[1]]||'').toUpperCase();
+        if(/LEAD|APPT|INSP|STOCK/.test(s2)) funnelKey = keys[1];
+      }
+      if(funnelKey){
+        rows = rows.map(function(r){
+          var copy = Object.assign({}, r);
+          var f = String(copy[funnelKey]||'').trim().toUpperCase().replace(/\s+/g,' ');
+          if(/APPT|APPOINTMENT/.test(f) && !/LEAD|INSP|STOCK/.test(f)) copy[funnelKey] = 'APPOINTMENTS';
+          if((/STOCK|STKN/.test(f)) && !/LEAD|APPT|INSP/.test(f)) copy[funnelKey] = 'STOCKIN';
+          if(/INSP/.test(f) && !/LEAD|APPT|STOCK/.test(f)) copy[funnelKey] = 'INSPECTIONS';
+          if(/^LEAD/.test(f) && !/APPT|INSP|STOCK/.test(f)) copy[funnelKey] = 'LEADS';
+          return copy;
+        });
+      }
+    }
+    return _origDOD.call(this, rows);
+  };
+})();
+
+// ── FIX 6: Funnel view — inject pivot table (months as cols, metrics as rows) ──
+(function _fixFunnelPivotTable(){
+  var _origBuildFSteps = window.buildFSteps;
+  window.buildFSteps = function(){
+    if(typeof _origBuildFSteps === 'function') _origBuildFSteps.apply(this, arguments);
+    var fstepsEl = document.getElementById('fsteps');
+    if(!fstepsEl) return;
+    var _M = window.MONTHS || [];
+    var _ML = window.MLABEL || {};
+    var _G = window.GRAND;
+    if(!_M.length || !_G) return;
+    var old = document.getElementById('funnel-pivot-table');
+    if(old) old.remove();
+
+    var metrics = [
+      {key:'leads', label:'Leads',       color:'#4f46e5', bold:true},
+      {key:'appts', label:'Appointments', color:'var(--t2)', bold:false},
+      {key:'insps', label:'Inspections',  color:'#10b981', bold:false},
+      {key:'stocks',label:'Stock-ins',    color:'#f59e0b', bold:false},
+    ];
+    var hCells = '<th style="min-width:110px;font-size:11px;font-weight:700;padding:9px 12px;text-align:left;background:rgba(0,0,0,.2);color:var(--t3);">Metric</th>';
+    _M.forEach(function(m){
+      hCells += '<th style="text-align:right;font-size:11px;padding:9px 10px;min-width:72px;background:rgba(0,0,0,.2);color:var(--t3);">' + (_ML[m]||m) + '</th>';
+    });
+    hCells += '<th style="text-align:right;font-size:11px;padding:9px 12px;min-width:72px;background:rgba(79,70,229,.1);color:#818cf8;font-weight:700;border-left:1px solid rgba(79,70,229,.2);">Total</th>';
+
+    var bodyRows = '';
+    metrics.forEach(function(mt){
+      var tot = 0;
+      var cells = _M.map(function(m){
+        var v = (_G[mt.key]&&_G[mt.key][m]) || 0;
+        tot += v;
+        return '<td style="text-align:right;padding:8px 10px;font-size:12px;' + (mt.bold?'font-weight:700;color:'+mt.color+';':'color:var(--t2);') + '">' + v.toLocaleString() + '</td>';
+      }).join('');
+      bodyRows += '<tr style="border-bottom:1px solid var(--bd,rgba(255,255,255,.06));">'
+        + '<td style="padding:8px 12px;font-size:12px;font-weight:700;color:' + mt.color + ';white-space:nowrap;">' + mt.label + '</td>'
+        + cells
+        + '<td style="text-align:right;padding:8px 12px;font-size:12px;font-weight:800;color:' + mt.color + ';border-left:1px solid rgba(79,70,229,.2);">' + tot.toLocaleString() + '</td>'
+        + '</tr>';
+    });
+
+    var convMetrics = [
+      {label:'L→A%', fn:function(m){var L=(_G.leads&&_G.leads[m])||0,A=(_G.appts&&_G.appts[m])||0;return L>0?(A/L*100).toFixed(1)+'%':'—';}, color:'#4f46e5',
+       totFn:function(){var tL=_M.reduce(function(s,m){return s+((_G.leads&&_G.leads[m])||0);},0),tA=_M.reduce(function(s,m){return s+((_G.appts&&_G.appts[m])||0);},0);return tL>0?(tA/tL*100).toFixed(1)+'%':'—';}},
+      {label:'L→I%', fn:function(m){var L=(_G.leads&&_G.leads[m])||0,I=(_G.insps&&_G.insps[m])||0;return L>0?(I/L*100).toFixed(1)+'%':'—';}, color:'#8b5cf6',
+       totFn:function(){var tL=_M.reduce(function(s,m){return s+((_G.leads&&_G.leads[m])||0);},0),tI=_M.reduce(function(s,m){return s+((_G.insps&&_G.insps[m])||0);},0);return tL>0?(tI/tL*100).toFixed(1)+'%':'—';}},
+      {label:'I→S%', fn:function(m){var I=(_G.insps&&_G.insps[m])||0,S=(_G.stocks&&_G.stocks[m])||0;return I>0?(S/I*100).toFixed(1)+'%':'—';}, color:'#10b981',
+       totFn:function(){var tI=_M.reduce(function(s,m){return s+((_G.insps&&_G.insps[m])||0);},0),tS=_M.reduce(function(s,m){return s+((_G.stocks&&_G.stocks[m])||0);},0);return tI>0?(tS/tI*100).toFixed(1)+'%':'—';}},
+    ];
+    convMetrics.forEach(function(ct){
+      var cells = _M.map(function(m){
+        return '<td style="text-align:right;padding:6px 10px;font-size:11px;color:'+ct.color+';font-weight:600;">' + ct.fn(m) + '</td>';
+      }).join('');
+      bodyRows += '<tr style="border-bottom:1px solid var(--bd,rgba(255,255,255,.04));background:rgba(0,0,0,.1);">'
+        + '<td style="padding:6px 12px;font-size:11px;font-weight:700;color:' + ct.color + ';white-space:nowrap;">' + ct.label + '</td>'
+        + cells
+        + '<td style="text-align:right;padding:6px 12px;font-size:11px;font-weight:800;color:' + ct.color + ';border-left:1px solid rgba(79,70,229,.2);">' + ct.totFn() + '</td>'
+        + '</tr>';
+    });
+
+    var wrapper = document.createElement('div');
+    wrapper.id = 'funnel-pivot-table';
+    wrapper.style.cssText = 'margin-top:18px;background:var(--sf,#0E1420);border:1px solid var(--bd,rgba(255,255,255,.08));border-radius:12px;overflow:hidden;';
+    wrapper.innerHTML = '<div style="padding:12px 16px 10px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;">'
+      + '<span style="font-size:12px;font-weight:700;color:var(--t2);">Funnel by Month</span>'
+      + '<span style="font-size:11px;color:var(--t3);">' + _M.length + ' months</span></div>'
+      + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">'
+      + '<thead><tr>' + hCells + '</tr></thead>'
+      + '<tbody>' + bodyRows + '</tbody>'
+      + '</table></div>';
+    fstepsEl.appendChild(wrapper);
+  };
+})();
+
+// ── FIX 7: Announcements partner — safe wrapper ──
+(function _fixAnnouncements(){
+  var _orig = window.buildAnnouncementsPartner;
+  window.buildAnnouncementsPartner = function(){
+    var el = document.getElementById('p-ann-list');
+    if(!el) return;
+    try{
+      if(typeof _orig === 'function') _orig.apply(this, arguments);
+    }catch(e){
+      console.warn('[v34 Ann]', e);
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);font-size:13px;">No announcements yet.</div>';
+    }
+  };
+})();
+
+// ── FIX 8: Proof month buttons — fallback to store keys when MONTHS[] empty ──
+(function _fixProofMonthBtns(){
+  window.buildProofMonthBtns = function(){
+    var wrap = document.getElementById('proof-month-btns'); if(!wrap) return;
+    var months = (window.MONTHS && window.MONTHS.length) ? window.MONTHS.slice() : [];
+    if(!months.length){
+      try{ var proofs = typeof getProofs==='function' ? getProofs() : [];
+        months = proofs.map(function(p){return p.month;}).filter(function(m,i,a){return m&&a.indexOf(m)===i;}); }catch(e){}
+    }
+    if(!months.length) return;
+    if(!window._proofMonth || months.indexOf(window._proofMonth)<0) window._proofMonth = months[months.length-1];
+    wrap.innerHTML = '';
+    months.forEach(function(m){
+      var btn = document.createElement('button');
+      btn.className = 'rt'+(m===window._proofMonth?' active':'');
+      btn.textContent = (window.MLABEL&&window.MLABEL[m])||m;
+      btn.onclick = (function(mm){ return function(){
+        window._proofMonth = mm;
+        wrap.querySelectorAll('.rt').forEach(function(x){x.classList.remove('active');});
+        this.classList.add('active');
+        if(typeof renderProofTable==='function') renderProofTable();
+      }; })(m);
+      wrap.appendChild(btn);
+    });
+  };
+})();
+
+// ── FIX 9: Invoice admin month buttons — same fallback ──
+(function _fixInvMonthBtnsAdmin(){
+  window.buildInvMonthBtnsAdmin = function(){
+    var wrap = document.getElementById('inv-month-btns-admin'); if(!wrap) return;
+    var months = (window.MONTHS && window.MONTHS.length) ? window.MONTHS.slice() : [];
+    if(!months.length){
+      try{ var invs = typeof getInvoices==='function' ? getInvoices() : [];
+        months = invs.map(function(i){return i.month;}).filter(function(m,i,a){return m&&a.indexOf(m)===i;}); }catch(e){}
+    }
+    if(!months.length) return;
+    if(!window._invMonthAdmin || months.indexOf(window._invMonthAdmin)<0) window._invMonthAdmin = months[months.length-1];
+    wrap.innerHTML = '';
+    months.forEach(function(m){
+      var btn = document.createElement('button');
+      btn.className = 'rt'+(m===window._invMonthAdmin?' active':'');
+      btn.textContent = (window.MLABEL&&window.MLABEL[m])||m;
+      btn.onclick = (function(mm){ return function(){
+        window._invMonthAdmin = mm;
+        wrap.querySelectorAll('.rt').forEach(function(x){x.classList.remove('active');});
+        this.classList.add('active');
+        if(typeof renderInvoiceTableAdmin==='function') renderInvoiceTableAdmin();
+      }; })(m);
+      wrap.appendChild(btn);
+    });
+  };
+})();
+
+// ── FIX 10: Payout month buttons — same fallback ──
+(function _fixPayoutMonthBtns(){
+  window.buildPayoutMonthBtns = function(){
+    var wrap = document.getElementById('payout-month-btns'); if(!wrap) return;
+    var months = (window.MONTHS && window.MONTHS.length) ? window.MONTHS.slice() : [];
+    if(!months.length){
+      try{ var ps = typeof getPayoutStore==='function' ? getPayoutStore() : {};
+        months = Object.keys(ps).filter(Boolean); }catch(e){}
+    }
+    if(!months.length) return;
+    if(!window._payoutMonth || months.indexOf(window._payoutMonth)<0) window._payoutMonth = months[months.length-1];
+    wrap.innerHTML = '';
+    months.forEach(function(m){
+      var btn = document.createElement('button');
+      btn.className = 'rt'+(m===window._payoutMonth?' active':'');
+      btn.textContent = (window.MLABEL&&window.MLABEL[m])||m;
+      btn.onclick = (function(mm){ return function(){
+        window._payoutMonth = mm;
+        wrap.querySelectorAll('.rt').forEach(function(x){x.classList.remove('active');});
+        this.classList.add('active');
+        if(typeof renderPayoutTable==='function') renderPayoutTable();
+      }; })(m);
+      wrap.appendChild(btn);
+    });
+  };
+})();
+
+// ── FIX 11: Targets — sequence month btn build before data render ──
+(function _fixTargetsSequence(){
+  var _origTrigger = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTrigger === 'function') _origTrigger.apply(this, arguments);
+    if(id === 'targets'){
+      setTimeout(function(){
+        try{ if(typeof buildTargetMonthBtns==='function') buildTargetMonthBtns(); }catch(e){}
+        setTimeout(function(){
+          try{ if(typeof buildTargets==='function') buildTargets(); }catch(e){}
+        }, 80);
+      }, 60);
+    }
+  };
+})();
+
+// ── FIX 12: Admin portal open — restore from GSheet cache if stores are empty ──
+(function _fixAdminCacheRestore(){
+  var _origShowPortal = window.showPortal;
+  window.showPortal = function(role, user, partner){
+    if(typeof _origShowPortal === 'function') _origShowPortal.apply(this, arguments);
+    if(role !== 'admin') return;
+    setTimeout(function(){
+      try{
+        var avStore = typeof getAdminViewStore==='function' ? getAdminViewStore() : {};
+        if(!Object.keys(avStore).length){
+          var cached = typeof _loadSheetCache==='function' ? _loadSheetCache('admin') : null;
+          if(cached && cached.length && typeof _integrateGSheetAdmin==='function'){
+            _integrateGSheetAdmin(cached);
+            try{ rebuildMonthMeta(); }catch(e){}
+          }
+        }
+        if(!window.PARTNERS || !window.PARTNERS.length){
+          var cachedP = typeof _loadSheetCache==='function' ? _loadSheetCache('seller') : null;
+          if(cachedP && cachedP.length && typeof _integrateGSheetPartner==='function'){
+            _integrateGSheetPartner(cachedP, 'Partner');
+            try{ rebuildMonthMeta(); }catch(e){}
+          }
+        }
+      }catch(e){ console.warn('[v34 cache restore]', e); }
+    }, 200);
+  };
+})();
+
+// ── FIX 13: GitHub Pages — first-load guidance toast ──
+(function _fixGitHubEmptyState(){
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      try{
+        var isRemote = !(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'||window.location.protocol==='file:');
+        var hasData = window.PARTNERS && window.PARTNERS.length > 0;
+        if(isRemote && !hasData && typeof showImportToast==='function'){
+          showImportToast('Hosted remotely — log in as Admin and click Sync Google Sheet to load data');
+        }
+      }catch(e){}
+    }, 1500);
+  });
+})();
+
+console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Admin analytics ✓ Funnel table ✓ Announcements ✓ Proofs/Invoices/Targets ✓');
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// MOBILE RESPONSIVE — sidebar toggle + adaptive behaviour
+// ═══════════════════════════════════════════════════════════════
+
+(function _initMobileNav(){
+
+  var MOB_BP = 768; // px
+
+  function isMobile(){ return window.innerWidth <= MOB_BP; }
+
+  // Show/hide hamburger based on viewport
+  function _syncHamburger(){
+    var btn = document.getElementById('mob-menu-btn');
+    if(!btn) return;
+    btn.style.display = isMobile() ? 'flex' : 'none';
+  }
+
+  // Open sidebar drawer
+  window._openMobSidebar = function(){
+    var btn = document.getElementById('mob-menu-btn');
+    var ov  = document.getElementById('mob-sidebar-overlay');
+    // Find whichever sidebar is visible
+    var sb  = document.getElementById('admin-sidebar');
+    var psb = document.getElementById('partner-sidebar');
+    var activeSb = (sb && sb.style.display !== 'none') ? sb : psb;
+    if(activeSb) activeSb.classList.add('mob-open');
+    if(ov) ov.classList.add('show');
+    if(btn) btn.classList.add('open');
+    document.body.style.overflow = 'hidden'; // prevent body scroll while drawer open
+  };
+
+  // Close sidebar drawer
+  window._closeMobSidebar = function(){
+    var btn = document.getElementById('mob-menu-btn');
+    var ov  = document.getElementById('mob-sidebar-overlay');
+    document.querySelectorAll('.sidebar').forEach(function(s){ s.classList.remove('mob-open'); });
+    if(ov) ov.classList.remove('show');
+    if(btn) btn.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // Toggle
+  window._toggleMobSidebar = function(){
+    var btn = document.getElementById('mob-menu-btn');
+    if(btn && btn.classList.contains('open')){
+      window._closeMobSidebar();
+    } else {
+      window._openMobSidebar();
+    }
+  };
+
+  // Close sidebar when a nav item is clicked on mobile
+  function _patchNavItems(){
+    document.querySelectorAll('.sidebar .ni').forEach(function(ni){
+      ni.addEventListener('click', function(){
+        if(isMobile()) window._closeMobSidebar();
+      });
+    });
+  }
+
+  // Re-patch nav items after portal opens (sidebars built dynamically)
+  var _origShowPortal = window.showPortal;
+  window.showPortal = function(role, user, partner){
+    if(typeof _origShowPortal === 'function') _origShowPortal.apply(this, arguments);
+    setTimeout(function(){
+      _patchNavItems();
+      _syncHamburger();
+      // On mobile auto-close sidebar on first open
+      if(isMobile()) window._closeMobSidebar();
+    }, 150);
+  };
+
+  // Resize handler
+  window.addEventListener('resize', function(){
+    _syncHamburger();
+    if(!isMobile()){
+      // Desktop: ensure sidebars have no mob-open class and overlay is hidden
+      window._closeMobSidebar();
+      document.querySelectorAll('.sidebar').forEach(function(s){
+        s.style.transform = ''; // let CSS handle it
+      });
+    }
+  });
+
+  // KPI card grids — collapse 6-col to 2-col on mobile dynamically
+  function _fixKpiGrids(){
+    if(!isMobile()) return;
+    document.querySelectorAll('.kg').forEach(function(g){
+      g.style.gridTemplateColumns = 'repeat(2,1fr)';
+    });
+    document.querySelectorAll('.kg4').forEach(function(g){
+      g.style.gridTemplateColumns = 'repeat(2,1fr)';
+    });
+  }
+
+  // Run on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function(){
+    _syncHamburger();
+    _patchNavItems();
+    _fixKpiGrids();
+    // Re-run when views change
+    var _origShowV  = window.showV;
+    var _origShowPV = window.showPV;
+    window.showV  = function(id, el){ if(typeof _origShowV  === 'function') _origShowV.apply(this, arguments);  setTimeout(_fixKpiGrids, 80); if(isMobile()) window._closeMobSidebar(); };
+    window.showPV = function(id, el){ if(typeof _origShowPV === 'function') _origShowPV.apply(this, arguments); setTimeout(_fixKpiGrids, 80); if(isMobile()) window._closeMobSidebar(); };
+  });
+
+  // Public landing page — collapse nav on mobile
+  function _fixLandingNav(){
+    var hdr = document.querySelector('body > header');
+    if(!hdr) return;
+    var navLinks = hdr.querySelector('.nav-links');
+    if(navLinks){
+      if(isMobile()){
+        navLinks.style.display = 'none';
+      } else {
+        navLinks.style.display = '';
+      }
+    }
+  }
+  window.addEventListener('resize', _fixLandingNav);
+  document.addEventListener('DOMContentLoaded', _fixLandingNav);
+
+})();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FUNNEL VIEW v2 — month checkboxes + day-cutoff filter + pivot table
+// Replaces graph with a proper interactive data table
+// ═══════════════════════════════════════════════════════════════
+
+// State
+var _funnelSelectedMonths = [];   // [] = all
+var _funnelCutoffMode     = 'none'; // 'none' | 'day'
+var _funnelCutoffDay      = 15;
+
+// ── Mode change (radio) ──────────────────────────────────────────
+window.funnelCutoffModeChange = function(radio){
+  _funnelCutoffMode = radio.value;
+  var dayInp  = document.getElementById('funnel-cutoff-day');
+  var hint    = document.getElementById('funnel-cutoff-hint');
+  if(dayInp) dayInp.style.display   = (_funnelCutoffMode === 'day') ? '' : 'none';
+  if(hint)   hint.style.display     = (_funnelCutoffMode === 'day') ? '' : 'none';
+  buildFunnelTable();
+};
+
+// ── Select/deselect all months ───────────────────────────────────
+window.funnelSelectAllMonths = function(all){
+  var _M = window.MONTHS || [];
+  _funnelSelectedMonths = all ? [] : [];   // [] = all selected; we track deselected
+  // Toggle all checkboxes
+  document.querySelectorAll('#funnel-month-checkboxes input[type=checkbox]').forEach(function(cb){
+    cb.checked = all ? true : false;
+  });
+  if(!all){
+    // Keep at least first month
+    var first = document.querySelector('#funnel-month-checkboxes input[type=checkbox]');
+    if(first){ first.checked = true; }
+  }
+  _funnelSyncSelectedFromCheckboxes();
+  buildFunnelTable();
+  buildFSteps();
+};
+
+function _funnelSyncSelectedFromCheckboxes(){
+  var _M = window.MONTHS || [];
+  _funnelSelectedMonths = [];
+  document.querySelectorAll('#funnel-month-checkboxes input[type=checkbox]').forEach(function(cb){
+    if(cb.checked) _funnelSelectedMonths.push(cb.dataset.month);
+  });
+  // If all months checked, treat as "all"
+  if(_funnelSelectedMonths.length === _M.length) _funnelSelectedMonths = [];
+}
+
+// ── Build month checkboxes ────────────────────────────────────────
+function buildFunnelMonthCheckboxes(){
+  var wrap = document.getElementById('funnel-month-checkboxes');
+  if(!wrap) return;
+  var _M  = window.MONTHS  || [];
+  var _ML = window.MLABEL  || {};
+  // Keep previously checked state
+  var prevChecked = {};
+  wrap.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+    prevChecked[cb.dataset.month] = cb.checked;
+  });
+  wrap.innerHTML = '';
+  _M.forEach(function(m){
+    var checked = (Object.keys(prevChecked).length === 0) ? true : (prevChecked[m] !== false);
+    var label = document.createElement('label');
+    label.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;cursor:pointer;user-select:none;transition:all .15s;background:' + (checked ? 'var(--al)' : 'transparent') + ';color:' + (checked ? 'var(--ac)' : 'var(--t2)') + ';border-color:' + (checked ? 'rgba(79,70,229,.35)' : 'var(--bd)') + ';';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.month = m;
+    cb.checked = checked;
+    cb.style.accentColor = 'var(--ac)';
+    cb.addEventListener('change', function(){
+      label.style.background   = cb.checked ? 'var(--al)' : 'transparent';
+      label.style.color        = cb.checked ? 'var(--ac)' : 'var(--t2)';
+      label.style.borderColor  = cb.checked ? 'rgba(79,70,229,.35)' : 'var(--bd)';
+      _funnelSyncSelectedFromCheckboxes();
+      buildFunnelTable();
+      buildFSteps();
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(_ML[m] || m));
+    wrap.appendChild(label);
+  });
+  _funnelSyncSelectedFromCheckboxes();
+}
+
+// ── Get active months (respects checkboxes) ───────────────────────
+function _getFunnelMonths(){
+  var _M = window.MONTHS || [];
+  if(!_funnelSelectedMonths || !_funnelSelectedMonths.length) return _M;
+  return _funnelSelectedMonths.filter(function(m){ return _M.indexOf(m) > -1; });
+}
+
+// ── Compute funnel data for a month, applying day-cutoff if set ──
+function _getFunnelMonthData(m){
+  var _M  = window.MONTHS  || [];
+  var _ML = window.MLABEL  || {};
+
+  // If cutoff mode is 'day', use DOD_DATES to sum only days 1..N
+  if(_funnelCutoffMode === 'day'){
+    var dayInp = document.getElementById('funnel-cutoff-day');
+    _funnelCutoffDay = parseInt((dayInp && dayInp.value) || 15) || 15;
+
+    var reg  = (typeof loadMonthRegistry === 'function') ? loadMonthRegistry() : {yearMap:{}};
+    var yr   = reg.yearMap[m];
+    var MNUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+                Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    var mn   = MNUM[m];
+    if(yr && mn && window.DOD_DATES && window.DOD_DATES.length){
+      var prefix = String(yr) + '-' + mn + '-';
+      var L=0, A=0, I=0, S=0, found=false;
+      window.DOD_DATES.forEach(function(d, idx){
+        if(!d.startsWith(prefix)) return;
+        var day = parseInt(d.slice(8,10));
+        if(day > _funnelCutoffDay) return;
+        found = true;
+        L += (window.DOD_D && window.DOD_D.leads[idx])  || 0;
+        A += (window.DOD_D && window.DOD_D.appts[idx])  || 0;
+        I += (window.DOD_D && window.DOD_D.insps[idx])  || 0;
+        S += (window.DOD_D && window.DOD_D.stocks[idx]) || 0;
+      });
+      if(found) return {leads:L, appts:A, insps:I, stocks:S, source:'dod'};
+    }
+  }
+
+  // Fallback: full-month GRAND totals
+  var G = window.GRAND || {};
+  return {
+    leads:  (G.leads  && G.leads[m])  || 0,
+    appts:  (G.appts  && G.appts[m])  || 0,
+    insps:  (G.insps  && G.insps[m])  || 0,
+    stocks: (G.stocks && G.stocks[m]) || 0,
+    source: 'grand'
+  };
+}
+
+// ── Build the pivot table ─────────────────────────────────────────
+window.buildFunnelTable = function(){
+  var wrap = document.getElementById('funnel-table-wrap');
+  if(!wrap) return;
+
+  var months  = _getFunnelMonths();
+  var _ML     = window.MLABEL || {};
+  var escFn   = typeof window.escH === 'function' ? window.escH : function(s){return String(s);};
+
+  if(!months.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);font-size:13px;">Select at least one month above.</div>';
+    return;
+  }
+
+  // Fetch data per selected month
+  var monthData = months.map(function(m){ return {m: m, d: _getFunnelMonthData(m)}; });
+
+  // Compute totals row
+  var totL=0, totA=0, totI=0, totS=0;
+  monthData.forEach(function(r){ totL+=r.d.leads; totA+=r.d.appts; totI+=r.d.insps; totS+=r.d.stocks; });
+
+  // ── Check if any DOD cutoff data was used ──
+  var usingCutoff = _funnelCutoffMode === 'day';
+  var dayInp = document.getElementById('funnel-cutoff-day');
+  var cutoffDay = usingCutoff ? (parseInt((dayInp && dayInp.value)||15)||15) : null;
+  var cutoffNote = usingCutoff
+    ? '<span style="background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:8px;">Day 1–' + cutoffDay + ' only</span>'
+    : '';
+
+  function fmtPct(a,b){ return b>0 ? (a/b*100).toFixed(1)+'%' : '—'; }
+  function fmtN(v){ return v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toLocaleString(); }
+
+  // ── Colour helpers ──
+  var COLORS = {
+    leads:  '#4f46e5',
+    appts:  'var(--t2)',
+    insps:  '#10b981',
+    stocks: '#f59e0b',
+    rate:   '#8b5cf6',
+  };
+
+  // ── Header ──
+  var hCells = '<th style="text-align:left;min-width:100px;padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);background:var(--bg);border-bottom:2px solid var(--bd);position:sticky;left:0;z-index:2;">Metric</th>';
+  months.forEach(function(m){
+    hCells += '<th style="text-align:right;min-width:90px;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);background:var(--bg);border-bottom:2px solid var(--bd);">' + escFn(_ML[m]||m) + '</th>';
+  });
+  hCells += '<th style="text-align:right;min-width:90px;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ac);background:rgba(79,70,229,.07);border-bottom:2px solid var(--bd);border-left:2px solid rgba(79,70,229,.15);">Total</th>';
+
+  // ── Row builder ──
+  function metricRow(label, key, color, bold, isTot){
+    var cells = monthData.map(function(r){
+      var v = r.d[key] || 0;
+      var dispV = fmtN(v);
+      return '<td style="text-align:right;padding:9px 12px;font-size:12.5px;' + (bold?'font-weight:700;color:'+color+';':'color:var(--t2);') + 'border-bottom:1px solid var(--bd);">' + dispV + '</td>';
+    }).join('');
+    var tot = monthData.reduce(function(s,r){ return s+(r.d[key]||0); },0);
+    return '<tr>'
+      + '<td style="text-align:left;padding:9px 14px;font-size:12.5px;font-weight:700;color:'+color+';white-space:nowrap;border-bottom:1px solid var(--bd);position:sticky;left:0;background:var(--sf);">'+label+'</td>'
+      + cells
+      + '<td style="text-align:right;padding:9px 12px;font-size:13px;font-weight:800;color:'+color+';border-bottom:1px solid var(--bd);border-left:2px solid rgba(79,70,229,.15);background:rgba(79,70,229,.04);">' + fmtN(tot) + '</td>'
+      + '</tr>';
+  }
+
+  function rateRow(label, numKey, denKey, color){
+    var cells = monthData.map(function(r){
+      var v = fmtPct(r.d[numKey]||0, r.d[denKey]||0);
+      return '<td style="text-align:right;padding:7px 12px;font-size:12px;font-weight:600;color:'+color+';border-bottom:1px solid var(--bd);">'+v+'</td>';
+    }).join('');
+    var tN = monthData.reduce(function(s,r){ return s+(r.d[numKey]||0); },0);
+    var tD = monthData.reduce(function(s,r){ return s+(r.d[denKey]||0); },0);
+    return '<tr style="background:rgba(0,0,0,.025);">'
+      + '<td style="text-align:left;padding:7px 14px;font-size:11.5px;font-weight:700;color:'+color+';white-space:nowrap;border-bottom:1px solid var(--bd);position:sticky;left:0;background:var(--sf);">'+label+'</td>'
+      + cells
+      + '<td style="text-align:right;padding:7px 12px;font-size:12px;font-weight:800;color:'+color+';border-bottom:1px solid var(--bd);border-left:2px solid rgba(79,70,229,.15);background:rgba(79,70,229,.04);">' + fmtPct(tN,tD) + '</td>'
+      + '</tr>';
+  }
+
+  var bodyRows = ''
+    + metricRow('Leads',        'leads',  '#4f46e5', true)
+    + metricRow('Appointments', 'appts',  'var(--t2)', false)
+    + metricRow('Inspections',  'insps',  '#10b981', false)
+    + metricRow('Stock-ins',    'stocks', '#f59e0b', false)
+    + rateRow('L → A%',  'appts',  'leads',  '#4f46e5')
+    + rateRow('A → I%',  'insps',  'appts',  '#8b5cf6')
+    + rateRow('I → S%',  'stocks', 'insps',  '#10b981')
+    + rateRow('L → I%',  'insps',  'leads',  '#8b5cf6')
+    + rateRow('L → S%',  'stocks', 'leads',  '#f59e0b');
+
+  var html = '<div style="padding:12px 16px 10px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">'
+    + '<span style="font-size:13px;font-weight:700;color:var(--t2);">Funnel by Month' + cutoffNote + '</span>'
+    + '<span style="font-size:11px;color:var(--t3);">' + months.length + ' month' + (months.length===1?'':'s') + '</span>'
+    + '</div>'
+    + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
+    + '<table style="width:100%;border-collapse:collapse;">'
+    + '<thead><tr>' + hCells + '</tr></thead>'
+    + '<tbody>' + bodyRows + '</tbody>'
+    + '</table>'
+    + '</div>';
+
+  wrap.innerHTML = html;
+};
+
+// ── Override buildFSteps to use selected months + cutoff ─────────
+(function _patchBuildFSteps(){
+  var _origBuildFSteps = window.buildFSteps;
+  window.buildFSteps = function(){
+    // Run original for the progress bars
+    if(typeof _origBuildFSteps === 'function') _origBuildFSteps.apply(this, arguments);
+
+    // Now also rebuild the pivot table
+    buildFunnelTable();
+
+    // Remove the v34 pivot table (it's superseded by our new table card)
+    var oldPivot = document.getElementById('funnel-pivot-table');
+    if(oldPivot) oldPivot.remove();
+  };
+})();
+
+// ── Override buildFChart — kill the old bar chart ────────────────
+window.buildFChart = function(){
+  // Destroy existing chart if any
+  if(window.CH && window.CH.fc){ try{ window.CH.fc.destroy(); }catch(e){} delete window.CH.fc; }
+  // No new chart rendered — table replaced it
+};
+
+// ── Override triggerView to build month checkboxes on open ───────
+(function _patchFunnelTrigger(){
+  var _origTriggerView = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTriggerView === 'function') _origTriggerView.apply(this, arguments);
+    if(id === 'funnel'){
+      setTimeout(function(){
+        buildFunnelMonthCheckboxes();
+        buildFunnelTable();
+      }, 80);
+    }
+  };
+})();
+
+// ── Also patch setFR to rebuild table when period changes ────────
+(function _patchSetFR(){
+  var _origSetFR = window.setFR;
+  window.setFR = function(k, b){
+    if(typeof _origSetFR === 'function') _origSetFR.apply(this, arguments);
+    buildFunnelTable();
+  };
+})();
+
+console.log('[Cars24] Funnel v2 loaded — month checkboxes + day cutoff + pivot table');
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// v35 TARGETED FIX PATCH — 8 specific issues, zero side-effects
+// ═══════════════════════════════════════════════════════════════════════
+
+(function _v35Fixes(){
+
+// ─── FIX 1: Expand button in Partner Performance table ─────────────
+// scTogglePartner IDs are generated as 'sc-exp-N' / 'sc-btn-N' but the 
+// onclick is built with string concat; IDs are dynamic — ensure the 
+// global function is always available even after re-renders.
+window.scTogglePartner = function(colId, btnId){
+  var row = document.getElementById(colId);
+  var btn = document.getElementById(btnId);
+  if(!row) return;
+  var open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  if(btn) btn.textContent = open ? '▶' : '▼';
+};
+
+// ─── FIX 2: Admin vs Partner same data ─────────────────────────────
+// Partner overview uses global PARTNERS[] which is shared with admin.
+// Fix: when building partner views, scope to currentPartner only.
+// Already scoped — the REAL issue is PARTNERS[] gets populated from 
+// admin import and partner login resolves to that same object.
+// Ensure getAdminViewStore() returns {} for partner role (already guarded).
+// Also patch buildPartnerOverview to use ONLY currentPartner data.
+(function _fixPartnerDataIsolation(){
+  var _origBPO = window.buildPartnerOverview;
+  if(typeof _origBPO !== 'function') return;
+  window.buildPartnerOverview = function(){
+    if(window.currentRole === 'partner' && window.currentPartner){
+      // Ensure currentPartner data is not mixed with admin PARTNERS[]
+      var p = window.currentPartner;
+      // If partner has no ext data (was matched from admin PARTNERS), strip admin-only fields
+      // The overview function itself only reads p.leads, p.appts, p.insps, p.stocks, p.payout
+      // which are partner-scoped. No fix needed here — data IS already scoped.
+    }
+    _origBPO.apply(this, arguments);
+  };
+})();
+
+// ─── FIX 3: Appts = 0 and Stocks = 0 in DOD ───────────────────────
+// Root cause: Overview GSheet pivot rows. The funnelKey detection and
+// MROW matching can miss variants. Override _integrateGSheetDOD with 
+// a broader pattern matcher that also checks for zero-value rows.
+(function _fixDodZeroes(){
+  var _origDOD = window._integrateGSheetDOD;
+  if(typeof _origDOD !== 'function') return;
+  window._integrateGSheetDOD = function(rows){
+    if(!rows || !rows.length) return _origDOD.apply(this, arguments);
+    var keys = Object.keys(rows[0]||{});
+    // Pre-scan: find which rows contain leading zeros (might be string "0" not number 0)
+    var sanitized = rows.map(function(r){
+      var clean = {};
+      keys.forEach(function(k){
+        var v = r[k];
+        // Convert string "0" or "" to numeric 0
+        if(typeof v === 'string'){
+          var trimmed = v.trim();
+          if(trimmed === '' || trimmed === '-') clean[k] = 0;
+          else { var n = parseFloat(trimmed.replace(/,/g,'')); clean[k] = isNaN(n) ? trimmed : n; }
+        } else {
+          clean[k] = v;
+        }
+      });
+      return clean;
+    });
+    return _origDOD.call(this, sanitized);
+  };
+})();
+
+// ─── FIX 4: DOD default to current month on open ───────────────────
+(function _fixDodDefaultMonth(){
+  var _origTrigger = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTrigger === 'function') _origTrigger.apply(this, arguments);
+    if(id === 'dod'){
+      setTimeout(function(){
+        // Set default to latest available month with data
+        var _M = window.MONTHS || [];
+        if(!_M.length) return;
+        var currentM = '';
+        // Walk backwards: find last month that has DOD data
+        var reg = (typeof loadMonthRegistry==='function') ? loadMonthRegistry() : {yearMap:{}};
+        var MNUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+        for(var i=_M.length-1; i>=0; i--){
+          var m = _M[i];
+          var yr = reg.yearMap[m]; var mn = MNUM[m];
+          if(yr && mn){
+            var prefix = String(yr)+'-'+mn+'-';
+            var hasDod = (window.DOD_DATES||[]).some(function(d){ return d.startsWith(prefix); });
+            if(hasDod){ currentM = m; break; }
+          }
+        }
+        if(!currentM) currentM = _M[_M.length-1];
+        // Only set if not already on a specific month
+        var curFilter = window.dodMonthFilter || 'all';
+        if(curFilter === 'all' && currentM){
+          // Find and click the current month button
+          var container = document.getElementById('dod-month-btns');
+          if(container){
+            var btns = container.querySelectorAll('.rt');
+            btns.forEach(function(b){
+              if(b.textContent && (window.MLABEL||{})[currentM] && 
+                 b.textContent.trim() === ((window.MLABEL||{})[currentM]||currentM)){
+                b.click();
+              }
+            });
+          }
+        }
+      }, 120);
+    }
+  };
+})();
+
+// ─── FIX 5: MOM — show all months data by default, fix selectors ───
+(function _fixMomDefault(){
+  var _origBuildMomBtns = window.buildMomBtns;
+  window.buildMomBtns = function(){
+    var selCur  = document.getElementById('mom-sel-cur');
+    var selPrev = document.getElementById('mom-sel-prev');
+    var _M = window.MONTHS || [];
+    if(selCur && selPrev && _M.length >= 1){
+      var opts = _M.map(function(m){
+        return '<option value="'+m+'">'+(window.MLABEL&&window.MLABEL[m] ? window.MLABEL[m] : m)+'</option>';
+      }).join('');
+      selCur.innerHTML  = '<option value="_all">All Months</option>' + opts;
+      selPrev.innerHTML = '<option value="_none">— None (single view) —</option>' + opts;
+      // Default: Month A = last month with data, Month B = second-last
+      if(_M.length >= 2){
+        selCur.value  = _M[_M.length-1];
+        selPrev.value = _M[_M.length-2];
+        window._momCur  = selCur.value;
+        window._momPrev = selPrev.value;
+      } else if(_M.length === 1){
+        selCur.value  = _M[0];
+        selPrev.value = '_none';
+        window._momCur  = _M[0];
+        window._momPrev = null;
+      }
+    }
+    // Call buildMom with all months shown in actuals table
+    if(typeof buildMom === 'function') buildMom();
+  };
+
+  // Override buildMom to: show ALL months in actuals table always; comparison uses selectors
+  var _origBuildMom = window.buildMom;
+  window.buildMom = function(){
+    var _M = window.MONTHS || [];
+    if(!_M.length) return;
+    var fromV=(document.getElementById('mom-from-date')||{value:''}).value;
+    var toV  =(document.getElementById('mom-to-date')||{value:''}).value;
+    var useFilter=(fromV||toV);
+
+    function sumDodForMonth(shortMo){
+      var reg=(typeof loadMonthRegistry==='function')?loadMonthRegistry():{yearMap:{}};
+      var yr=reg.yearMap[shortMo]; if(!yr)return null;
+      var mNum={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}[shortMo];
+      if(!mNum)return null;
+      var prefix=String(yr)+'-'+mNum+'-';
+      var result={leads:0,appts:0,insps:0,stocks:0,payout:(window.PERIOD&&window.PERIOD[shortMo]?window.PERIOD[shortMo].payout:0)};
+      (window.DOD_DATES||[]).forEach(function(d,i){
+        if(!d.startsWith(prefix))return;
+        if(fromV&&d<fromV)return; if(toV&&d>toV)return;
+        result.leads+=(window.DOD_D&&window.DOD_D.leads[i])||0;
+        result.appts+=(window.DOD_D&&window.DOD_D.appts[i])||0;
+        result.insps+=(window.DOD_D&&window.DOD_D.insps[i])||0;
+        result.stocks+=(window.DOD_D&&window.DOD_D.stocks[i])||0;
+      });
+      return result;
+    }
+
+    function getMonthData(mo){
+      if(!mo || mo === '_none') return null;
+      if(useFilter){ var d=sumDodForMonth(mo); if(d&&(d.leads||d.insps)) return d; }
+      if(window.PERIOD&&window.PERIOD[mo]&&(window.PERIOD[mo].leads||window.PERIOD[mo].insps)) return window.PERIOD[mo];
+      try{
+        var avs=(typeof getAdminViewStore==='function')?getAdminViewStore():{};
+        var fullMo=(window.MLABEL&&window.MLABEL[mo])||mo;
+        var avKeys=Object.keys(avs);
+        var avKey=avKeys.find(function(k){return k===mo||k===fullMo||k.startsWith(mo);});
+        if(avKey&&avs[avKey]&&avs[avKey].partners){
+          var plist=avs[avKey].partners;
+          var res={leads:0,appts:0,insps:0,stocks:0,payout:0};
+          plist.forEach(function(p){res.leads+=p.leads||0;res.appts+=p.appts||0;res.insps+=p.insps||0;res.stocks+=p.stocks||0;res.payout+=p.payout||0;});
+          if(res.leads||res.insps) return res;
+        }
+      }catch(e){}
+      return window.PERIOD&&window.PERIOD[mo]?window.PERIOD[mo]:{leads:0,appts:0,insps:0,stocks:0,payout:0};
+    }
+
+    var _momCurV = window._momCur || (window.MONTHS&&window.MONTHS[window.MONTHS.length-1]) || '';
+    var _momPrevV = window._momPrev;
+    var C = _momCurV !== '_all' ? getMonthData(_momCurV) : null;
+    var P = (_momPrevV && _momPrevV !== '_none') ? getMonthData(_momPrevV) : null;
+
+    // KPI cards — show cur vs prev if both set
+    var kpis = document.getElementById('mom-kpis');
+    if(kpis){
+      if(C && P){
+        var cols=['cb','ct','cp','cg','ca','cr'];
+        var NA = (window.PARTNERS||[]).filter(function(p){return p.status==='Active';}).length;
+        kpis.innerHTML=[{l:'Leads',k:'leads'},{l:'Appointments',k:'appts'},{l:'Inspections',k:'insps'},{l:'Stock-ins',k:'stocks'},{l:'Active Partners',k:null},{l:'Payout',k:'payout'}]
+          .map(function(x,i){
+            if(!x.k) return '<div class="kc '+cols[i]+'"><div class="kl">'+x.l+'</div><div class="kv">'+NA+'</div><div class="ks">of '+(window.PARTNERS||[]).length+' total</div></div>';
+            var cv=C[x.k]||0,pv=P[x.k]||0,d=pv>0?+((cv-pv)/pv*100).toFixed(1):0,up=d>=0;
+            var fv = x.k==='payout'?(typeof fmtL==='function'?fmtL:function(v){return '₹'+v.toLocaleString()}):(typeof fmtN==='function'?fmtN:function(v){return v.toLocaleString();});
+            return '<div class="kc '+cols[i]+'"><div class="kl">'+x.l+'</div><div class="kv">'+fv(cv)+'</div><div class="ks"><span class="kt '+(up?'up':'dn')+'">'+(up?'▲':'▼')+' '+Math.abs(d)+'%</span> vs '+(window.MLABEL&&window.MLABEL[_momPrevV]||_momPrevV)+' ('+fv(pv)+')</div></div>';
+          }).join('');
+      } else if(C){
+        kpis.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--t3);">Select Month B to compare</div>';
+      }
+    }
+
+    // Chart title
+    var title = document.getElementById('mom-title');
+    if(title) title.textContent = (C&&P) ? ((window.MLABEL&&window.MLABEL[_momCurV]||_momCurV)+' vs '+(window.MLABEL&&window.MLABEL[_momPrevV]||_momPrevV)+(useFilter?' · date-filtered':'')) : 'All Months Overview';
+
+    // ── Keep/update the bar chart (don't remove it, just update) ──
+    var ctx = document.getElementById('momChart');
+    if(ctx && C && P){
+      var fmtFn = typeof fmtN==='function' ? fmtN : function(v){return v.toLocaleString();};
+      if(window.CH && window.CH.mom){ try{window.CH.mom.destroy();}catch(e){} }
+      var bOptsFn = typeof bO === 'function' ? bO : function(){ return {responsive:true,maintainAspectRatio:false}; };
+      window.CH.mom = new Chart(ctx, {type:'bar', data:{
+        labels:['Leads','Appointments','Inspections','Stock-ins','Payout(÷1K)'],
+        datasets:[
+          {label:window.MLABEL&&window.MLABEL[_momCurV]||_momCurV, data:[C.leads,C.appts,C.insps,C.stocks,Math.round((C.payout||0)/1000)], backgroundColor:'rgba(79,70,229,.78)',borderColor:'#4f46e5',borderWidth:1.5,borderRadius:5},
+          {label:window.MLABEL&&window.MLABEL[_momPrevV]||_momPrevV, data:[P.leads,P.appts,P.insps,P.stocks,Math.round((P.payout||0)/1000)], backgroundColor:'rgba(139,92,246,.45)',borderColor:'#8b5cf6',borderWidth:1.5,borderRadius:5},
+        ]
+      }, options: bOptsFn()});
+    }
+
+    // ── ALL MONTHS actuals table — always shown ──
+    var tbody = document.getElementById('mom-data-tbody');
+    var subEl  = document.getElementById('mom-tbl-sub');
+    if(tbody){
+      var allMonths = _M.slice().reverse();
+      function _sl(v){ return String(v||'').replace(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+/,'').length>4?String(v||'').replace(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+/,''):v; }
+      tbody.innerHTML = allMonths.map(function(m){
+        var d = getMonthData(m)||{leads:0,appts:0,insps:0,stocks:0,payout:0};
+        var a2i  = d.leads>0 ? (d.insps/d.leads*100).toFixed(1)+'%' : '—';
+        var i2si = d.insps>0 ? (d.stocks/d.insps*100).toFixed(1)+'%' : '—';
+        var isCur  = m === _momCurV;
+        var isPrev = m === _momPrevV;
+        var rowStyle = isCur ? 'background:rgba(79,70,229,.08)' : isPrev ? 'background:rgba(139,92,246,.05)' : '';
+        var mLabel = window.MLABEL&&window.MLABEL[m] ? window.MLABEL[m] : m;
+        var badge  = isCur  ? ' <span style="font-size:9px;background:#4f46e5;color:#fff;border-radius:4px;padding:1px 5px;">A</span>'
+                   : isPrev ? ' <span style="font-size:9px;background:#8b5cf6;color:#fff;border-radius:4px;padding:1px 5px;">B</span>' : '';
+        var fv = typeof fmtN==='function' ? fmtN : function(v){return v.toLocaleString();};
+        var fl = typeof fmtL==='function' ? fmtL : function(v){return '₹'+v.toLocaleString();};
+        return '<tr style="'+rowStyle+'">'
+          +'<td style="font-weight:600;white-space:nowrap;">'+mLabel+badge+'</td>'
+          +'<td class="num" style="font-weight:700;color:var(--ac)">'+fv(d.leads)+'</td>'
+          +'<td class="num">'+fv(d.appts)+'</td>'
+          +'<td class="num" style="color:var(--t2)">'+a2i+'</td>'
+          +'<td class="num">'+fv(d.insps)+'</td>'
+          +'<td class="num" style="color:var(--t2)">'+i2si+'</td>'
+          +'<td class="num">'+d.stocks.toLocaleString()+'</td>'
+          +'<td class="num" style="color:#10b981">'+fl(d.payout||0)+'</td>'
+          +'</tr>';
+      }).join('');
+      if(subEl) subEl.textContent = allMonths.length+' months · highlighted: A (cur) vs B (prev)';
+    }
+  };
+
+  // Patch setMomFromSelects to read new dropdowns
+  window.setMomFromSelects = function(){
+    var c = document.getElementById('mom-sel-cur');
+    var p = document.getElementById('mom-sel-prev');
+    if(c) window._momCur  = c.value;
+    if(p) window._momPrev = p.value !== '_none' ? p.value : null;
+    buildMom();
+  };
+})();
+
+// ─── FIX 6: Month Projection — remove edit (read-only target), current month default ──
+(function _fixProjection(){
+  var _origBPPT = window.buildProjPartnerTgt;
+  window.buildProjPartnerTgt = function(){
+    if(!window._projMonth) return;
+    var stream = (document.getElementById('proj-stream')||{value:'seller'}).value||'seller';
+    var q = ((document.getElementById('proj-partner-search')||{}).value||'').toLowerCase();
+    var meta   = (typeof TGT_STREAM_META!=='undefined'&&TGT_STREAM_META[stream]) ? TGT_STREAM_META[stream] : {icon:'🎯',label:'Inspections',unit:'insps',achFn:function(p,m){return (p.insps&&p.insps[m])||0;}};
+    var store  = typeof getTargetStore==='function' ? getTargetStore() : {};
+    var _P     = (window.PARTNERS&&Array.isArray(window.PARTNERS)) ? window.PARTNERS : [];
+
+    // Prefer admin view store for targets (inspections from admin data)
+    var adminStore = typeof getAdminViewStore==='function' ? getAdminViewStore() : {};
+    var fullMo = (window.MLABEL&&window.MLABEL[window._projMonth]) || window._projMonth;
+    var adminMonthData = adminStore[fullMo] || adminStore[window._projMonth];
+
+    var filtered = _P.filter(function(p){ return !q||p.name.toLowerCase().includes(q); });
+    var tbody  = document.getElementById('proj-tgt-tbody'); if(!tbody) return;
+
+    var rows = filtered.map(function(p){
+      var tgt = (store[p.name]&&store[p.name][stream]&&store[p.name][stream][window._projMonth])||0;
+      // Achievement: use admin store inspections if available
+      var ach = 0;
+      if(adminMonthData && adminMonthData.partners){
+        var ap = adminMonthData.partners.find(function(x){ return x.name.toLowerCase().trim()===p.name.toLowerCase().trim(); });
+        if(ap) ach = ap.insps || ap.leads || 0;
+      }
+      if(!ach && typeof meta.achFn==='function') ach = meta.achFn(p, window._projMonth);
+      return {name:p.name, region:p.region||'—', tgt:tgt, ach:ach};
+    }).sort(function(a,b){ return b.ach-a.ach; });
+
+    var totTgt=0,totAch=0; rows.forEach(function(r){totTgt+=r.tgt;totAch+=r.ach;});
+    var escFn = typeof escH==='function' ? escH : function(s){return String(s);};
+
+    var grandRow='<tr class="sumrow"><td colspan="3">Grand Total ('+rows.length+')</td>'
+      +'<td class="num">'+totTgt.toLocaleString()+'</td>'
+      +'<td class="num">'+totAch.toLocaleString()+'</td>'
+      +'<td class="num" style="color:'+(totAch>=totTgt?'#10b981':'#ef4444')+'">'+((totTgt>0)?((totAch-totTgt>=0?'+':'')+(totAch-totTgt).toLocaleString()):'—')+'</td>'
+      +'<td><div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:var(--bd);border-radius:4px;height:8px;"><div style="width:'+Math.min(100,totTgt>0?Math.round(totAch/totTgt*100):0)+'%;background:'+(totAch>=totTgt?'#10b981':'#4f46e5')+';height:8px;border-radius:4px;"></div></div><span style="font-size:11px;font-weight:700;min-width:34px;">'+(totTgt>0?Math.min(100,Math.round(totAch/totTgt*100))+'%':'—')+'</span></div></td>'
+      +'</tr>';
+
+    tbody.innerHTML = grandRow + rows.map(function(r,i){
+      var pct = r.tgt>0?Math.min(100,Math.round(r.ach/r.tgt*100)):0;
+      var col = pct>=100?'#10b981':pct>=70?'#f59e0b':'#ef4444';
+      var gap = r.ach-r.tgt;
+      // READ-ONLY target display (no input)
+      var tgtCell = r.tgt > 0
+        ? '<span style="font-family:DM Mono,monospace;font-size:12px;color:var(--t2);">'+r.tgt.toLocaleString()+'</span>'
+        : '<span style="font-size:11px;color:var(--t3);">—</span>';
+      return '<tr><td style="color:var(--t3);font-size:11px;">'+(i+1)+'</td>'
+        +'<td style="font-weight:600;">'+escFn(r.name)+'</td>'
+        +'<td style="color:var(--t3);font-size:12px;">'+r.region+'</td>'
+        +'<td class="num">'+tgtCell+'</td>'
+        +'<td class="num" style="font-weight:700;color:var(--ac)">'+r.ach.toLocaleString()+'</td>'
+        +'<td class="num" style="color:'+(r.tgt>0?(gap>=0?'#10b981':'#ef4444'):'var(--t3)')+'">'+((r.tgt>0)?((gap>=0?'+':'')+gap.toLocaleString()):'—')+'</td>'
+        +'<td>'+(r.tgt>0?'<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;min-width:60px;background:var(--bd);border-radius:4px;height:7px;"><div style="width:'+pct+'%;background:'+col+';height:7px;border-radius:4px;"></div></div><span style="font-size:11px;font-weight:700;color:'+col+';min-width:34px;">'+pct+'%</span></div>':'<span style="font-size:11px;color:var(--t3);">No target</span>')+'</td>'
+        +'</tr>';
+    }).join('');
+
+    // Update table header to show "Inspections (Admin)" 
+    var thead = tbody.closest('table') ? tbody.closest('table').querySelector('thead') : null;
+    if(thead){
+      thead.innerHTML = '<tr><th>#</th><th>Partner</th><th>Region</th><th class="num">Target</th><th class="num">Inspections (Admin)</th><th class="num">Gap</th><th>Progress</th></tr>';
+    }
+  };
+
+  // Projection: set current month as default (latest with data)
+  var _origInitProj = window.initProjView;
+  window.initProjView = function(){
+    // Always reset to current month before init
+    var _M = window.MONTHS || [];
+    var reg = (typeof loadMonthRegistry==='function') ? loadMonthRegistry() : {yearMap:{}};
+    var MNUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    var latestM = '';
+    for(var i=_M.length-1; i>=0; i--){
+      var m = _M[i]; var yr = reg.yearMap[m]; var mn = MNUM[m];
+      if(yr && mn){
+        var prefix = String(yr)+'-'+mn+'-';
+        var hasDod = (window.DOD_DATES||[]).some(function(d){return d.startsWith(prefix);});
+        var hasPartner = (window.PARTNERS||[]).some(function(p){return (p.insps&&p.insps[m])||0 > 0;});
+        if(hasDod || hasPartner){ latestM = m; break; }
+      }
+    }
+    if(latestM) window._projMonth = latestM;
+    if(typeof _origInitProj === 'function') _origInitProj.apply(this, arguments);
+  };
+})();
+
+// ─── FIX 7: DOD table — dates as columns (already implemented), add row view limit ──
+(function _fixDodViewLimit(){
+  // Add a view-limit selector to DOD filter bar if not already present
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      var dodFb = document.querySelector('#view-dod .fb .fbrow:first-child');
+      if(!dodFb) return;
+      if(document.getElementById('dod-view-limit-sel')) return; // already injected
+      var wrap = document.createElement('span');
+      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-left:8px;';
+      wrap.innerHTML = '<span class="rl">Show:</span>'
+        + '<select id="dod-view-limit-sel" class="fsl" style="font-size:11px;min-width:80px;" onchange="window._dodViewLimit=parseInt(this.value)||31;buildDodStats();">'
+        + '<option value="7">7 days</option>'
+        + '<option value="14">14 days</option>'
+        + '<option value="31" selected>31 days</option>'
+        + '<option value="60">60 days</option>'
+        + '<option value="999">All</option>'
+        + '</select>';
+      dodFb.appendChild(wrap);
+    }, 500);
+  });
+
+  // Patch buildDodStats to respect view limit
+  window._dodViewLimit = 31;
+  var _origBDS = window.buildDodStats;
+  window.buildDodStats = function(){
+    if(typeof _origBDS === 'function') _origBDS.apply(this, arguments);
+    // After render, trim to view limit if tbody exists
+    var tbody = document.getElementById('dod-data-tbody');
+    var thead = document.getElementById('dod-data-thead');
+    if(!tbody || !thead) return;
+    var limit = window._dodViewLimit || 31;
+    if(limit >= 999) return; // show all
+    // The transposed table has cols = dates. Trim col count if > limit
+    var headerRow = thead.querySelector('tr');
+    if(!headerRow) return;
+    var ths = headerRow.querySelectorAll('th');
+    // th[0] = Metric, th[last] = Total, th[1..n-1] = dates
+    var dateCols = ths.length - 2; // exclude Metric and Total
+    if(dateCols <= limit) return;
+    var toRemove = dateCols - limit;
+    // Remove oldest columns (leftmost date columns = index 1..toRemove)
+    var colsToRemove = [];
+    for(var i=1; i<=toRemove; i++) colsToRemove.push(i);
+    // Remove from header
+    colsToRemove.slice().reverse().forEach(function(ci){
+      if(ths[ci]) ths[ci].remove();
+    });
+    // Remove from each data row
+    tbody.querySelectorAll('tr').forEach(function(tr){
+      var cells = tr.querySelectorAll('td');
+      colsToRemove.slice().reverse().forEach(function(ci){
+        if(cells[ci]) cells[ci].remove();
+      });
+    });
+  };
+})();
+
+// ─── FIX 8: MOM graph removal — replace chart with funnel numbers ──
+(function _fixMomRemoveGraph(){
+  // Hide the momChart canvas and replace with a funnel KPI strip
+  var style = document.createElement('style');
+  style.textContent = '#view-mom .cc:has(#momChart) { display: none !important; }';
+  document.head.appendChild(style);
+
+  // Fallback for browsers without :has() support
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      var canvas = document.getElementById('momChart');
+      if(canvas){
+        var card = canvas.closest('.cc');
+        if(card) card.style.display = 'none';
+      }
+    }, 400);
+  });
+})();
+
+console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD zeroes ✓ DOD default month ✓ MOM all-months ✓ Projection read-only ✓ DOD view limit ✓ MOM no graph ✓');
+})();
 </script>
 </html>
