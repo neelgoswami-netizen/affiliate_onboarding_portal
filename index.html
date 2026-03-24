@@ -4579,8 +4579,12 @@ function loadCreds(){
 }
 function saveCreds(arr){
   try{
-    localStorage.setItem('cars24_partner_creds', JSON.stringify(arr));
     window.PARTNER_CREDS = arr;
+    localStorage.setItem('cars24_partner_creds', JSON.stringify(arr)); // triggers C24Sync push
+    // If admin is viewing credentials view, re-render immediately
+    if(typeof renderCredTable==='function'){
+      setTimeout(renderCredTable, 50);
+    }
   }catch(e){}
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
@@ -17786,7 +17790,7 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   function _reloadGlobals(keys){
     var all = !keys || keys.length === 0;
     function _has(k){ return all || keys.indexOf(k) !== -1; }
-    try{ if(_has('cars24_partner_creds')){ var pc=localStorage.getItem('cars24_partner_creds'); if(pc) window.PARTNER_CREDS=JSON.parse(pc); }}catch(e){}
+    try{ if(_has('cars24_partner_creds')){ var pc=localStorage.getItem('cars24_partner_creds'); if(pc){ window.PARTNER_CREDS=JSON.parse(pc); if(typeof PARTNER_CREDS!=='undefined') try{ PARTNER_CREDS=window.PARTNER_CREDS; }catch(e){} }}}catch(e){}
     try{ if(_has('cars24_partner_sheet_data')){ var psd=localStorage.getItem('cars24_partner_sheet_data'); if(psd) window.PARTNER_SHEET=JSON.parse(psd); }}catch(e){}
     try{ if(_has('cars24_partners_data')){ var pd=localStorage.getItem('cars24_partners_data'); if(pd){ window.PARTNERS=JSON.parse(pd); if(typeof window.rebuildMonthMeta==='function') window.rebuildMonthMeta(); }}}catch(e){}
     try{ if(_has('cars24_admin_accounts')){ var aa=localStorage.getItem('cars24_admin_accounts'); if(aa) window._adminAccounts=JSON.parse(aa); }}catch(e){}
