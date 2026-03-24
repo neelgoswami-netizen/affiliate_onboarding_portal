@@ -4595,17 +4595,28 @@ function getLatestCreds(){
 }
 function saveCreds(arr){
   try{
-    // Serialise to JSON string — this is the canonical representation
     var serialised = JSON.stringify(arr);
-    // 1. Write to localStorage FIRST (triggers C24Sync intercept → push to Drive)
+
+    // 1. Write via intercepted localStorage.setItem → triggers C24Sync push to Drive
     localStorage.setItem('cars24_partner_creds', serialised);
-    // 2. Re-parse so all references point to same fresh object (no aliasing)
+
+    // 2. Keep all in-memory references in sync (no aliasing)
     var fresh = JSON.parse(serialised);
     PARTNER_CREDS        = fresh;
     window.PARTNER_CREDS = fresh;
-    // 3. Re-render credential table on admin side immediately
-    if(typeof renderCredTable==='function') setTimeout(renderCredTable, 50);
-    console.log('[saveCreds] saved', arr.length, 'creds → localStorage + sync push triggered');
+
+    // 3. Re-render credential table immediately (admin side)
+    if(typeof renderCredTable === 'function') setTimeout(renderCredTable, 50);
+
+    // 4. Force immediate push to Drive relay — don't wait for debounce
+    //    This ensures password changes appear on admin side within seconds
+    setTimeout(function(){
+      try{
+        if(window.c24SyncPush) window.c24SyncPush('cars24_partner_creds');
+      }catch(e){}
+    }, 200);
+
+    console.log('[saveCreds] saved', arr.length, 'creds → localStorage + immediate push queued');
   }catch(e){ console.warn('[saveCreds] error:', e); }
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
@@ -17828,6 +17839,19 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       changedKeys.forEach(function(k){ _renderForKey(k); });
       _showSyncToast(changedKeys);
       console.log('[C24Sync] Applied:', changedKeys);
+
+      // ── Credential-specific: always force re-render on admin side ──
+      // renderCredTable is safe to call even when view is not active
+      // (it checks for #cred-tbl and returns early if not found)
+      if(changedKeys.indexOf('cars24_partner_creds') !== -1){
+        if(typeof getLatestCreds === 'function') getLatestCreds(); // sync var binding
+        if(window.currentRole === 'admin'){
+          setTimeout(function(){
+            if(typeof renderCredTable === 'function') renderCredTable();
+            if(typeof renderAdminAccountsInCredView === 'function') renderAdminAccountsInCredView();
+          }, 100);
+        }
+      }
     }
     _updateSyncIndicator('live');
     if(onDone) onDone(true, changedKeys);
@@ -18161,11 +18185,11 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       }
     });
 
-    // Rolling poll every 10s (was 60s — now near-real-time)
+    // Rolling poll every 5s for near-real-time sync
     setInterval(function(){
       if(document.visibilityState === 'hidden') return;
       _pullFromRelay(null);
-    }, 10000);
+    }, 5000);
   }
 
   // Patch showPortal to inject indicator + banner check
