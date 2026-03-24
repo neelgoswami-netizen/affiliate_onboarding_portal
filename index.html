@@ -458,7 +458,7 @@ input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px rgba(61,53
 .tc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
 .tch{padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .tct{font-size:13.5px;font-weight:700}
-.tw{overflow-x:auto;max-height:420px;overflow-y:auto}
+.tw{overflow-x:auto;max-height:480px;overflow-y:auto}.tw table{border-collapse:collapse;width:100%;min-width:max-content}.tw thead{position:sticky;top:0;z-index:2;background:var(--sf)}.tw thead th{background:var(--sf);white-space:nowrap}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead th{background:var(--bg);padding:8px 12px;text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;z-index:1}
 thead th.num{text-align:right}
@@ -785,7 +785,7 @@ tbody tr:hover td{background:var(--al)}
 </div>
 
 <!-- Hero -->
-<div class="hero" style="padding-top:90px;">
+<div class="hero" style="padding-top:120px;">
   <div class="hero-grid-bg"></div>
   <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(62px,9.5vw,130px);line-height:0.95;letter-spacing:2px;font-weight:900;margin-bottom:10px;opacity:0;animation:fadeUp 0.7s 0.2s forwards;color:var(--blue);">Hey! Affiliate Partner</h1>
   <p class="hero-eyebrow" style="font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);margin-bottom:28px;opacity:0;animation:fadeUp 0.7s 0.35s forwards;font-weight:700;">Drive Traffic. Earn More. Grow Together.</p>
@@ -2577,6 +2577,7 @@ function navScrollTo(id) {
         <div class="ni" onclick="showPV('p-announcements',this)"><span class="nic">📢</span>Announcements</div>
         <div class="ni" onclick="showPV('p-targets',this)"><span class="nic">🎯</span>My Targets</div>
         <div class="ni" onclick="showPV('p-reports',this)"><span class="nic">📤</span>Download Reports</div>
+        <div class="ni" onclick="showPV('p-settings',this)"><span class="nic">🔑</span>Change Password</div>
       </div>
     </nav>
 
@@ -3462,10 +3463,10 @@ function navScrollTo(id) {
           </div>
           <div class="tw"><table>
             <thead><tr>
-              <th>#</th><th>Partner</th><th>Channel Group</th><th>Source / Medium</th><th>Campaign</th>
-              <th class="num">Leads</th><th class="num">Appts</th><th class="num">Insps</th>
-              <th class="num">A2I%</th><th class="num">Stocks</th><th class="num">I2SI%</th>
-              <th class="num">ASP (₹)</th><th class="num">CPI (₹)</th><th class="num">Payout (₹)</th>
+              <th style="width:28px;"></th><th style="min-width:120px;">#&nbsp;Partner</th><th style="min-width:110px;">Channel Group</th><th style="min-width:130px;">Source / Medium</th><th style="min-width:110px;">Campaign</th>
+              <th class="num" style="min-width:72px;">Leads</th><th class="num" style="min-width:62px;">Appts</th><th class="num" style="min-width:62px;">Insps</th>
+              <th class="num" style="min-width:58px;">A2I%</th><th class="num" style="min-width:62px;">Stocks</th><th class="num" style="min-width:58px;">I2SI%</th>
+              <th class="num" style="min-width:80px;">ASP (₹)</th><th class="num" style="min-width:72px;">CPI (₹)</th><th class="num" style="min-width:80px;">Payout (₹)</th>
             </tr></thead>
             <tbody id="sc-tbl"></tbody>
           </table></div>
@@ -3646,7 +3647,7 @@ function navScrollTo(id) {
           <div class="pt">Manage Partner Credentials</div>
           <div class="ps">Add, edit, or disable partner login access · Changes saved automatically</div>
           </div>
-          <button onclick="bulkSharePasswords()" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">📧 Bulk Export Credentials CSV</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button onclick="openBulkEmailModal()" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">📧 Bulk Send Emails</button><button onclick="bulkSharePasswords()" style="background:rgba(61,53,232,0.08);color:#3D35E8;border:1px solid rgba(61,53,232,0.25);border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">⬇ Export CSV</button></div>
         </div>
         <!-- Change Admin Password panel -->
         <div class="cc" style="margin-bottom:14px;border-top:3px solid #f59e0b">
@@ -3715,6 +3716,24 @@ function navScrollTo(id) {
             <button onclick="addCredential()" style="padding:9px 20px;background:var(--ac);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.background='var(--ah)'" onmouseout="this.style.background='var(--ac)'">Add Partner</button>
           </div>
           <div id="cred-add-msg" style="margin-top:8px;font-size:12px;display:none"></div>
+        </div>
+        <!-- Bulk Add Partners panel -->
+        <div class="cc" id="cred-bulk-panel" style="margin-bottom:14px;border-top:3px solid #8b5cf6;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div class="cti">📋 Bulk Add Partners</div>
+            <button onclick="toggleBulkPanel()" id="bulk-toggle-btn" style="padding:5px 14px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:7px;font-size:11px;font-weight:700;color:#8b5cf6;cursor:pointer;">Show / Hide</button>
+          </div>
+          <div id="bulk-add-body" style="display:none;">
+            <div style="font-size:12px;color:var(--t3);margin-bottom:10px;">Paste CSV rows below — one partner per line.<br>Format: <code style="background:rgba(255,255,255,.07);padding:2px 7px;border-radius:4px;font-size:11px;">Display Name, Username, Password, Email, Status</code>&nbsp; (Status optional — defaults to Active)</div>
+            <textarea id="bulk-csv-input" rows="6" placeholder="Track Back Media, trackback, pass123, tb@example.com, Active&#10;ANR Digital, anrdigital, pass456, anr@example.com&#10;Carinfo, carinfo, pass789, ci@example.com" style="width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:8px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--tx);outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--t2);cursor:pointer;">
+                <input type="checkbox" id="bulk-send-email" checked style="accent-color:var(--ac);width:14px;height:14px;"> Auto-send welcome emails
+              </label>
+              <button onclick="addBulkCredentials()" style="padding:9px 22px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">➕ Add All Partners</button>
+            </div>
+            <div id="bulk-add-msg" style="margin-top:8px;font-size:12px;display:none;"></div>
+          </div>
         </div>
         <!-- Search & Stats bar -->
         <div class="fb" style="margin-bottom:12px">
@@ -4080,6 +4099,34 @@ function navScrollTo(id) {
         </div>
       </div>
 
+      <!-- ════ PARTNER: CHANGE PASSWORD ════ -->
+      <div class="view" id="view-p-settings">
+        <div class="ph"><div class="pt">🔑 Change Password</div><div class="ps">Update your login password · New password takes effect immediately</div></div>
+        <div class="cc" style="max-width:480px;">
+          <div class="cti" style="margin-bottom:16px;">Update My Password</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">Current Password</label>
+              <input type="password" id="p-chg-cur" placeholder="Enter current password" style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--tx);outline:none;" onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--bd)'">
+            </div>
+            <div>
+              <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">New Password</label>
+              <input type="password" id="p-chg-new" placeholder="Enter new password" style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--tx);outline:none;" onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--bd)'">
+            </div>
+            <div>
+              <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">Confirm New Password</label>
+              <input type="password" id="p-chg-confirm" placeholder="Confirm new password" style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--tx);outline:none;" onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--bd)'">
+            </div>
+            <button onclick="changePartnerPassword()" style="padding:10px 24px;background:var(--ac);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;align-self:flex-start;">Update Password</button>
+            <div id="p-chg-msg" style="display:none;font-size:12px;padding:8px 12px;border-radius:6px;"></div>
+          </div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--bd);font-size:11px;color:var(--t3);line-height:1.7;">
+            💡 Password change is recorded. If you forget your password, contact your admin.<br>
+            Minimum 6 characters recommended.
+          </div>
+        </div>
+      </div>
+
       <!-- ════ PARTNER: BUYER PANEL ════ -->
       <div class="view" id="view-p-buyer">
         <div class="ph"><div class="pt">🛒 My Buyer Panel</div><div class="ps">Your buyer funnel performance — Sessions, Intent, Conversions, Visits</div></div>
@@ -4175,14 +4222,12 @@ function navScrollTo(id) {
     var creds = [];
     try { var s=localStorage.getItem('cars24_partner_creds'); creds=s?JSON.parse(s):(window.PARTNER_CREDS||[]); } catch(e){ creds=window.PARTNER_CREDS||[]; }
 
-    // Partner login reads from PARTNER_SHEET (partner tab data only)
+    // Partner login reads EXCLUSIVELY from PARTNER_SHEET (partner tab gid=0)
+    // NEVER falls back to admin data store — prevents admin data leaking to partners
     var partnerSheetData = {};
     try { var psd=localStorage.getItem('cars24_partner_sheet_data'); partnerSheetData=psd?JSON.parse(psd):(window.PARTNER_SHEET||{}); } catch(e){ partnerSheetData=window.PARTNER_SHEET||{}; }
     var partners = Object.values(partnerSheetData);
-    // Fallback: if partner sheet is empty, allow any credential holder in (graceful degradation)
-    if(!partners.length){
-      try { var sp2=localStorage.getItem('cars24_partners_data'); var adm=sp2?JSON.parse(sp2):[]; if(adm.length) partners=adm; } catch(e){}
-    }
+    // No admin fallback — partners only see Partner Sheet data
 
     if (u === 'admin') {
       if (p !== adminPw) { err.textContent='❌ Incorrect admin password.'; err.style.display='block'; return; }
@@ -4213,8 +4258,13 @@ function navScrollTo(id) {
         partner=pt; break;
       }
     }
-    // Create empty shell if partner not in sheet yet — they can still log in
-    if(!partner){ partner={name:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; }
+    // If not in PARTNER_SHEET, create empty shell (partner can log in, data loads after sync)
+    if(!partner){
+      partner={name:cred.display,display:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}};
+    }
+    // Attach username to partner object for unambiguous lookup later
+    partner.username = cred.username;
+    partner.display  = cred.display;
     showPortal('partner', cred.display, partner);
   };
 })();
@@ -4725,7 +4775,15 @@ function doLogin(){
       if(cred.display.toLowerCase().replace(/\s+/g,'').includes(pt.name.toLowerCase().replace(/\s+/g,'').slice(0,8))) return true;
       return false;
     });
-    if(!partner){err.textContent='❌ Partner data not found. Please ask admin to import Partner Sheet data first.';err.classList.add('show');return;}
+    // If not yet in PARTNER_SHEET (sheet not synced), create clean shell — no admin data
+    if(!partner){
+      partner = {name:cred.display, display:cred.display, username:cred.username,
+                 status:'Active', leads:{}, appts:{}, insps:{}, stocks:{}, payout:{}, ext:{}};
+    } else {
+      // Attach credential identifiers to partner object for unambiguous later lookup
+      partner.username = cred.username;
+      partner.display  = cred.display;
+    }
     currentUser=cred.display; currentRole='partner'; currentPartner=partner;
     launchApp();
   }
@@ -4762,7 +4820,7 @@ function triggerView(id){
     if(pSel && PARTNERS && PARTNERS.length){
       var cur=pSel.value;
       pSel.innerHTML='<option value="all">All Partners (Overview Total)</option>'+
-        PARTNERS.map(function(p){ return '<option value="'+escH(p.name)+'"'+(p.name===cur?' selected':'')+'>'+escH(p.name)+'</option>'; }).join('');
+        PARTNERS.map(function(p){ return '<option value="'+escH((p.name||'').trim())+'"'+(p.name===cur?' selected':'')+'>'+escH((p.name||'').trim())+'</option>'; }).join('');
     }
     buildDodStats();buildDodChart();
   }
@@ -4948,7 +5006,7 @@ function buildPartnerTable(){
       const badge=p.status==='Active'?'<span class="ba bag"><span class="bdot"></span>Active</span>':'<span class="ba bar"><span class="bdot"></span>Inactive</span>';
       return `<tr>
         <td style="color:var(--t3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
-        <td style="font-weight:600">${p.name}</td>
+        <td style="font-weight:600">${escH((p.name||'').trim())}</td>
         <td style="font-size:12px;color:var(--t2)">${p._region||'—'}</td>
         <td style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p._srcMed||''}">${p._srcMed||'—'}</td>
         <td>${badge}</td>
@@ -5006,7 +5064,7 @@ function buildPartnerTable(){
           expandHtml=`<tr id="pexp-${i}" style="display:none;"><td colspan="10" style="padding:0;border-top:none;"><table style="width:100%;border-collapse:collapse;">${extTbl}</table></td></tr>`;
         }
       }
-      return expandBtn+`<td style="color:var(--t3);font-size:11px">${i+1}</td><td style="font-weight:600">${escH(p.name)}</td><td>${badge}</td><td class="num">${p._L.toLocaleString()}</td><td class="num">${p._A.toLocaleString()}</td><td class="num">${p._I.toLocaleString()}</td><td class="num">${p._S}</td><td class="num">${p._P>0?fmtL(p._P):'—'}</td><td class="num">${cv}${cv!=='—'?'%':''}</td></tr>`+expandHtml;
+      return expandBtn+`<td style="color:var(--t3);font-size:11px">${i+1}</td><td style="font-weight:600">${escH((p.name||'').trim())}</td><td>${badge}</td><td class="num">${p._L.toLocaleString()}</td><td class="num">${p._A.toLocaleString()}</td><td class="num">${p._I.toLocaleString()}</td><td class="num">${p._S}</td><td class="num">${p._P>0?fmtL(p._P):'—'}</td><td class="num">${cv}${cv!=='—'?'%':''}</td></tr>`+expandHtml;
     }).map(function(r,i){ return '<tr id="prow-'+i+'">'+r; }).join('');
     document.getElementById('ptbl').innerHTML=`<tr class="sumrow"><td colspan="4">Grand Total (${rows.length})</td><td class="num">${gL.toLocaleString()}</td><td class="num">${gA.toLocaleString()}</td><td class="num">${gI.toLocaleString()}</td><td class="num">${gS}</td><td class="num">${gP>0?fmtL(gP):'—'}</td><td class="num">${gL>0?(gS/gL*100).toFixed(2)+'%':'—'}</td></tr>`+rowsH;
   }
@@ -7580,37 +7638,43 @@ function exportAdminViewCSV(){
 // The data comes from the existing p.ext[month] import store already populated by validateAndPreviewAdmin/Partner
 function getSellerChannelRows(month, partnerFilter){
   var rows = [];
-  // FIX: ext is stored under full label ('Mar 2026') but MONTHS uses short keys ('Mar').
-  // Try full label first (MLABEL[month]), then fall back to short key — mirrors partner overview.
   var fullMonth = (typeof MLABEL !== 'undefined' && MLABEL && MLABEL[month]) || month;
-  PARTNERS.forEach(function(p){
-    if(partnerFilter && partnerFilter!=='all' && p.name!==partnerFilter) return;
-    var ext = p.ext && (p.ext[fullMonth] || p.ext[month]);
+
+  // ── Priority 1: PARTNER_SHEET — has channel-level rows from GSheet Partner tab ──
+  // This is the correct source for Seller Channels (channel/source breakdown per partner)
+  var psData = (typeof PARTNER_SHEET !== 'undefined') ? PARTNER_SHEET : {};
+  var psUsed = {}; // track which partners we got from PARTNER_SHEET
+
+  Object.keys(psData).forEach(function(pName){
+    if(partnerFilter && partnerFilter!=='all' && pName!==partnerFilter) return;
+    var ps  = psData[pName];
+    var ext = ps.ext && (ps.ext[fullMonth] || ps.ext[month]);
     if(!ext) return;
-    // If ext has channel-level rows stored (from partner-view import)
-    if(ext.rows&&ext.rows.length){
+    psUsed[pName] = true;
+    if(ext.rows && ext.rows.length){
+      // Channel-level breakdown rows
       ext.rows.forEach(function(r){
         rows.push({
-          partner:        p.name,
-          channel_group:  r.channel_group||'—',
-          source_medium:  r.source_medium||r.source||'—',
-          campaign:       r.campaign||'—',
-          leads:          r.leads||0,
-          appts:          r.appts||0,
-          insps:          r.insps||0,
-          a2i:            r.a2i||0,
-          stocks:         r.stocks||0,
-          i2si:           r.i2si||0,
-          asp:            r.asp||0,
-          cpi:            r.cpi||0,
-          payout:         r.payout||0
+          partner:       pName,
+          channel_group: r.channel_group||r.region||'—',
+          source_medium: r.source_medium||r.source||'—',
+          campaign:      r.campaign||'—',
+          leads:         r.leads||0,
+          appts:         r.appts||0,
+          insps:         r.insps||0,
+          a2i:           r.a2i||0,
+          stocks:        r.stocks||0,
+          i2si:          r.i2si||0,
+          asp:           r.asp||0,
+          cpi:           r.cpi||0,
+          payout:        r.payout||0
         });
       });
     } else {
-      // Aggregate row from ext (admin-view import — single row per partner per month)
+      // Aggregate from PARTNER_SHEET ext (no channel breakdown — single row)
       rows.push({
-        partner:       p.name,
-        channel_group: ext.source_medium||'Aggregate',
+        partner:       pName,
+        channel_group: ext.region||'Partner Sheet',
         source_medium: ext.source_medium||'—',
         campaign:      ext.campaign||'—',
         leads:         ext.leads||0,
@@ -7625,6 +7689,53 @@ function getSellerChannelRows(month, partnerFilter){
       });
     }
   });
+
+  // ── Priority 2: PARTNERS (admin import) — only for partners NOT already in PARTNER_SHEET ──
+  // Avoids double-counting. Admin data typically has no channel breakdown, shows as Aggregate.
+  var adminP = (typeof PARTNERS !== 'undefined' && Array.isArray(PARTNERS)) ? PARTNERS : [];
+  adminP.forEach(function(p){
+    if(psUsed[p.name]) return; // already covered by PARTNER_SHEET
+    if(partnerFilter && partnerFilter!=='all' && p.name!==partnerFilter) return;
+    var ext = p.ext && (p.ext[fullMonth] || p.ext[month]);
+    if(!ext) return;
+    if(ext.view_type === 'partner') return; // skip — partner-sheet data already in psUsed
+    if(ext.rows && ext.rows.length){
+      ext.rows.forEach(function(r){
+        rows.push({
+          partner:       p.name,
+          channel_group: r.channel_group||r.region||'—',
+          source_medium: r.source_medium||r.source||'—',
+          campaign:      r.campaign||'—',
+          leads:         r.leads||0,
+          appts:         r.appts||0,
+          insps:         r.insps||0,
+          a2i:           r.a2i||0,
+          stocks:        r.stocks||0,
+          i2si:          r.i2si||0,
+          asp:           r.asp||0,
+          cpi:           r.cpi||0,
+          payout:        r.payout||0
+        });
+      });
+    } else {
+      rows.push({
+        partner:       p.name,
+        channel_group: ext.source_medium||'Admin Import',
+        source_medium: ext.source_medium||'—',
+        campaign:      ext.campaign||'—',
+        leads:         ext.leads||0,
+        appts:         ext.appts||0,
+        insps:         ext.insps||0,
+        a2i:           ext.a2i||0,
+        stocks:        ext.stocks||0,
+        i2si:          ext.i2si||0,
+        asp:           ext.asp||0,
+        cpi:           ext.cpi||0,
+        payout:        ext.payout||0
+      });
+    }
+  });
+
   return rows;
 }
 
@@ -7658,11 +7769,16 @@ function initSellerChannels(){
       wrap.appendChild(b);
     });
   }
-  // Build partner selector
+  // Build partner selector — merge PARTNER_SHEET + PARTNERS names
   var sel = document.getElementById('sc-partner-sel');
   if(sel){
+    var _psNames = (typeof PARTNER_SHEET !== 'undefined') ? Object.keys(PARTNER_SHEET) : [];
+    var _adminNames = (typeof PARTNERS !== 'undefined' && Array.isArray(PARTNERS)) ? PARTNERS.map(function(p){return p.name;}) : [];
+    var _allNames = _psNames.slice();
+    _adminNames.forEach(function(n){ if(_allNames.indexOf(n)<0) _allNames.push(n); });
+    _allNames.sort();
     sel.innerHTML = '<option value="all">All Partners</option>'+
-      PARTNERS.map(function(p){ return '<option value="'+escH(p.name)+'">'+escH(p.name)+'</option>'; }).join('');
+      _allNames.map(function(n){ return '<option value="'+escH(n)+'">'+escH(n)+'</option>'; }).join('');
   }
   buildSellerChannels();
 }
@@ -7728,9 +7844,8 @@ function buildSellerChannels(){
     var multi=g.rows.length>1;
     // Summary row (always visible)
     html+='<tr style="background:var(--sb,#131b28);border-left:3px solid var(--ac);">'
-      +'<td style="padding:5px 6px;cursor:'+(multi?'pointer':'default')+';"'+(multi?' onclick="scTogglePartner('+cId+','+bId+')"':'')+'>'
-        +(multi?'<span id="'+bId+'" style="display:inline-block;font-size:10px;color:var(--t3);">▶</span>':'')+'</td>'
-      +'<td style="font-weight:700;" colspan="4">'+escH(pName)+'<span style="font-size:10px;color:var(--t3);font-weight:500;margin-left:6px;">'+(multi?g.rows.length+' channels':'1 channel')+'</span></td>'
+      +(multi?'<td style="padding:5px 6px;text-align:center;cursor:pointer;" data-cid="'+cId+'" data-bid="'+bId+'" onclick="var r=document.getElementById(this.dataset.cid),b=document.getElementById(this.dataset.bid),o=r&&r.style.display!==\'none\';if(r)r.style.display=o?\'none\':\'\';if(b)b.textContent=o?\'\u25b6\':\'\u25bc\';"><span id="'+bId+'" style="font-size:13px;color:var(--ac);font-weight:700;cursor:pointer;">\u25b6</span></td>':'<td></td>')
+      +'<td style="font-weight:700;" colspan="4">'+'<span style="font-size:10px;color:var(--t3);font-weight:500;margin-right:6px;">'+( pi+1)+'.</span>'+escH(pName)+'<span style="font-size:10px;color:var(--t3);font-weight:500;margin-left:6px;">'+(multi?g.rows.length+' channels':'1 channel')+'</span></td>'
       +'<td class="num" style="font-weight:700;color:var(--ac)">'+t.leads.toLocaleString()+'</td>'
       +'<td class="num">'+t.appts.toLocaleString()+'</td>'
       +'<td class="num">'+t.insps.toLocaleString()+'</td>'
@@ -8209,6 +8324,247 @@ function bulkSharePasswords(){
   var csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='cars24_partner_credentials_bulk.csv';a.click();
   showImportToast('✓ Bulk credentials CSV downloaded ('+PARTNER_CREDS.length+' partners)');
+}
+
+// ── TOGGLE BULK ADD PANEL ─────────────────────────────────────────
+function toggleBulkPanel(){
+  var body = document.getElementById('bulk-add-body');
+  if(!body) return;
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── BULK ADD PARTNERS ─────────────────────────────────────────────
+function addBulkCredentials(){
+  var raw = (document.getElementById('bulk-csv-input')||{value:''}).value;
+  var sendEmail = document.getElementById('bulk-send-email') ? document.getElementById('bulk-send-email').checked : false;
+  var msg = document.getElementById('bulk-add-msg');
+  function _showBulkMsg(txt, ok){
+    if(!msg) return;
+    msg.style.display='block';
+    msg.style.color=ok?'#059669':'#dc2626';
+    msg.textContent=txt;
+    if(ok) setTimeout(function(){msg.style.display='none';},7000);
+  }
+  var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  if(!lines.length){ _showBulkMsg('⚠ No data found. Paste at least one CSV row.', false); return; }
+
+  var added=0, skipped=[], errors=[], queue=[];
+  lines.forEach(function(line){
+    // Strip wrapping quotes if present
+    var parts = line.split(',').map(function(p){ return p.trim().replace(/^["'\s]+|["'\s]+$/g,''); });
+    var display  = parts[0]||'';
+    var username = (parts[1]||'').toLowerCase().replace(/\s+/g,'');
+    var password = parts[2]||'';
+    var email    = (parts[3]||'').toLowerCase().replace(/\s/g,'');
+    var status   = parts[4]||'Active';
+    if(!display||!username||!password){ errors.push(line.slice(0,30)+' — missing field'); return; }
+    if(PARTNER_CREDS.find(function(c){ return c.username===username||c.display===display; })){
+      skipped.push(display+' (duplicate)'); return;
+    }
+    var cid = (typeof genCampaignId==='function') ? genCampaignId(display) : display.replace(/[^A-Z]/gi,'').slice(0,4).toUpperCase()+(Math.floor(1000+Math.random()*9000));
+    PARTNER_CREDS.push({display:display, username:username, password:password, status:status, email:email||'', campaign_id:cid, utm_medium:'email_ob'});
+    added++;
+    if(sendEmail && email && email.includes('@')){
+      queue.push({display:display, username:username, password:password, email:email, campaign_id:cid});
+    }
+  });
+
+  if(typeof saveCreds==='function') saveCreds(PARTNER_CREDS);
+  if(typeof renderCredTable==='function') renderCredTable();
+
+  var summary = '✓ '+added+' partner(s) added.';
+  if(skipped.length) summary += ' Skipped: '+skipped.join(', ')+'.';
+  if(errors.length) summary += ' Errors: '+errors.join('; ')+'.';
+  _showBulkMsg(summary, added>0);
+
+  if(typeof _auditLog==='function') _auditLog('Bulk partners added', added+' partners; '+(queue.length)+' emails queued');
+  if(added>0) document.getElementById('bulk-csv-input').value='';
+
+  if(queue.length){
+    setTimeout(function(){ openBulkEmailModal(queue); }, 400);
+  }
+}
+
+// ── BULK EMAIL MODAL (sequential 1-by-1) ─────────────────────────
+var _bulkEmailQueue = [];
+var _bulkEmailIdx   = 0;
+var _bulkEmailActive = false;
+
+function openBulkEmailModal(preQueue){
+  ensureCampaignIds();
+  // Build queue: either passed-in (from bulk add) or all partners with emails
+  if(preQueue && preQueue.length){
+    _bulkEmailQueue = preQueue;
+  } else {
+    _bulkEmailQueue = PARTNER_CREDS.filter(function(c){ return c.email && c.email.includes('@'); }).map(function(c){
+      return {display:c.display, username:c.username, password:c.password, email:c.email, campaign_id:c.campaign_id||genCampaignId(c.display)};
+    });
+  }
+  _bulkEmailIdx    = 0;
+  _bulkEmailActive = false;
+  if(!_bulkEmailQueue.length){
+    alert('No partners have email addresses saved. Edit partners to add emails first.');
+    return;
+  }
+  // Build modal
+  var existing = document.getElementById('bulk-email-modal-overlay');
+  if(existing) existing.remove();
+  var html = '<div id="bulk-email-modal-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">'
+    + '<div style="background:var(--sf,#0E1420);border:1px solid var(--bd);border-radius:18px;padding:28px 32px;width:100%;max-width:540px;box-shadow:0 24px 60px rgba(0,0,0,.4);position:relative;">'
+    + '<button onclick="closeBulkEmailModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;line-height:1;">✕</button>'
+    + '<div style="font-size:17px;font-weight:700;margin-bottom:6px;">📧 Bulk Send Welcome Emails</div>'
+    + '<div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Emails will be sent one-by-one with a short delay. You can pause at any time.</div>'
+    + '<div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin-bottom:16px;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+    + '<span style="font-size:12px;font-weight:700;color:var(--t2);">Queue: <span id="bem-queue-count">'+_bulkEmailQueue.length+'</span> partners</span>'
+    + '<span style="font-size:11px;color:var(--t3);">Sent: <span id="bem-sent-count">0</span> / <span id="bem-total-count">'+_bulkEmailQueue.length+'</span></span>'
+    + '</div>'
+    + '<div style="height:6px;background:var(--muted,#1E2A3A);border-radius:3px;overflow:hidden;margin-bottom:12px;">'
+    + '<div id="bem-progress-bar" style="height:100%;background:#10b981;border-radius:3px;width:0%;transition:width .4s;"></div>'
+    + '</div>'
+    + '<div id="bem-current-status" style="font-size:12px;color:var(--t3);min-height:20px;">Ready to send.</div>'
+    + '</div>'
+    + '<div id="bem-log" style="max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;font-size:11px;font-family:DM Mono,monospace;color:var(--t2);margin-bottom:16px;line-height:1.8;">'
+    + '<div style="color:var(--t3);">Email log will appear here…</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
+    + '<button id="bem-stop-btn" onclick="stopBulkEmail()" style="padding:9px 20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#dc2626;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:none;">⏹ Stop</button>'
+    + '<button id="bem-start-btn" onclick="startBulkEmail()" style="padding:9px 22px;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">▶ Start Sending</button>'
+    + '<button id="bem-close-btn" onclick="closeBulkEmailModal()" style="padding:9px 20px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--t2);">Close</button>'
+    + '</div>'
+    + '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeBulkEmailModal(){
+  _bulkEmailActive = false;
+  var ov = document.getElementById('bulk-email-modal-overlay');
+  if(ov) ov.remove();
+}
+
+function stopBulkEmail(){
+  _bulkEmailActive = false;
+  var startBtn = document.getElementById('bem-start-btn');
+  var stopBtn  = document.getElementById('bem-stop-btn');
+  if(startBtn){ startBtn.textContent='▶ Resume'; startBtn.style.display=''; }
+  if(stopBtn) stopBtn.style.display='none';
+  _bemLog('⏸ Paused at '+_bulkEmailIdx+' / '+_bulkEmailQueue.length);
+}
+
+function startBulkEmail(){
+  if(_bulkEmailActive) return;
+  _bulkEmailActive = true;
+  var startBtn = document.getElementById('bem-start-btn');
+  var stopBtn  = document.getElementById('bem-stop-btn');
+  if(startBtn) startBtn.style.display='none';
+  if(stopBtn)  stopBtn.style.display='';
+  _sendNextBulkEmail();
+}
+
+function _bemLog(msg){
+  var log = document.getElementById('bem-log');
+  if(!log) return;
+  var line = document.createElement('div');
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function _updateBemProgress(){
+  var sent = _bulkEmailIdx;
+  var total = _bulkEmailQueue.length;
+  var pct = total > 0 ? Math.round(sent/total*100) : 0;
+  var bar = document.getElementById('bem-progress-bar');
+  var sentEl = document.getElementById('bem-sent-count');
+  var statusEl = document.getElementById('bem-current-status');
+  if(bar) bar.style.width = pct+'%';
+  if(sentEl) sentEl.textContent = sent;
+  if(statusEl){
+    if(sent < total){
+      var next = _bulkEmailQueue[sent];
+      statusEl.textContent = 'Sending to: '+(next?next.display+' <'+next.email+'>':'…');
+    } else {
+      statusEl.textContent = '✅ All emails sent!';
+    }
+  }
+}
+
+async function _sendNextBulkEmail(){
+  if(!_bulkEmailActive) return;
+  if(_bulkEmailIdx >= _bulkEmailQueue.length){
+    _bulkEmailActive = false;
+    _updateBemProgress();
+    var startBtn = document.getElementById('bem-start-btn');
+    var stopBtn  = document.getElementById('bem-stop-btn');
+    if(startBtn){ startBtn.textContent='✅ Done'; startBtn.disabled=true; startBtn.style.display=''; }
+    if(stopBtn)  stopBtn.style.display='none';
+    _bemLog('🎉 All done! '+_bulkEmailQueue.length+' email(s) processed.');
+    if(typeof showImportToast==='function') showImportToast('✅ Bulk emails sent to '+_bulkEmailQueue.length+' partners');
+    return;
+  }
+  // Check EmailJS is available
+  if(typeof emailjs === 'undefined'){
+    _bemLog('✗ EmailJS not loaded. Check your internet connection and reload the page.');
+    _bulkEmailActive = false;
+    return;
+  }
+  var partner = _bulkEmailQueue[_bulkEmailIdx];
+  _updateBemProgress();
+  _bemLog('📤 ['+(parseInt(_bulkEmailIdx)+1)+'/'+_bulkEmailQueue.length+'] Sending to '+partner.display+' <'+partner.email+'>…');
+  try {
+    var utmLink = (typeof buildUTMLink==='function') ? buildUTMLink(partner.campaign_id||'','email_ob') : '';
+    var params = {
+      to_name: partner.display, display_name: partner.display, name: partner.display,
+      to_email: partner.email, partner_email: partner.email, email: partner.email,
+      username: partner.username, password: partner.password,
+      portal_url: window.location.href.split('?')[0],
+      utm_link: utmLink, campaign_id: partner.campaign_id||'',
+      from_name: 'Cars24 Affiliate Team', reply_to: 'ampcars24@gmail.com',
+      message: 'Your Cars24 Affiliate Partner login credentials are ready.'
+    };
+    var result = await emailjs.send(CARS24_CONFIG.emailjs.serviceId, CARS24_CONFIG.emailjs.templateId, params);
+    _bemLog('  ✓ Sent OK (status '+result.status+') → '+partner.email);
+    if(typeof _auditLog==='function') _auditLog('Email sent', partner.display+' <'+partner.email+'>');
+  } catch(e){
+    var errTxt = (e && (e.text||e.message||JSON.stringify(e))) || 'Unknown error';
+    _bemLog('  ✗ Failed → '+partner.email+': '+errTxt);
+  }
+  _bulkEmailIdx++;
+  // 1.5s delay between emails to stay within EmailJS rate limits
+  setTimeout(function(){ _sendNextBulkEmail(); }, 1500);
+}
+
+// ── PARTNER: CHANGE PASSWORD ──────────────────────────────────────
+function changePartnerPassword(){
+  var cur = (document.getElementById('p-chg-cur')||{value:''}).value.trim();
+  var nw  = (document.getElementById('p-chg-new')||{value:''}).value.trim();
+  var cf  = (document.getElementById('p-chg-confirm')||{value:''}).value.trim();
+  var msg = document.getElementById('p-chg-msg');
+  function showMsg(text, ok){
+    if(!msg) return;
+    msg.style.display='block';
+    msg.style.color=ok?'#059669':'#dc2626';
+    msg.style.background=ok?'rgba(5,150,105,.1)':'rgba(220,38,38,.1)';
+    msg.style.border='1px solid '+(ok?'rgba(5,150,105,.3)':'rgba(220,38,38,.3)');
+    msg.textContent=text;
+    if(ok) setTimeout(function(){msg.style.display='none';},5000);
+  }
+  if(!cur||!nw||!cf){ showMsg('⚠ All fields are required.', false); return; }
+  if(!currentPartner){ showMsg('⚠ No partner session found. Please log in again.', false); return; }
+  // Verify current password against PARTNER_CREDS
+  var cred = PARTNER_CREDS.find(function(c){ return c.username === currentPartner.username; });
+  if(!cred){ showMsg('⚠ Credential record not found. Contact admin.', false); return; }
+  if(cred.password !== cur){ showMsg('⚠ Current password is incorrect.', false); return; }
+  if(nw.length < 6){ showMsg('⚠ New password must be at least 6 characters.', false); return; }
+  if(nw !== cf){ showMsg('⚠ Passwords do not match.', false); return; }
+  // Apply change
+  cred.password = nw;
+  saveCreds(PARTNER_CREDS);
+  _auditLog('Partner password changed', 'Partner: '+currentPartner.display+' ('+currentPartner.username+')');
+  document.getElementById('p-chg-cur').value='';
+  document.getElementById('p-chg-new').value='';
+  document.getElementById('p-chg-confirm').value='';
+  showMsg('✅ Password updated successfully! Please note your new password.', true);
 }
 
 // ── 4 & 9. PARTNER REPORTS ────────────────────────────────────────
@@ -15391,4 +15747,1136 @@ window.scTogglePartner = function(colId, btnId){
 console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD zeroes ✓ DOD default month ✓ MOM all-months ✓ Projection read-only ✓ DOD view limit ✓ MOM no graph ✓');
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+  v36 MASTER FIX PATCH
+  Fix 1 : Partner sheet data linked to partner dashboard (data isolation)
+  Fix 2 : Projection month-change actually rebuilds all cards & table
+  Fix 3 : Logic Builder — partner data + month selector + "Add months"
+  Fix 4 : Partner credential bulk-upload (CSV) + bulk email send
+  Fix 5 : Password change for all users (partner & admin) + audit record
+  Fix 6 : GUI overlap / z-index corrections
+═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function _v36Fixes(){
+
+// ─────────────────────────────────────────────────────────────────────────
+// SHARED STYLES injected once
+// ─────────────────────────────────────────────────────────────────────────
+(function _injectV36Styles(){
+  var s = document.createElement('style');
+  s.id = 'v36-styles';
+  s.textContent = `
+    /* Fix overlapping modals — enforce stacking order */
+    #portal-login-overlay   { z-index: 100001 !important; }
+    #_add-month-modal       { z-index: 100002 !important; }
+    #v36-bulk-upload-modal  { z-index: 100003 !important; }
+    #v36-pwchange-modal     { z-index: 100003 !important; }
+    #cred-modal-overlay     { z-index:  99999 !important; }
+    #import-modal           { z-index: 100000 !important; }
+    /* Fix partner sidebar not scrolling below header */
+    #partner-sidebar, #admin-sidebar { overflow-y: auto; overflow-x: hidden; }
+    /* Fix view area overflow clipping partner views */
+    #portal-fullscreen .main-content { overflow: visible !important; }
+    /* Projection cards fix — prevent content clipping */
+    #proj-metric-cards .vc, #dash-proj-cards .vc { overflow: visible !important; min-width: 130px; }
+    /* Logic builder table x-scroll */
+    #view-logic-builder .tw { overflow-x: auto; }
+    /* Fix potential overlap of filter bars in narrow screens */
+    .fbrow { flex-wrap: wrap !important; }
+    /* Bulk upload drag area */
+    #v36-bulk-drop-area {
+      border: 2px dashed var(--bd, rgba(255,255,255,.12));
+      border-radius: 10px; padding: 24px; text-align: center;
+      cursor: pointer; transition: border-color .2s;
+    }
+    #v36-bulk-drop-area:hover, #v36-bulk-drop-area.drag-over {
+      border-color: var(--ac, #4f46e5);
+      background: var(--al, rgba(79,70,229,.07));
+    }
+    /* Password change button in cred table */
+    .v36-pw-btn {
+      padding: 3px 9px; font-size: 11px; font-weight: 600;
+      background: rgba(79,70,229,.1); border: 1px solid rgba(79,70,229,.25);
+      border-radius: 5px; color: var(--ac, #4f46e5); cursor: pointer;
+    }
+    .v36-pw-btn:hover { background: rgba(79,70,229,.2); }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 1 — Partner dashboard strict data isolation
+// Problem: admin PARTNERS[] leak into partner portal (all partners visible)
+// Solution: partner views scope EXCLUSIVELY to currentPartner object
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixPartnerDataIsolationV36(){
+
+  // Returns the single partner object for the logged-in partner, or null
+  function _getMyPartner(){
+    if(!window.currentPartner || window.currentRole !== 'partner') return null;
+    var cp = window.currentPartner;
+    var cpName = (cp.display||cp.name||'').toLowerCase().trim();
+    // ALWAYS source from PARTNER_SHEET — never from PARTNERS[] (which holds admin data)
+    var ps = window.PARTNER_SHEET || {};
+    var fromSheet = null;
+    Object.keys(ps).forEach(function(k){
+      if(!fromSheet && ps[k] && ps[k].name &&
+         ps[k].name.toLowerCase().trim() === cpName) fromSheet = ps[k];
+    });
+    // If not in sheet yet (new partner, sheet not synced), fall back to currentPartner object
+    return fromSheet || cp;
+  }
+
+  // ── Patch buildPartnerOverview ──────────────────────────────────────
+  var _origBPO = window.buildPartnerOverview;
+  window.buildPartnerOverview = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPO==='function') _origBPO(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPO==='function') _origBPO(); return; }
+    // Temporarily swap PARTNERS to single-element so original fn sees only this partner
+    var _saved = window.PARTNERS;
+    window.PARTNERS = [p];
+    try{ if(typeof _origBPO==='function') _origBPO(); }finally{ window.PARTNERS = _saved; }
+  };
+
+  // ── Patch buildPartnerMonthly ──────────────────────────────────────
+  var _origBPM = window.buildPartnerMonthly;
+  window.buildPartnerMonthly = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPM==='function') _origBPM(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPM==='function') _origBPM(); return; }
+    var _saved = window.PARTNERS;
+    window.PARTNERS = [p];
+    try{ if(typeof _origBPM==='function') _origBPM(); }finally{ window.PARTNERS = _saved; }
+  };
+
+  // ── Patch buildPartnerFunnel ──────────────────────────────────────
+  var _origBPF = window.buildPartnerFunnel;
+  window.buildPartnerFunnel = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPF==='function') _origBPF(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPF==='function') _origBPF(); return; }
+    var _saved = window.PARTNERS;
+    window.PARTNERS = [p];
+    try{ if(typeof _origBPF==='function') _origBPF(); }finally{ window.PARTNERS = _saved; }
+  };
+
+  // ── Patch buildPartnerTargets (p-targets view) ──────────────────
+  var _origBPT = window.buildPartnerTargets;
+  window.buildPartnerTargets = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPT==='function') _origBPT(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPT==='function') _origBPT(); return; }
+    var _saved = window.PARTNERS;
+    window.PARTNERS = [p];
+    try{ if(typeof _origBPT==='function') _origBPT(); }finally{ window.PARTNERS = _saved; }
+  };
+
+  // ── Patch partner seller channels ──────────────────────────────
+  var _origBPSC = window.buildPartnerSellerChannels;
+  window.buildPartnerSellerChannels = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPSC==='function') _origBPSC(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPSC==='function') _origBPSC(); return; }
+    var _saved = window.PARTNERS;
+    window.PARTNERS = [p];
+    try{ if(typeof _origBPSC==='function') _origBPSC(); }finally{ window.PARTNERS = _saved; }
+  };
+
+  // ── Patch partner buyer view ────────────────────────────────────
+  // Partner buyer view reads from getBuyerStore() keyed by partner name
+  // Ensure partner only sees their own row in buyer store
+  var _origBPBuyer = window.buildPartnerBuyer;
+  window.buildPartnerBuyer = function(){
+    if(window.currentRole !== 'partner'){ if(typeof _origBPBuyer==='function') _origBPBuyer(); return; }
+    var p = _getMyPartner(); if(!p){ if(typeof _origBPBuyer==='function') _origBPBuyer(); return; }
+
+    // Find buyer data for this partner in store
+    var bStore = typeof getBuyerStore==='function' ? getBuyerStore() : {};
+    var pNameLower = p.name.toLowerCase().trim();
+
+    // Build a scoped buyer store containing only this partner's rows
+    var scopedStore = {};
+    Object.keys(bStore).forEach(function(mo){
+      var md = bStore[mo]; if(!md||!md.partners) return;
+      var myRows = md.partners.filter(function(r){ return r.name && r.name.toLowerCase().trim() === pNameLower; });
+      if(myRows.length){ scopedStore[mo] = { month: mo, importedAt: md.importedAt, partners: myRows }; }
+    });
+
+    // Inject scoped store temporarily via monkey-patch
+    var _origGBS = window.getBuyerStore;
+    window.getBuyerStore = function(){ return scopedStore; };
+    try{ if(typeof _origBPBuyer==='function') _origBPBuyer(); }
+    finally{ window.getBuyerStore = _origGBS; }
+  };
+
+  // ── Prevent partner from seeing admin view / partner table ──────
+  // Patch triggerPartnerView to guard admin-only views
+  var _origTPV = window.triggerPartnerView;
+  window.triggerPartnerView = function(id){
+    // Block accidental opening of admin views in partner session
+    var adminViews = ['funnel','dod','wow','mtd','mom','sdc','wdwe','targets',
+                      'admin-view','seller-channels','buyer','payouts',
+                      'credentials','announcements','biz-perf','projection','logic-builder'];
+    if(window.currentRole === 'partner' && adminViews.indexOf(id) !== -1){ return; }
+    if(typeof _origTPV==='function') _origTPV(id);
+  };
+
+  console.log('[v36] Partner data isolation applied');
+})();
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 2 — Projection month selector actually triggers rebuild
+// Problem: selecting a different month in projection view doesn't re-render
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixProjectionMonthChange(){
+
+  // Wrap _buildProjMonthBtns to ensure button onclick refreshes everything
+  var _orig = window._buildProjMonthBtns;
+  window._buildProjMonthBtns = function(){
+    if(typeof _orig === 'function') _orig.apply(this, arguments);
+    // Patch each button's onclick to also call buildDashboardProjection + buildProjPartnerTgt
+    var wrap = document.getElementById('proj-month-btns');
+    if(!wrap) return;
+    var btns = wrap.querySelectorAll('.rt');
+    btns.forEach(function(btn){
+      var orig = btn.onclick;
+      btn.onclick = function(e){
+        if(typeof orig === 'function') orig.call(this, e);
+        // Force full rebuild
+        setTimeout(function(){
+          try{ window.buildDashboardProjection && window.buildDashboardProjection(); }catch(e2){}
+          try{ window.buildProjPartnerTgt && window.buildProjPartnerTgt(); }catch(e2){}
+          try{ window.buildProjTopBottom && window.buildProjTopBottom(); }catch(e2){}
+          try{ window.buildProjView && window.buildProjView(); }catch(e2){}
+        }, 30);
+      };
+    });
+  };
+
+  // Also patch buildProjView to always re-call sub-builders
+  var _origBPV = window.buildProjView;
+  window.buildProjView = function(){
+    if(typeof _origBPV === 'function') _origBPV.apply(this, arguments);
+    // Ensure sub-sections refresh
+    setTimeout(function(){
+      try{ window.buildDashboardProjection && window.buildDashboardProjection(); }catch(e){}
+      try{ window.buildProjPartnerTgt && window.buildProjPartnerTgt(); }catch(e){}
+      try{ window.buildProjTopBottom && window.buildProjTopBottom(); }catch(e){}
+    }, 60);
+  };
+
+  // Patch the projection metric dropdown (if any) to trigger refresh
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      var metricSel = document.getElementById('proj-metric');
+      if(metricSel && !metricSel.dataset.v36patched){
+        metricSel.dataset.v36patched='1';
+        metricSel.addEventListener('change', function(){
+          try{ window.buildDashboardProjection && window.buildDashboardProjection(); }catch(e){}
+        });
+      }
+    }, 600);
+  });
+
+  console.log('[v36] Projection month-change fix applied');
+})();
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 3 — Logic Builder: populate with partner data + add-months button
+// Problem: Logic builder shows no partner data; no way to add months inline
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixLogicBuilderData(){
+
+  // Patch _initLogicBuilder to also inject an "Add Month" button
+  var _origILB = window._initLogicBuilder;
+  window._initLogicBuilder = function(){
+    if(typeof _origILB === 'function') _origILB.apply(this, arguments);
+
+    // Inject "Add Month" button next to month row in Logic Builder
+    var lbMonthRow = document.getElementById('lb-month-btns');
+    if(lbMonthRow && !document.getElementById('lb-add-month-btn')){
+      var addBtn = document.createElement('button');
+      addBtn.id = 'lb-add-month-btn';
+      addBtn.textContent = '+ Add Month';
+      addBtn.className = 'rt';
+      addBtn.style.cssText = 'background:rgba(34,197,122,.1);border-color:rgba(34,197,122,.3);color:#22c55e;margin-left:8px;';
+      addBtn.onclick = function(){ if(typeof _showAddMonthModal==='function') _showAddMonthModal(); };
+      lbMonthRow.parentNode.appendChild(addBtn);
+    }
+
+    // Ensure pList in Logic Builder comes from BOTH admin store AND PARTNERS[]
+    // by patching previewAllLogicRules
+    _patchPreviewAllLogicRules();
+  };
+
+  function _patchPreviewAllLogicRules(){
+    var _origPALR = window.previewAllLogicRules;
+    if(!_origPALR || window._v36PreviewPatched) return;
+    window._v36PreviewPatched = true;
+
+    window.previewAllLogicRules = function(){
+      var m = window._lbMonth;
+      if(!m){ if(typeof _origPALR==='function') _origPALR(); return; }
+
+      // Build enriched partner list combining admin store + PARTNERS[]
+      var avs = typeof getAdminViewStore==='function' ? getAdminViewStore() : {};
+      var fullMo = (window.MLABEL && window.MLABEL[m]) || m;
+      var avKey = Object.keys(avs).find(function(k){
+        return k === m || k === fullMo || (typeof _canonMonthKey==='function' && _canonMonthKey(k)===_canonMonthKey(m));
+      });
+      var adminList = (avKey && avs[avKey] && avs[avKey].partners) || [];
+
+      // Merge: admin list has CPI/ASP/A2I; PARTNERS[] has monthly breakdowns
+      var pMap = {};
+      adminList.forEach(function(p){
+        pMap[p.name.toLowerCase().trim()] = Object.assign({}, p);
+      });
+      (window.PARTNERS||[]).forEach(function(p){
+        var key = p.name.toLowerCase().trim();
+        if(!pMap[key]){
+          pMap[key] = {
+            name: p.name, region: p.region||'',
+            leads:  (p.leads  && p.leads[m])  || 0,
+            appts:  (p.appts  && p.appts[m])  || 0,
+            insps:  (p.insps  && p.insps[m])  || 0,
+            stocks: (p.stocks && p.stocks[m]) || 0,
+            payout: (p.payout && p.payout[m]) || 0,
+            asp: 0, a2i: 0, i2si: 0, cpi: 0
+          };
+        } else {
+          // Supplement missing zero-values from PARTNERS[]
+          if(!pMap[key].insps) pMap[key].insps  = (p.insps  && p.insps[m])  || 0;
+          if(!pMap[key].leads) pMap[key].leads  = (p.leads  && p.leads[m])  || 0;
+          if(!pMap[key].appts) pMap[key].appts  = (p.appts  && p.appts[m])  || 0;
+          if(!pMap[key].stocks)pMap[key].stocks = (p.stocks && p.stocks[m]) || 0;
+        }
+      });
+
+      // Temporarily inject enriched list so original function uses it
+      var savedAVS = window.getAdminViewStore;
+      window.getAdminViewStore = function(){
+        var mock = {}; mock[fullMo] = { partners: Object.values(pMap) }; mock[m] = mock[fullMo];
+        return mock;
+      };
+      try{ _origPALR(); }finally{ window.getAdminViewStore = savedAVS; }
+    };
+  }
+
+  // Trigger patch if LB is already initialized
+  _patchPreviewAllLogicRules();
+
+  // Also patch triggerView to apply patch when logic-builder is opened
+  var _origTV = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTV==='function') _origTV(id);
+    if(id === 'logic-builder'){
+      setTimeout(function(){
+        _patchPreviewAllLogicRules();
+        if(typeof window._initLogicBuilder==='function') window._initLogicBuilder();
+      }, 100);
+    }
+  };
+
+  console.log('[v36] Logic Builder data + add-months fix applied');
+})();
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 4 — Bulk Upload for partner credentials + bulk email + restore deleted
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixBulkUpload(){
+
+  // ── Inject "Bulk Upload" button into credentials view ──────────────
+  function _injectBulkUploadBtn(){
+    var credView = document.getElementById('view-credentials');
+    if(!credView || document.getElementById('v36-bulk-upload-btn')) return;
+
+    // Find the stats/search bar and add the button there
+    var fbRow = credView.querySelector('.fbrow');
+    if(!fbRow) return;
+    var btn = document.createElement('button');
+    btn.id = 'v36-bulk-upload-btn';
+    btn.innerHTML = '📤 Bulk Upload / Restore';
+    btn.style.cssText = 'padding:6px 14px;background:rgba(34,197,122,.1);border:1.5px solid rgba(34,197,122,.3);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:#22c55e;font-family:\'DM Sans\',sans-serif;';
+    btn.onclick = _openBulkUploadModal;
+    fbRow.appendChild(btn);
+  }
+
+  // ── Build and open bulk upload modal ──────────────────────────────
+  window._openBulkUploadModal = function _openBulkUploadModal(){
+    var existing = document.getElementById('v36-bulk-upload-modal');
+    if(existing){ existing.style.display='flex'; _renderBulkPreview([]); return; }
+
+    var ov = document.createElement('div');
+    ov.id = 'v36-bulk-upload-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100003;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+    ov.innerHTML = `
+      <div style="background:var(--card,#0e1420);border:1.5px solid var(--muted,#1e2a3a);border-radius:18px;width:min(700px,97vw);max-height:90vh;overflow:auto;padding:28px 28px 20px;position:relative;">
+        <button onclick="document.getElementById('v36-bulk-upload-modal').style.display='none'"
+          style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--t3);font-size:18px;cursor:pointer;">✕</button>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:4px;">📤 BULK CREDENTIAL UPLOAD</div>
+        <div style="font-size:12px;color:var(--t3,#7A8FA8);margin-bottom:16px;">
+          Upload a CSV with columns: <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;">name,username,password,email,status</code>
+          &nbsp;·&nbsp; Use this to add new partners in bulk, restore deleted partners, or send welcome emails.
+        </div>
+
+        <!-- Template download -->
+        <button onclick="window._v36DownloadBulkTemplate()" style="padding:7px 16px;background:rgba(79,70,229,.1);border:1px solid rgba(79,70,229,.3);border-radius:7px;font-size:12px;font-weight:700;color:var(--ac,#4f46e5);cursor:pointer;margin-bottom:14px;">⬇ Download CSV Template</button>
+
+        <!-- Drop zone -->
+        <div id="v36-bulk-drop-area" onclick="document.getElementById('v36-bulk-file').click()">
+          <div style="font-size:28px;margin-bottom:6px;">📂</div>
+          <div style="font-size:13px;font-weight:600;color:var(--t2);">Drop CSV here or click to browse</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px;">Supports .csv · max 500 partners per file</div>
+          <input type="file" id="v36-bulk-file" accept=".csv" style="display:none;" onchange="window._v36HandleBulkFile(this.files[0])">
+        </div>
+
+        <!-- Options -->
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0 10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="v36-bulk-send-email" checked style="accent-color:var(--ac);"> Send welcome email to each partner
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="v36-bulk-skip-existing"> Skip partners that already exist
+          </label>
+        </div>
+
+        <!-- Preview table -->
+        <div id="v36-bulk-preview" style="display:none;">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;" id="v36-bulk-preview-title">Preview</div>
+          <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr id="v36-bulk-thead" style="background:var(--bg);"></tr></thead>
+              <tbody id="v36-bulk-tbody"></tbody>
+            </table>
+          </div>
+          <div id="v36-bulk-msg" style="font-size:12px;margin-top:8px;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+            <button onclick="document.getElementById('v36-bulk-upload-modal').style.display='none'"
+              style="padding:9px 20px;background:transparent;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--t3);">Cancel</button>
+            <button id="v36-bulk-confirm-btn" onclick="window._v36ConfirmBulkUpload()"
+              style="padding:9px 22px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✓ Import & Add Partners</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Drag & drop handlers
+    var dropArea = ov.querySelector('#v36-bulk-drop-area');
+    dropArea.addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('drag-over'); });
+    dropArea.addEventListener('dragleave', function(){ this.classList.remove('drag-over'); });
+    dropArea.addEventListener('drop', function(e){ e.preventDefault(); this.classList.remove('drag-over'); var f=e.dataTransfer.files[0]; if(f) window._v36HandleBulkFile(f); });
+
+    document.body.appendChild(ov);
+    _renderBulkPreview([]);
+  };
+
+  window._v36DownloadBulkTemplate = function(){
+    var csv = 'name,username,password,email,status\nExample Partner,examplepartner,Pass@123,partner@example.com,Active\n';
+    var a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'partner_bulk_template.csv';
+    a.click();
+  };
+
+  window._v36BulkParsed = [];
+
+  window._v36HandleBulkFile = function(file){
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var text = e.target.result;
+      var rows = _parseCSV(text);
+      window._v36BulkParsed = rows;
+      _renderBulkPreview(rows);
+    };
+    reader.readAsText(file);
+  };
+
+  function _parseCSV(text){
+    var lines = text.trim().split(/\r?\n/);
+    if(lines.length < 2) return [];
+    var headers = lines[0].split(',').map(function(h){ return h.trim().replace(/^"|"$/g,'').toLowerCase(); });
+    return lines.slice(1).map(function(line){
+      var vals = line.split(',').map(function(v){ return v.trim().replace(/^"|"$/g,''); });
+      var obj = {};
+      headers.forEach(function(h,i){ obj[h] = vals[i]||''; });
+      return obj;
+    }).filter(function(r){ return r.name || r.username; });
+  }
+
+  function _renderBulkPreview(rows){
+    var preview = document.getElementById('v36-bulk-preview');
+    var thead   = document.getElementById('v36-bulk-thead');
+    var tbody   = document.getElementById('v36-bulk-tbody');
+    var title   = document.getElementById('v36-bulk-preview-title');
+    if(!preview) return;
+    if(!rows.length){ preview.style.display='none'; return; }
+    preview.style.display='';
+    if(title) title.textContent = rows.length + ' partner' + (rows.length===1?'':'s') + ' found in CSV · First 10 shown';
+
+    var cols = ['name','username','password','email','status'];
+    if(thead) thead.innerHTML = cols.map(function(c){ return '<th style="padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--bd);white-space:nowrap;">'+c+'</th>'; }).join('');
+    if(tbody) tbody.innerHTML = rows.slice(0,10).map(function(r,i){
+      return '<tr style="background:'+(i%2===0?'var(--sb,rgba(0,0,0,.03))':'')+';">'+
+        cols.map(function(c){ return '<td style="padding:5px 10px;border-bottom:1px solid var(--bd);color:var(--t2);">' + escH(r[c]||'—') + '</td>'; }).join('') + '</tr>';
+    }).join('');
+  }
+
+  window._v36ConfirmBulkUpload = function(){
+    var rows = window._v36BulkParsed||[];
+    if(!rows.length){ alert('No rows to import. Please upload a valid CSV first.'); return; }
+
+    var sendEmail = document.getElementById('v36-bulk-send-email') && document.getElementById('v36-bulk-send-email').checked;
+    var skipExist = document.getElementById('v36-bulk-skip-existing') && document.getElementById('v36-bulk-skip-existing').checked;
+
+    var creds = [];
+    try{ var cs = localStorage.getItem('cars24_partner_creds'); creds = cs ? JSON.parse(cs) : []; }catch(e){ creds=[]; }
+
+    var existingKeys = new Set(creds.map(function(c){ return (c.username||'').toLowerCase(); }));
+    var existingNames = new Set(creds.map(function(c){ return (c.name||'').toLowerCase().trim(); }));
+    var added = 0, skipped = 0, errors = [];
+
+    rows.forEach(function(r){
+      var name = (r.name||'').trim();
+      var uname = (r.username||'').trim() || name.toLowerCase().replace(/\s+/g,'_');
+      var pass  = (r.password||'').trim() || _genPass();
+      var email = (r.email||'').trim();
+      var stat  = (r.status||'Active').trim();
+
+      if(!name){ errors.push('Skipped blank name row'); return; }
+      if(skipExist && (existingKeys.has(uname.toLowerCase()) || existingNames.has(name.toLowerCase()))){ skipped++; return; }
+
+      // Remove if already present (restore scenario)
+      creds = creds.filter(function(c){ return (c.username||'').toLowerCase() !== uname.toLowerCase(); });
+
+      var newCred = { name: name, username: uname, password: pass, email: email, status: stat, campaignId: _genCampId(), utmMedium: 'email_ob', createdAt: new Date().toISOString() };
+      creds.push(newCred);
+      added++;
+
+      // Send welcome email
+      if(sendEmail && email && typeof emailjs !== 'undefined'){
+        try{
+          emailjs.send(CARS24_CONFIG.emailjs.serviceId, CARS24_CONFIG.emailjs.templateId, {
+            to_email: email, to_name: name,
+            username: uname, password: pass,
+            portal_url: window.location.href,
+            message: 'Your Cars24 Affiliate Partner login credentials.'
+          });
+        }catch(emErr){ console.warn('[Bulk email] Failed for '+name, emErr); }
+      }
+    });
+
+    try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS = creds; }catch(e){}
+    if(typeof renderCredTable==='function') renderCredTable();
+    if(typeof _auditLog==='function') _auditLog('Bulk credential upload', added+' added, '+skipped+' skipped');
+
+    var msgEl = document.getElementById('v36-bulk-msg');
+    if(msgEl){
+      msgEl.style.color = '#10b981';
+      msgEl.textContent = '✓ Done! '+added+' partner'+(added===1?'':'s')+' added'+(skipped?' · '+skipped+' skipped':'')+(errors.length?' · '+errors.length+' errors':'')+(sendEmail?' · Welcome emails sent':'');
+    }
+    window._v36BulkParsed = [];
+
+    setTimeout(function(){ var ov=document.getElementById('v36-bulk-upload-modal'); if(ov) ov.style.display='none'; }, 2500);
+  };
+
+  function _genPass(){ return 'C24_'+Math.random().toString(36).slice(2,7).toUpperCase(); }
+  function _genCampId(){ return 'C24'+Date.now().toString(36).toUpperCase().slice(-6); }
+  function escH(s){ var d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+  // Inject button when credentials view is opened
+  var _origTVBulk = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTVBulk==='function') _origTVBulk(id);
+    if(id === 'credentials') setTimeout(_injectBulkUploadBtn, 120);
+  };
+  setTimeout(_injectBulkUploadBtn, 800);
+
+  console.log('[v36] Bulk credential upload applied');
+})();
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 5 — Password change for ALL users (admin + partner) + audit record
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixPasswordChange(){
+
+  // ── Partner "Change Password" button in partner sidebar/overview ──
+  function _injectPartnerPwBtn(){
+    var hdr = document.getElementById('hdr-user'); // top-bar username area
+    if(!hdr || document.getElementById('v36-partner-pw-btn')) return;
+    var btn = document.createElement('button');
+    btn.id = 'v36-partner-pw-btn';
+    btn.textContent = '🔑';
+    btn.title = 'Change Password';
+    btn.style.cssText = 'margin-left:8px;padding:5px 9px;background:rgba(79,70,229,.1);border:1px solid rgba(79,70,229,.25);border-radius:6px;font-size:13px;cursor:pointer;color:var(--ac,#4f46e5);vertical-align:middle;';
+    btn.onclick = function(){ window._v36OpenPwChangeModal(); };
+    hdr.parentNode.insertBefore(btn, hdr.nextSibling);
+  }
+
+  // ── Inject "Change Password" in each row of the credential table ──
+  var _origRCT = window.renderCredTable;
+  window.renderCredTable = function(){
+    if(typeof _origRCT==='function') _origRCT.apply(this, arguments);
+    // After table renders, add pw-change buttons to each row
+    setTimeout(function(){
+      var tbody = document.getElementById('cred-tbl');
+      if(!tbody) return;
+      tbody.querySelectorAll('tr').forEach(function(tr){
+        if(tr.querySelector('.v36-pw-btn')) return; // already injected
+        var actionTd = tr.cells[tr.cells.length - 1];
+        if(!actionTd) return;
+        var idx = tr.dataset.idx !== undefined ? tr.dataset.idx : null;
+        if(idx === null){ /* try to infer from row position */ idx = Array.from(tbody.rows).indexOf(tr); }
+        var pwBtn = document.createElement('button');
+        pwBtn.className = 'v36-pw-btn';
+        pwBtn.textContent = '🔑 Pw';
+        pwBtn.title = 'Change password for this partner';
+        pwBtn.onclick = function(e){
+          e.stopPropagation();
+          var name = tr.cells[1] ? tr.cells[1].textContent.trim() : '';
+          window._v36OpenPwChangeModal(name, 'partner-cred');
+        };
+        actionTd.appendChild(pwBtn);
+      });
+    }, 150);
+  };
+
+  // ── Admin change-own-password button in credentials view ──────────
+  function _injectAdminPwBtn(){
+    var credView = document.getElementById('view-credentials');
+    if(!credView || document.getElementById('v36-admin-pw-btn')) return;
+    var panel = document.createElement('div');
+    panel.style.cssText = 'background:var(--card,#0e1420);border:1px solid var(--bd);border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;';
+    panel.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">🔐 Admin Password</div><div style="font-size:11px;color:var(--t3);margin-top:3px;">Change your admin account password</div></div>';
+    var btn = document.createElement('button');
+    btn.id = 'v36-admin-pw-btn';
+    btn.textContent = '🔑 Change My Password';
+    btn.style.cssText = 'padding:9px 18px;background:var(--ac,#4f46e5);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;';
+    btn.onclick = function(){ window._v36OpenPwChangeModal(window.currentUser, 'admin'); };
+    panel.appendChild(btn);
+    var firstCC = credView.querySelector('.cc');
+    if(firstCC) firstCC.parentNode.insertBefore(panel, firstCC);
+    else credView.insertBefore(panel, credView.firstChild);
+  }
+
+  // ── Central modal ──────────────────────────────────────────────────
+  window._v36OpenPwChangeModal = function(targetName, targetType){
+    var name = targetName || window.currentUser || '';
+    var type = targetType || (window.currentRole === 'admin' ? 'admin' : 'partner-cred');
+
+    var existing = document.getElementById('v36-pwchange-modal');
+    if(existing) existing.remove();
+
+    var ov = document.createElement('div');
+    ov.id = 'v36-pwchange-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100003;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+    ov.innerHTML = `
+      <div style="background:var(--card,#0e1420);border:1.5px solid var(--muted,#1e2a3a);border-radius:16px;width:min(420px,95vw);padding:28px;position:relative;">
+        <button onclick="this.closest('#v36-pwchange-modal').remove()"
+          style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--t3);font-size:18px;cursor:pointer;">✕</button>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:4px;">🔑 CHANGE PASSWORD</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Account: <strong style="color:var(--t2);">${escH(name)}</strong></div>
+        <input type="hidden" id="v36-pw-target-name" value="${escH(name)}">
+        <input type="hidden" id="v36-pw-target-type" value="${type}">
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">
+            ${type==='admin'?'Current Password':'New Password'}
+          </label>
+          <input type="password" id="v36-pw-current" placeholder="${type==='admin'?'Current password':''}"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;"
+            ${type!=='admin'?'placeholder="Enter new password"':''}>
+        </div>
+        <div style="margin-bottom:14px;" ${type!=='admin'?'style="display:none;"':''} id="v36-pw-new-wrap">
+          <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">New Password</label>
+          <input type="password" id="v36-pw-new" placeholder="New password (min 6 chars)"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;">Confirm New Password</label>
+          <input type="password" id="v36-pw-confirm" placeholder="Confirm new password"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;background:var(--bg,#0E1420);color:var(--tx);outline:none;">
+        </div>
+        <div id="v36-pw-msg" style="font-size:12px;margin-bottom:10px;display:none;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="this.closest('#v36-pwchange-modal').remove()"
+            style="padding:10px 22px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--t2);">Cancel</button>
+          <button onclick="window._v36SavePassword()"
+            style="padding:10px 22px;background:var(--ac,#4f46e5);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Save Password</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+
+    // Show new-password wrap for admin (needs old+new), for partner just new+confirm
+    var newWrap = ov.querySelector('#v36-pw-new-wrap');
+    if(newWrap) newWrap.style.display = (type==='admin') ? '' : 'none';
+    var currentLbl = ov.querySelector('label');
+    // For partner-cred type: only new + confirm
+    if(type !== 'admin'){
+      var curWrap = ov.querySelector('#v36-pw-current').parentNode;
+      if(curWrap){ curWrap.querySelector('label').textContent='New Password'; ov.querySelector('#v36-pw-current').placeholder='Enter new password'; }
+    }
+  };
+
+  window._v36SavePassword = function(){
+    var targetName = (document.getElementById('v36-pw-target-name')||{}).value||'';
+    var targetType = (document.getElementById('v36-pw-target-type')||{}).value||'partner-cred';
+    var pwCur  = (document.getElementById('v36-pw-current')||{}).value||'';
+    var pwNew  = targetType==='admin' ? ((document.getElementById('v36-pw-new')||{}).value||'') : pwCur;
+    var pwConf = (document.getElementById('v36-pw-confirm')||{}).value||'';
+    var msgEl  = document.getElementById('v36-pw-msg');
+
+    function _showMsg(msg, ok){
+      if(!msgEl) return;
+      msgEl.style.display=''; msgEl.style.color=ok?'#10b981':'#ef4444'; msgEl.textContent=msg;
+    }
+
+    if(!pwNew || pwNew.length < 6){ _showMsg('Password must be at least 6 characters.', false); return; }
+    if(pwNew !== pwConf){ _showMsg('Passwords do not match.', false); return; }
+
+    if(targetType === 'admin'){
+      // Validate old password from ADMIN_ACCOUNTS
+      var accts = [];
+      try{ var s=localStorage.getItem('cars24_admin_accounts'); accts=s?JSON.parse(s):[]; }catch(e){}
+      var acct = accts.find(function(a){ return a.username===targetName || a.displayName===targetName; });
+      if(!acct){ _showMsg('Admin account not found.', false); return; }
+      if(acct.password !== pwCur){ _showMsg('Current password is incorrect.', false); return; }
+      acct.password = pwNew;
+      acct.lastPwChange = new Date().toISOString();
+      try{ localStorage.setItem('cars24_admin_accounts', JSON.stringify(accts)); }catch(e){}
+      if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
+    } else {
+      // Partner credential update
+      var creds = [];
+      try{ var cs=localStorage.getItem('cars24_partner_creds'); creds=cs?JSON.parse(cs):[]; }catch(e){}
+      var cred = creds.find(function(c){ return c.display===targetName || c.username===targetName; });
+      if(!cred){ _showMsg('Partner credential not found.', false); return; }
+      cred.password = pwNew;
+      cred.lastPwChange = new Date().toISOString();
+      try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS=creds; }catch(e){}
+      if(typeof _auditLog==='function') _auditLog('Partner password changed', 'Partner: '+targetName);
+      if(typeof renderCredTable==='function') setTimeout(renderCredTable, 100);
+    }
+
+    _showMsg('✓ Password changed successfully!', true);
+    setTimeout(function(){ var m=document.getElementById('v36-pwchange-modal'); if(m) m.remove(); }, 1800);
+  };
+
+  // ── Inject after portal opens ──────────────────────────────────────
+  var _origShowPortalPw = window.showPortal;
+  window.showPortal = function(role, user, partner){
+    if(typeof _origShowPortalPw==='function') _origShowPortalPw(role, user, partner);
+    if(role === 'partner') setTimeout(_injectPartnerPwBtn, 300);
+    if(role === 'admin'){
+      var _origTVPw = window.triggerView;
+      // Only patch once
+      if(!window._v36TriggerViewPwPatched){
+        window._v36TriggerViewPwPatched = true;
+        var __origTV = window.triggerView;
+        window.triggerView = function(id){
+          if(typeof __origTV==='function') __origTV(id);
+          if(id==='credentials') setTimeout(_injectAdminPwBtn, 150);
+        };
+      }
+    }
+  };
+
+  // Inject immediately in case portal already open
+  setTimeout(function(){
+    if(window.currentRole==='partner') _injectPartnerPwBtn();
+    if(window.currentRole==='admin')   _injectAdminPwBtn();
+  }, 1000);
+
+  function escH(s){ var d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+  console.log('[v36] Password change for all users applied');
+})();
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX 6 — GUI overlap corrections
+// Problem: modals clip sidebar; projection cards clip; filter bars wrap
+// ─────────────────────────────────────────────────────────────────────────
+(function _fixGUIOverlaps(){
+  // Fix portal fullscreen container overflow
+  var style = document.createElement('style');
+  style.textContent = `
+    /* Portal container must not clip modals */
+    #portal-fullscreen { overflow: visible !important; }
+
+    /* Sidebar must scroll on small screens */
+    #admin-sidebar, #partner-sidebar {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      max-height: calc(100vh - 60px);
+    }
+
+    /* Main content area horizontal scroll for wide tables */
+    #portal-fullscreen .main-content, .pmc {
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
+    /* Logic builder table overflow */
+    #view-logic-builder .tw, #view-logic-builder .tc {
+      overflow-x: auto !important;
+    }
+
+    /* Projection view cards no clip */
+    #proj-kpis, #proj-metric-cards, #dash-proj-cards {
+      overflow: visible !important;
+    }
+
+    /* Avoid modal being clipped by parent with overflow:hidden */
+    body.no-scroll { overflow: hidden; }
+
+    /* Credential modal positioning fix */
+    #cred-modal-overlay {
+      position: fixed !important;
+      z-index: 99999 !important;
+    }
+
+    /* Fix filter bar chips wrapping */
+    .rts { flex-wrap: wrap; gap: 4px; }
+
+    /* Fix import modal z-index */
+    #import-modal { z-index: 100000 !important; }
+
+    /* Tooltip overlap prevention */
+    [title]:hover::after {
+      z-index: 99998;
+      position: relative;
+    }
+
+    /* Fix partner-sidebar nav overlap with content on small screens */
+    @media(max-width: 900px){
+      #partner-sidebar, #admin-sidebar {
+        position: absolute;
+        z-index: 200;
+        height: 100%;
+        box-shadow: 4px 0 20px rgba(0,0,0,.3);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  console.log('[v36] GUI overlap styles applied');
+})();
+
+
+console.log('[Cars24 v36] All 6 fixes applied — data isolation ✓ projection rebuild ✓ logic builder data ✓ bulk upload ✓ password change ✓ GUI overlaps ✓');
+
+})(); // end _v36Fixes IIFE
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// PATCH: (1) Expand arrow fix (2) Google Drive upload (3) Partner isolation
+// ══════════════════════════════════════════════════════════════════
+(function _cars24ExtraPatches(){
+
+// ── GOOGLE DRIVE UPLOAD HELPER ────────────────────────────────────
+// Uses a Google Apps Script Web App as a relay to upload files to Drive.
+// Partners submit invoices → stored in Drive + localStorage.
+// Admin uploads payment proof → stored in Drive + localStorage.
+// Set your Apps Script URL below (deploy as "Anyone" with access).
+var DRIVE_WEBAPP_URL = window.CARS24_DRIVE_URL || '';  // set in config if available
+
+// Base64-encode a File and POST to the Apps Script relay
+async function uploadFileToDrive(file, folder, fileName){
+  return new Promise(function(resolve, reject){
+    if(!DRIVE_WEBAPP_URL){
+      // No Drive URL set — resolve with null (file saved locally only)
+      resolve(null);
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var base64 = e.target.result.split(',')[1];
+      fetch(DRIVE_WEBAPP_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          fileName: fileName,
+          mimeType: file.type || 'application/octet-stream',
+          base64Data: base64,
+          folder: folder
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ resolve(d.fileUrl || d.url || d.id || null); })
+      .catch(function(err){ console.warn('[Drive upload]', err); resolve(null); });
+    };
+    reader.onerror = function(){ resolve(null); };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── OVERRIDE: submitPartnerInvoice — add Drive upload ────────────
+window.submitPartnerInvoice = (function(_orig){
+  return async function(){
+    var sel      = document.getElementById('inv-month-sel');
+    if(sel && sel.options.length===0 && window.MONTHS && window.MONTHS.length){
+      sel.innerHTML = window.MONTHS.map(function(m){
+        return '<option value="'+m+'">'+(window.MLABEL&&window.MLABEL[m]?window.MLABEL[m]:m)+'</option>';
+      }).join('');
+    }
+    var month  = sel ? sel.value : '';
+    if(!month && window.MONTHS && window.MONTHS.length) month = window.MONTHS[window.MONTHS.length-1];
+    if(!month) month='current';
+
+    var invNo  = (document.getElementById('p-inv-number')||{value:''}).value.trim();
+    var amount = parseInt((document.getElementById('p-inv-amount')||{value:'0'}).value)||0;
+    var msg    = document.getElementById('p-inv-msg');
+    var fileEl = document.getElementById('p-inv-file');
+
+    function showMsg(ok, text){
+      if(!msg) return;
+      msg.style.display='block';
+      msg.style.background = ok?'rgba(16,185,129,.12)':'rgba(239,68,68,.12)';
+      msg.style.color = ok?'#10b981':'#dc2626';
+      msg.style.padding='8px 12px'; msg.style.borderRadius='6px';
+      msg.textContent = text;
+      if(ok) setTimeout(function(){ msg.style.display='none'; },5000);
+    }
+
+    if(!invNo)  { showMsg(false,'⚠ Invoice number is required.');  return; }
+    if(!amount) { showMsg(false,'⚠ Amount must be greater than 0.'); return; }
+
+    var partner = window.currentPartner ? (window.currentPartner.display||window.currentPartner.name) : 'Unknown';
+    var fullMo  = (window.MLABEL&&window.MLABEL[month]) ? window.MLABEL[month] : month;
+    var file    = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
+    var fname   = file ? file.name : '—';
+    var driveUrl = null;
+
+    if(file){
+      showMsg(true,'⏳ Uploading attachment…');
+      var driveName = 'INV_'+partner.replace(/[^a-zA-Z0-9]/g,'_')+'_'+invNo+'_'+fullMo.replace(/[^a-zA-Z0-9]/g,'_')+'.'+fname.split('.').pop();
+      driveUrl = await uploadFileToDrive(file, 'Cars24_Invoices', driveName);
+    }
+
+    var invs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+    var entry = {
+      id: Date.now(), partner: partner, month: month, fullMonth: fullMo,
+      invNo: invNo, amount: amount, fileName: fname,
+      driveUrl: driveUrl,
+      submitted: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+      status: 'Pending'
+    };
+    invs.push(entry);
+    if(typeof window.saveInvoices==='function') window.saveInvoices(invs);
+
+    // Reset fields
+    ['p-inv-number','p-inv-amount'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    if(fileEl) fileEl.value='';
+    var fn=document.getElementById('p-inv-fname'); if(fn) fn.textContent='No file';
+
+    var driveNote = driveUrl ? ' · <a href="'+driveUrl+'" target="_blank" style="color:#10b981;">View in Drive ↗</a>' : (file ? ' (saved locally — Drive not configured)' : '');
+    showMsg(true,'✓ Invoice submitted for '+fullMo+'!'+driveNote.replace(/<[^>]+>/g,''));
+    if(typeof window.buildPartnerInvoices==='function') window.buildPartnerInvoices();
+    if(typeof window.showImportToast==='function') window.showImportToast('🧾 Invoice submitted — '+invNo+' · '+fullMo+(driveUrl?' · Drive ✓':''));
+    if(typeof window._auditLog==='function') window._auditLog('Invoice submitted', partner+' · '+invNo+' · '+fullMo+(driveUrl?' · Drive:'+driveUrl:''));
+  };
+})(window.submitPartnerInvoice);
+
+// ── Patch buildPartnerInvoices to render Drive link in table ──────
+window.buildPartnerInvoices = (function(){
+  return function(){
+    var p = window.currentPartner; if(!p) return;
+    var pName = (p.display||p.name||'').trim();
+    var tbl = document.getElementById('p-inv-tbl'); if(!tbl) return;
+    var selEl = document.getElementById('inv-month-sel');
+    if(selEl && selEl.options.length===0 && window.MONTHS && window.MONTHS.length){
+      selEl.innerHTML = window.MONTHS.map(function(m){
+        return '<option value="'+m+'">'+(window.MLABEL&&window.MLABEL[m]?window.MLABEL[m]:m)+'</option>';
+      }).join('');
+    }
+    var allInvs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+    // Strict: only show invoices where partner name matches exactly
+    var mine = allInvs.filter(function(i){
+      return i.partner && (i.partner===pName ||
+        i.partner.toLowerCase().trim()===pName.toLowerCase().trim());
+    });
+    if(!mine.length){
+      tbl.innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--t3);">No invoices submitted yet.</td></tr>';
+      return;
+    }
+    tbl.innerHTML = mine.slice().reverse().map(function(inv){
+      var st = inv.status==='Approved'
+        ? '<span style="color:#10b981;font-weight:700;">✓ Approved</span>'
+        : inv.status==='Rejected'
+        ? '<span style="color:#ef4444;font-weight:700;">✗ Rejected'+(inv.remark?' — '+inv.remark:'')+'</span>'
+        : '<span style="color:#f59e0b;font-weight:700;">⏳ Pending</span>';
+      var fileCell = inv.driveUrl
+        ? '<a href="'+inv.driveUrl+'" target="_blank" style="color:var(--ac);font-size:11px;font-weight:600;text-decoration:none;">📎 Drive ↗</a>'
+        : (inv.fileName&&inv.fileName!=='—'
+          ? '<span style="font-size:11px;color:var(--t3);">📎 '+inv.fileName+'</span>'
+          : '—');
+      return '<tr>'
+        +'<td>'+(window.MLABEL&&window.MLABEL[inv.month]?window.MLABEL[inv.month]:inv.fullMonth||inv.month)+'</td>'
+        +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+inv.invNo+'</td>'
+        +'<td class="num">₹'+(inv.amount||0).toLocaleString()+'</td>'
+        +'<td style="color:var(--t3);font-size:12px;">'+inv.submitted+'</td>'
+        +'<td>'+fileCell+'</td>'
+        +'<td>'+st+'</td>'
+        +'</tr>';
+    }).join('');
+  };
+})();
+
+// ── OVERRIDE: savePaymentProof — add Drive upload ────────────────
+var _origSPP = window.savePaymentProof || function(){};
+window.savePaymentProof = async function(){
+  var partner = (document.getElementById('proof-partner')||{value:''}).value.trim();
+  var month   = (document.getElementById('proof-month-sel')||{value:''}).value;
+  var amount  = parseInt((document.getElementById('proof-amount')||{value:'0'}).value)||0;
+  var utr     = (document.getElementById('proof-utr')||{value:''}).value.trim();
+  var date    = (document.getElementById('proof-date')||{value:''}).value;
+  var fileEl  = document.getElementById('proof-file-inp');
+  var errEl   = document.getElementById('proof-ov-err');
+
+  function showErr(t){ if(errEl){errEl.style.display='block';errEl.textContent=t;} }
+  if(!partner||!amount||!utr){ showErr('⚠ Partner, amount, and UTR are required.'); return; }
+
+  var file = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
+  var fname = file ? file.name : '—';
+  var driveUrl = null;
+
+  if(file){
+    if(errEl){ errEl.style.display='block'; errEl.style.color='#f59e0b'; errEl.textContent='⏳ Uploading proof attachment…'; }
+    var driveName = 'PROOF_'+partner.replace(/[^a-zA-Z0-9]/g,'_')+'_'+utr+'_'+(month||'')+'.'+ fname.split('.').pop();
+    driveUrl = await uploadFileToDrive(file, 'Cars24_PaymentProofs', driveName);
+    if(errEl) errEl.style.display='none';
+  }
+
+  var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
+  var fullMo = (window.MLABEL&&window.MLABEL[month]) ? window.MLABEL[month] : month;
+  proofs.push({
+    id: Date.now(), partner: partner, month: month, fullMonth: fullMo,
+    amount: amount, utr: utr, driveUrl: driveUrl,
+    date: date ? date.split('-').reverse().join(' ').replace(/(\d+) (\d+) (\d+)/,function(_,d,m,y){var mn=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d+' '+mn[parseInt(m)]+' '+y;}) : new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    fileName: fname
+  });
+  if(typeof window.saveProofs==='function') window.saveProofs(proofs);
+
+  var ov = document.getElementById('proof-ov'); if(ov) ov.remove();
+  if(typeof window.renderProofTable==='function') window.renderProofTable();
+  if(typeof window.showImportToast==='function') window.showImportToast('✅ Payment proof saved for '+partner+(driveUrl?' · Drive ✓':''));
+  if(typeof window._auditLog==='function') window._auditLog('Payment proof uploaded', partner+' · '+utr+' · ₹'+amount+(driveUrl?' · Drive:'+driveUrl:''));
+};
+
+// ── Patch renderProofTable to show Drive link ─────────────────────
+var _origRPT = window.renderProofTable;
+window.renderProofTable = function(){
+  var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
+  var q = (document.getElementById('proof-search')||{value:''}).value.toLowerCase();
+  var tbl = document.getElementById('proof-tbl'); if(!tbl) return;
+  var pm = window._proofMonth || (window.MONTHS&&window.MONTHS[window.MONTHS.length-1]) || '';
+  var rows = proofs.filter(function(p){
+    return p.month===pm && (!q||p.partner.toLowerCase().includes(q));
+  });
+  if(!rows.length){
+    tbl.innerHTML='<tr><td colspan="8" class="empty">No payment proofs for this month.</td></tr>';
+    return;
+  }
+  tbl.innerHTML = rows.map(function(pr,i){
+    var fileCell = pr.driveUrl
+      ? '<a href="'+pr.driveUrl+'" target="_blank" style="color:#10b981;font-size:11px;font-weight:600;text-decoration:none;">📎 Drive ↗</a>'
+      : (pr.fileName&&pr.fileName!=='—' ? '<span style="font-size:11px;color:var(--t3);">'+pr.fileName+'</span>' : '—');
+    return '<tr>'
+      +'<td style="font-size:11px;color:var(--t3);">'+(i+1)+'</td>'
+      +'<td style="font-weight:600">'+pr.partner+'</td>'
+      +'<td>'+(pr.fullMonth||pr.month)+'</td>'
+      +'<td class="num">₹'+(pr.amount||0).toLocaleString()+'</td>'
+      +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+(pr.utr||'—')+'</td>'
+      +'<td style="color:var(--t3);font-size:12px;">'+(pr.date||'—')+'</td>'
+      +'<td>'+fileCell+'</td>'
+      +'<td style="text-align:center"><button onclick="deleteProof('+pr.id+')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;cursor:pointer;">🗑</button></td>'
+      +'</tr>';
+  }).join('');
+};
+
+// ── Patch buildPartnerPayments to show Drive link ─────────────────
+window.buildPartnerPayments = function(){
+  var proofs = (typeof window.getProofs==='function') ? window.getProofs() : [];
+  var p = window.currentPartner; if(!p) return;
+  var pName = (p.display||p.name||'').trim();
+  var mine = proofs.filter(function(pr){
+    return pr.partner && (pr.partner===pName || pr.partner.toLowerCase().trim()===pName.toLowerCase().trim());
+  });
+  var el = document.getElementById('p-payments-list'); if(!el) return;
+  if(!mine.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-size:13px;">No payment proofs yet. Cars24 team will upload once payment is released.</div>';
+    return;
+  }
+  el.innerHTML = mine.slice().reverse().map(function(pr){
+    var fileBtn = pr.driveUrl
+      ? '<a href="'+pr.driveUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:7px;color:#10b981;font-size:12px;font-weight:600;text-decoration:none;">📎 View Proof in Drive</a>'
+      : (pr.fileName&&pr.fileName!=='—' ? '<span style="font-size:11px;color:var(--t3);">📎 '+pr.fileName+'</span>' : '');
+    return '<div style="background:var(--sf,#0E1420);border:1px solid var(--bd);border-left:4px solid #10b981;border-radius:10px;padding:16px 20px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">'
+      +'<div><div style="font-weight:700;font-size:15px;">✅ '+(pr.fullMonth||pr.month)+' Payment Released</div>'
+      +'<div style="font-size:12px;color:var(--t3);margin-top:3px;">UTR: <span style="font-family:'DM Mono',monospace;color:var(--t2)">'+(pr.utr||'—')+'</span> · Date: '+(pr.date||'—')+'</div>'
+      +(fileBtn?'<div style="margin-top:8px;">'+fileBtn+'</div>':'')
+      +'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:#10b981;">₹'+(pr.amount||0).toLocaleString()+'</div>'
+      +'</div></div>';
+  }).join('');
+};
+
+// ── PARTNER DATA ISOLATION — ensure each view uses only own data ──
+// scTogglePartner is already globally defined; ensure it uses data attrs
+window.scTogglePartner = function(colId, btnId){
+  var row = document.getElementById(colId);
+  var btn = document.getElementById(btnId);
+  if(!row) return;
+  var open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  if(btn) btn.textContent = open ? '▶' : '▼';
+};
+
+// Ensure admin invoice table shows Drive links too
+var _origRITA = window.renderInvoiceTableAdmin;
+window.renderInvoiceTableAdmin = function(){
+  var invs = (typeof window.getInvoices==='function') ? window.getInvoices() : [];
+  var q = (document.getElementById('inv-search-admin')||{value:''}).value.toLowerCase();
+  var tbl = document.getElementById('inv-tbl-admin'); if(!tbl) return;
+  var mo = window._invMonthAdmin || (window.MONTHS&&window.MONTHS[window.MONTHS.length-1])||'';
+  var rows = invs.filter(function(i){
+    return i.month===mo && (!q||i.partner.toLowerCase().includes(q));
+  });
+  if(!rows.length){
+    tbl.innerHTML='<tr><td colspan="9" class="empty">No invoices for this month.</td></tr>';
+    return;
+  }
+  tbl.innerHTML = rows.map(function(inv,i){
+    var st = inv.status==='Approved'
+      ? '<span style="color:#10b981;font-weight:700;">✓ Approved</span>'
+      : inv.status==='Rejected'
+      ? '<span style="color:#ef4444;font-weight:700;">✗ Rejected</span>'
+      : '<span style="color:#f59e0b;font-weight:700;">⏳ Pending</span>';
+    var fileCell = inv.driveUrl
+      ? '<a href="'+inv.driveUrl+'" target="_blank" style="color:var(--ac);font-size:11px;font-weight:600;text-decoration:none;">📎 Drive ↗</a>'
+      : (inv.fileName&&inv.fileName!=='—' ? '<span style="font-size:11px;color:var(--t3);">'+inv.fileName+'</span>' : '—');
+    return '<tr>'
+      +'<td style="font-size:11px;color:var(--t3);">'+(i+1)+'</td>'
+      +'<td style="font-weight:600">'+inv.partner+'</td>'
+      +'<td>'+(inv.fullMonth||inv.month)+'</td>'
+      +'<td style="font-family:'DM Mono',monospace;font-size:12px;">'+inv.invNo+'</td>'
+      +'<td class="num">₹'+(inv.amount||0).toLocaleString()+'</td>'
+      +'<td style="color:var(--t3);font-size:12px;">'+inv.submitted+'</td>'
+      +'<td>'+fileCell+'</td>'
+      +'<td>'+st+'</td>'
+      +'<td style="text-align:center;display:flex;gap:5px;justify-content:center;">'
+      +'<button onclick="approveInvoice('+inv.id+','Approved')" style="padding:3px 10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✓</button>'
+      +'<button onclick="approveInvoice('+inv.id+','Rejected')" style="padding:3px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;">✗</button>'
+      +'</td></tr>';
+  }).join('');
+};
+
+console.log('[Cars24] Drive upload + expand fix + partner isolation applied');
+})();
+</script>
+
 </html>
