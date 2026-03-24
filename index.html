@@ -17539,4 +17539,330 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
 })();
 </script>
 
+<!-- ══════════════════════════════════════════════════════════════════
+     CARS24 CONFIG SYNC — Makes admin changes visible to ALL users
+     ══════════════════════════════════════════════════════════════════
+     
+     PROBLEM: localStorage is per-browser. Admin saves credentials/
+     announcements/payouts on their device → partners on other devices
+     see nothing because they have empty localStorage.
+
+     SOLUTION: Route all admin config writes through the existing
+     Google Apps Script relay (driveWebAppUrl). Config is stored as
+     JSON files in Google Drive and fetched on every page load.
+     
+     Keys synced via Drive/Apps Script:
+       cars24_partner_creds    → partner login credentials
+       cars24_admin_pass       → admin password  
+       cars24_announcements    → announcements
+       cars24_invoices         → invoice records
+       cars24_partner_sheet_data → partner dashboard data
+       cars24_target_store     → targets
+       cars24_admin_accounts   → secondary admin accounts
+     
+     Performance data (PARTNERS, buyer, VAS) flows from Google Sheet
+     via refreshGSheetData() — already shared. ✅
+     ══════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+
+  var RELAY_URL = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG && window.CARS24_CONFIG.driveWebAppUrl) || '';
+
+  // Config keys that must be shared across all users
+  var SYNC_KEYS = [
+    'cars24_partner_creds',
+    'cars24_admin_pass',
+    'cars24_announcements',
+    'cars24_invoices',
+    'cars24_partner_sheet_data',
+    'cars24_target_store',
+    'cars24_admin_accounts',
+    'cars24_partners_data',
+  ];
+
+  // ── Utility: debounce to batch rapid saves ──────────────────────
+  var _debounceTimers = {};
+  function _debounce(key, fn, delay){
+    clearTimeout(_debounceTimers[key]);
+    _debounceTimers[key] = setTimeout(fn, delay || 1200);
+  }
+
+  // ── Push a config key's value to Drive via Apps Script ──────────
+  function _pushToRelay(key, value){
+    if(!RELAY_URL) return; // no relay configured
+    try {
+      var payload = JSON.stringify({
+        action: 'saveConfig',
+        configKey: key,
+        configValue: JSON.stringify(value)
+      });
+      fetch(RELAY_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: payload,
+        redirect: 'follow',
+        mode: 'no-cors'   // Apps Script requires no-cors for POST
+      }).catch(function(e){
+        console.warn('[C24Sync] Push failed for', key, e);
+      });
+    } catch(e) {
+      console.warn('[C24Sync] Push error:', e);
+    }
+  }
+
+  // ── Fetch all config keys from Drive on page load ────────────────
+  function _pullFromRelay(onDone){
+    if(!RELAY_URL){ if(onDone) onDone(false); return; }
+    
+    // Use JSONP via script tag (works with no-cors Apps Script GET)
+    var cbName = '_c24ConfigCb' + Date.now();
+    var timeout = setTimeout(function(){
+      try{ delete window[cbName]; }catch(e){}
+      var s = document.getElementById('_c24ConfigScript');
+      if(s) s.parentNode.removeChild(s);
+      console.warn('[C24Sync] Pull timeout — working from local cache');
+      if(onDone) onDone(false);
+    }, 8000);
+
+    window[cbName] = function(data){
+      clearTimeout(timeout);
+      try{ delete window[cbName]; }catch(e){}
+      var s = document.getElementById('_c24ConfigScript');
+      if(s) s.parentNode.removeChild(s);
+
+      if(!data || data.error){
+        console.warn('[C24Sync] Pull error:', data && data.error);
+        if(onDone) onDone(false);
+        return;
+      }
+
+      // Merge remote config into localStorage
+      var updated = 0;
+      SYNC_KEYS.forEach(function(key){
+        if(data[key] !== undefined && data[key] !== null){
+          try{
+            var remoteVal = typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]);
+            var localVal  = localStorage.getItem(key);
+            if(remoteVal !== localVal){
+              localStorage.setItem(key, remoteVal);
+              updated++;
+            }
+          } catch(e){}
+        }
+      });
+
+      // Reload data globals after merge
+      _reloadGlobals();
+      console.log('[C24Sync] Pulled config from Drive —', updated, 'keys updated');
+      if(onDone) onDone(true);
+    };
+
+    var script = document.createElement('script');
+    script.id  = '_c24ConfigScript';
+    script.src = RELAY_URL + '?action=getConfig&keys=' + SYNC_KEYS.join(',') + '&cb=' + cbName + '&t=' + Date.now();
+    script.onerror = function(){
+      clearTimeout(timeout);
+      try{ delete window[cbName]; }catch(e){}
+      console.warn('[C24Sync] Script load failed — relay may not support getConfig yet');
+      if(onDone) onDone(false);
+    };
+    document.head.appendChild(script);
+  }
+
+  // ── Reload JS globals from (now-updated) localStorage ───────────
+  function _reloadGlobals(){
+    try{
+      var pc = localStorage.getItem('cars24_partner_creds');
+      if(pc) window.PARTNER_CREDS = JSON.parse(pc);
+    }catch(e){}
+    try{
+      var psd = localStorage.getItem('cars24_partner_sheet_data');
+      if(psd) window.PARTNER_SHEET = JSON.parse(psd);
+    }catch(e){}
+    try{
+      var pd = localStorage.getItem('cars24_partners_data');
+      if(pd) window.PARTNERS = JSON.parse(pd);
+      if(typeof window.rebuildMonthMeta === 'function') window.rebuildMonthMeta();
+    }catch(e){}
+  }
+
+  // ── Intercept localStorage.setItem to auto-push sync keys ───────
+  var _origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value){
+    _origSetItem(key, value);
+    if(SYNC_KEYS.indexOf(key) !== -1){
+      _debounce('push_' + key, function(){
+        try {
+          _pushToRelay(key, JSON.parse(value));
+        } catch(e){
+          _pushToRelay(key, value); // push as string if not JSON
+        }
+      }, 800);
+    }
+  };
+
+  // ── Pull config on page load (after DOM ready) ───────────────────
+  function _initSync(){
+    // First try pulling from relay (async)
+    _pullFromRelay(function(ok){
+      if(ok){
+        // Re-render portal if already open
+        var pf = document.getElementById('portal-fullscreen');
+        if(pf && pf.classList.contains('open')){
+          ['renderAdminDashboard','renderPartnerDashboard','buildCredentialsView',
+           'renderInvoiceTableAdmin','renderProofTable'
+          ].forEach(function(fn){
+            if(typeof window[fn]==='function') try{window[fn]();}catch(e){}
+          });
+        }
+      }
+    });
+
+    // Also pull every 60s while page is open (live updates)
+    setInterval(function(){
+      if(document.visibilityState !== 'hidden'){
+        _pullFromRelay(function(ok){
+          if(!ok) return;
+          var pf = document.getElementById('portal-fullscreen');
+          if(pf && pf.classList.contains('open')){
+            ['renderAdminDashboard','renderPartnerDashboard'].forEach(function(fn){
+              if(typeof window[fn]==='function') try{window[fn]();}catch(e){}
+            });
+          }
+        });
+      }
+    }, 60000);
+  }
+
+  // ── Show a persistent banner if relay is not configured ─────────
+  function _showNoBannerIfNeeded(){
+    if(RELAY_URL) return; // all good
+    // Only show in portal (admin view), not public landing
+    var pf = document.getElementById('portal-fullscreen');
+    if(!pf || !pf.classList.contains('open')) return;
+    var existing = document.getElementById('c24-no-relay-banner');
+    if(existing) return;
+    var banner = document.createElement('div');
+    banner.id = 'c24-no-relay-banner';
+    banner.style.cssText = [
+      'position:fixed','bottom:16px','left:50%','transform:translateX(-50%)',
+      'z-index:99999','background:#92400e','color:#fef3c7',
+      'border:1px solid #b45309','border-radius:10px',
+      'padding:10px 18px','font-size:12px','font-weight:600',
+      'font-family:DM Sans,sans-serif','max-width:90vw','text-align:center',
+      'box-shadow:0 4px 24px rgba(0,0,0,.35)','line-height:1.5'
+    ].join(';');
+    banner.innerHTML = '⚠️ <strong>Sync not configured</strong> — Admin changes are saved locally only.<br>'
+      + 'Set <code style="background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;">driveWebAppUrl</code> '
+      + 'in <strong>CARS24_CONFIG</strong> to share data across all users.';
+    // Close button
+    var x = document.createElement('button');
+    x.textContent = '✕';
+    x.style.cssText = 'background:none;border:none;color:inherit;font-size:14px;cursor:pointer;margin-left:10px;vertical-align:middle;';
+    x.onclick = function(){ banner.remove(); };
+    banner.appendChild(x);
+    document.body.appendChild(banner);
+    // Auto-dismiss after 12s
+    setTimeout(function(){ if(banner.parentNode) banner.remove(); }, 12000);
+  }
+
+  // Show banner when portal opens
+  var _origShowPortal2 = window.showPortal;
+  window.showPortal = function(){
+    if(typeof _origShowPortal2 === 'function') _origShowPortal2.apply(this, arguments);
+    setTimeout(_showNoBannerIfNeeded, 1500);
+  };
+
+  // Expose manual pull for admin
+  window.c24SyncPull = function(cb){ _pullFromRelay(cb); };
+  window.c24SyncPush = function(key){
+    var v = localStorage.getItem(key);
+    if(v) _pushToRelay(key, v);
+  };
+
+  // Init when DOM is ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', _initSync);
+  } else {
+    // DOM already ready — run after a short delay so all globals are defined
+    setTimeout(_initSync, 500);
+  }
+
+  console.log('[C24Sync] Config sync layer loaded. Relay:', RELAY_URL ? '✅ configured' : '⚠️ NOT configured — set driveWebAppUrl in CARS24_CONFIG');
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     APPS SCRIPT SETUP GUIDE (paste into your Cars24_Drive_Upload.gs)
+     ══════════════════════════════════════════════════════════════════
+     Add these two functions to your existing Apps Script to handle
+     config read/write. The existing upload logic stays unchanged.
+     
+     ── In your Apps Script (Cars24_Drive_Upload.gs) add: ──────────
+
+     var CONFIG_FILE_NAME = 'cars24_config_sync.json';
+
+     function doGet(e) {
+       var p = e.parameter || {};
+       if(p.action === 'getConfig'){
+         return _getConfig(p.cb);
+       }
+       return ContentService.createTextOutput('{}')
+         .setMimeType(ContentService.MimeType.JSON);
+     }
+
+     function _getConfig(cbName) {
+       try {
+         var files = DriveApp.getFilesByName(CONFIG_FILE_NAME);
+         var config = {};
+         if(files.hasNext()) {
+           config = JSON.parse(files.next().getBlob().getDataAsString());
+         }
+         var json = JSON.stringify(config);
+         if(cbName) {
+           // JSONP response
+           return ContentService.createTextOutput(cbName + '(' + json + ')')
+             .setMimeType(ContentService.MimeType.JAVASCRIPT);
+         }
+         return ContentService.createTextOutput(json)
+           .setMimeType(ContentService.MimeType.JSON);
+       } catch(e) {
+         var err = JSON.stringify({error: e.message});
+         return ContentService.createTextOutput(cbName ? cbName+'('+err+')' : err)
+           .setMimeType(cbName ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+       }
+     }
+
+     // In your existing doPost — add this BEFORE the file upload code:
+     // var body = JSON.parse(e.postData.contents || '{}');
+     // if(body.action === 'saveConfig') {
+     //   return _saveConfig(body.configKey, body.configValue);
+     // }
+
+     function _saveConfig(key, value) {
+       try {
+         var files = DriveApp.getFilesByName(CONFIG_FILE_NAME);
+         var config = {};
+         var file = null;
+         if(files.hasNext()) {
+           file = files.next();
+           config = JSON.parse(file.getBlob().getDataAsString());
+         }
+         config[key] = JSON.parse(value);
+         var json = JSON.stringify(config);
+         if(file) {
+           file.setContent(json);
+         } else {
+           DriveApp.createFile(CONFIG_FILE_NAME, json, MimeType.PLAIN_TEXT);
+         }
+         return ContentService.createTextOutput(JSON.stringify({ok:true}))
+           .setMimeType(ContentService.MimeType.JSON);
+       } catch(e) {
+         return ContentService.createTextOutput(JSON.stringify({error:e.message}))
+           .setMimeType(ContentService.MimeType.JSON);
+       }
+     }
+     ══════════════════════════════════════════════════════════════════ -->
+
 </html>
