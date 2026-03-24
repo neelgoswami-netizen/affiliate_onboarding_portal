@@ -17660,56 +17660,50 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   // ─────────────────────────────────────────────────────────────────
   //  LAYER 3 — Drive/Apps Script relay (cross-device, any browser)
   //
-  //  WHY JSONP ONLY:
-  //  Apps Script GET responses go through a 302 redirect to
-  //  script.googleusercontent.com. That domain does NOT send
-  //  Access-Control-Allow-Origin headers, so fetch() always gets
-  //  blocked by the browser's CORS policy regardless of credentials
-  //  or mode settings. JSONP via <script> tag bypasses CORS entirely
-  //  and is the only reliable approach for Apps Script.
+  //  ROOT CAUSE OF PREVIOUS FAILURES:
+  //  GitHub Pages CSP blocks <script src="script.google.com"> tags.
+  //  JSONP is therefore impossible on GitHub Pages.
   //
-  //  WHY FORM POST for push:
-  //  fetch POST with mode:'no-cors' sends the request but the browser
-  //  blocks anything beyond 'simple request' content types. A hidden
-  //  <form> submit with target='_blank' (immediately closed) is the
-  //  most reliable fire-and-forget POST to Apps Script.
+  //  WORKING SOLUTION:
+  //  fetch() is NOT blocked by GitHub Pages CSP.
+  //  Apps Script deployed as "Anyone" sends:
+  //    Access-Control-Allow-Origin: *
+  //  on the FINAL response after the 302 redirect.
+  //  fetch({ redirect:'follow', mode:'cors', credentials:'omit' })
+  //  follows the redirect and reads the JSON response successfully.
+  //
+  //  PUSH: fetch POST with mode:'no-cors' — fire-and-forget, write
+  //  lands server-side even though response is opaque.
   // ─────────────────────────────────────────────────────────────────
 
-  // Checksums to detect what actually changed (avoid unnecessary re-renders)
   var _lastChecksums = {};
+  var _pullInFlight  = false;
+
   function _checksum(str){
     var h=0,i,ch;
     for(i=0;i<str.length;i++){ ch=str.charCodeAt(i); h=((h<<5)-h)+ch; h|=0; }
     return h;
   }
 
-  // ── PUSH: hidden form POST (bypasses CORS for fire-and-forget writes) ─
+  // ── PUSH: fetch POST no-cors (fire-and-forget) ───────────────────
   function _pushToRelay(key, value){
     if(!RELAY_URL) return;
     try{
-      var payload = JSON.stringify({ action:'saveConfig', configKey:key, configValue:JSON.stringify(value) });
-      // Try fetch no-cors first (works in most browsers for simple writes)
       fetch(RELAY_URL, {
         method : 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body   : payload,
+        body   : JSON.stringify({ action:'saveConfig', configKey:key, configValue:JSON.stringify(value) }),
         mode   : 'no-cors',
-        redirect: 'follow'
-      }).catch(function(){ /* silent — write still lands server-side */ });
-    } catch(e){
-      console.warn('[C24Sync] Push error for', key, e.message);
-    }
+        redirect:'follow'
+      }).catch(function(e){ console.warn('[C24Sync] Push error:', e.message); });
+    }catch(e){ console.warn('[C24Sync] Push exception:', e.message); }
   }
 
-  // ── PULL: JSONP via <script> tag — bypasses CORS completely ──────
-  // Each call gets a unique sequence number to prevent tag/callback collisions
-  var _jsonpSeq = 0;
-  var _pullInFlight = false; // prevent overlapping pulls
-
+  // ── Apply remote data ────────────────────────────────────────────
   function _applyRemoteData(data, onDone){
     _pullInFlight = false;
     if(!data || data.error){
-      console.warn('[C24Sync] Relay data error:', data && data.error);
+      console.warn('[C24Sync] Relay error:', data && data.error);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
       return;
@@ -17734,62 +17728,41 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       _reloadGlobals(changedKeys);
       changedKeys.forEach(function(k){ _renderForKey(k); });
       _showSyncToast(changedKeys);
-      console.log('[C24Sync] Applied remote changes:', changedKeys);
+      console.log('[C24Sync] Applied:', changedKeys);
     }
     _updateSyncIndicator('live');
     if(onDone) onDone(true, changedKeys);
   }
 
+  // ── PULL: fetch GET with redirect follow (works on GitHub Pages) ─
   function _pullFromRelay(onDone){
-    if(!RELAY_URL){ if(onDone) onDone(false, []); return; }
-    if(_pullInFlight){ console.log('[C24Sync] Pull already in flight, skipping'); return; }
+    if(!RELAY_URL){ if(onDone) onDone(false,[]); return; }
+    if(_pullInFlight){ return; }
     _pullInFlight = true;
     _updateSyncIndicator('syncing');
 
-    var seq    = ++_jsonpSeq;
-    var cbName = '_c24Cb_' + seq + '_' + Date.now();
-    var tagId  = '_c24Tag_' + seq;
+    var url = RELAY_URL + '?action=getConfig&t=' + Date.now();
 
-    // Clean up ALL previous sync script tags
-    document.querySelectorAll('script[id^="_c24Tag_"]').forEach(function(s){
-      try{ s.parentNode.removeChild(s); }catch(e){}
-    });
-
-    var tid = setTimeout(function(){
-      _pullInFlight = false;
-      try{ delete window[cbName]; }catch(e){}
-      var s = document.getElementById(tagId);
-      if(s && s.parentNode) s.parentNode.removeChild(s);
-      console.warn('[C24Sync] JSONP timeout (seq ' + seq + ') — relay may be slow or URL wrong');
-      _updateSyncIndicator('offline');
-      if(onDone) onDone(false, []);
-    }, 12000); // 12s — Apps Script can be slow to cold-start
-
-    window[cbName] = function(data){
-      clearTimeout(tid);
-      try{ delete window[cbName]; }catch(e){}
-      var s = document.getElementById(tagId);
-      if(s && s.parentNode) s.parentNode.removeChild(s);
+    fetch(url, {
+      method     : 'GET',
+      mode       : 'cors',
+      credentials: 'omit',
+      redirect   : 'follow',
+      cache      : 'no-store'
+    })
+    .then(function(resp){
+      if(!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.json();
+    })
+    .then(function(data){
       _applyRemoteData(data, onDone);
-    };
-
-    var sc   = document.createElement('script');
-    sc.id    = tagId;
-    sc.async = true;
-    sc.src   = RELAY_URL + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
-
-    sc.onerror = function(){
-      clearTimeout(tid);
+    })
+    .catch(function(err){
       _pullInFlight = false;
-      try{ delete window[cbName]; }catch(e){}
-      console.warn('[C24Sync] JSONP script load error (seq ' + seq + ')');
-      console.warn('[C24Sync] Check: is relay URL correct? Does Apps Script respond to ?action=getConfig&cb=test');
+      console.warn('[C24Sync] fetch pull failed:', err.message);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
-    };
-
-    document.head.appendChild(sc);
-    console.log('[C24Sync] JSONP pull seq', seq, '→', sc.src.slice(0, 80) + '…');
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -18041,40 +18014,31 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   window.c24SyncPull  = function(cb){ _pullFromRelay(cb); };
   window.c24SyncDiag = function(){
     console.group('[C24Sync] Diagnostics');
-    console.log('Relay URL    :', RELAY_URL || '⚠️ NOT SET');
-    console.log('Role         :', window.currentRole || 'not logged in');
-    console.log('JSONP seq    :', _jsonpSeq);
+    console.log('Relay URL     :', RELAY_URL || '⚠️ NOT SET');
+    console.log('Role          :', window.currentRole || 'not logged in');
     console.log('Pull in-flight:', _pullInFlight);
-    if(!RELAY_URL){ console.warn('⚠️ driveWebAppUrl not set in CARS24_CONFIG'); console.groupEnd(); return; }
+    if(!RELAY_URL){ console.warn('⚠️ driveWebAppUrl not set'); console.groupEnd(); return; }
 
-    // Test 1: JSONP ping (this is the actual mechanism used)
-    console.log('--- Test 1: JSONP ping ---');
-    var cb1 = '_c24DiagPing_' + Date.now();
-    var t1  = setTimeout(function(){ console.warn('❌ JSONP ping TIMED OUT (12s) — possible causes:'); console.warn('   1. Apps Script not redeployed after code change'); console.warn('   2. Wrong deployment URL in CARS24_CONFIG'); console.warn('   3. Apps Script execution error — check Apps Script logs'); delete window[cb1]; }, 12000);
-    window[cb1] = function(d){
-      clearTimeout(t1); delete window[cb1];
-      console.log('✅ JSONP ping OK:', JSON.stringify(d).slice(0,100));
-    };
-    var s1 = document.createElement('script');
-    s1.src = RELAY_URL + '?action=ping&cb=' + cb1 + '&t=' + Date.now();
-    s1.onerror = function(){ clearTimeout(t1); delete window[cb1]; console.warn('❌ JSONP ping SCRIPT ERROR — URL may be wrong or Apps Script crashed'); };
-    document.head.appendChild(s1);
+    // Test 1: fetch GET (the actual mechanism used)
+    console.log('--- Test 1: fetch GET ---');
+    fetch(RELAY_URL + '?action=ping&t=' + Date.now(), {
+      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
+    })
+    .then(function(r){ return r.json().then(function(d){ console.log('✅ fetch GET OK — status:', r.status, d); }); })
+    .catch(function(e){ console.warn('❌ fetch GET failed:', e.message); });
 
-    // Test 2: JSONP getConfig (the actual sync call)
-    console.log('--- Test 2: JSONP getConfig ---');
-    var cb2 = '_c24DiagConfig_' + Date.now();
-    var t2  = setTimeout(function(){ console.warn('❌ getConfig TIMED OUT'); delete window[cb2]; }, 12000);
-    window[cb2] = function(d){
-      clearTimeout(t2); delete window[cb2];
-      if(d && d.error){ console.warn('❌ getConfig returned error:', d.error); }
-      else { console.log('✅ getConfig OK — ' + Object.keys(d||{}).length + ' keys in Drive config:', Object.keys(d||{})); }
-    };
-    var s2 = document.createElement('script');
-    s2.src = RELAY_URL + '?action=getConfig&cb=' + cb2 + '&t=' + Date.now();
-    s2.onerror = function(){ clearTimeout(t2); delete window[cb2]; console.warn('❌ getConfig script error'); };
-    document.head.appendChild(s2);
+    // Test 2: fetch getConfig
+    console.log('--- Test 2: fetch getConfig ---');
+    fetch(RELAY_URL + '?action=getConfig&t=' + Date.now(), {
+      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
+    })
+    .then(function(r){ return r.json().then(function(d){
+      if(d.error) console.warn('❌ getConfig error:', d.error);
+      else console.log('✅ getConfig OK —', Object.keys(d).length, 'keys:', Object.keys(d));
+    }); })
+    .catch(function(e){ console.warn('❌ getConfig failed:', e.message); });
 
-    console.log('(waiting for responses — check console in ~3s)');
+    console.log('(results appear in ~2s)');
     console.groupEnd();
   };
   window.c24SyncPush  = function(key){ var v=localStorage.getItem(key); if(v) _pushToRelay(key, v); };
