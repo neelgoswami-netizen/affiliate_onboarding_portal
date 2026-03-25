@@ -95,29 +95,20 @@ if(CARS24_CONFIG.driveWebAppUrl){
     // on all POST requests regardless of .gs code. no-cors skips preflight entirely,
     // the write lands server-side, response is opaque (unreadable) but that's fine.
     // GET (bootPull/poll) uses cors+redirect:follow which DOES work for Apps Script GETs.
-    // Use GET with encoded params — Apps Script CORS works on GET, not POST no-cors
-    // This makes push verifiable (we can read the response) unlike opaque no-cors POST
-    var _url = relay
-      + '?action=saveConfig'
-      + '&configKey=' + encodeURIComponent(key)
-      + '&configValue=' + encodeURIComponent(valStr)
-      + '&ts=' + ts;
-    fetch(_url, {
-      method  : 'GET',
-      mode    : 'cors',
-      credentials: 'omit',
-      redirect: 'follow',
-      cache   : 'no-store'
+    // no-cors POST — skips preflight, write lands server-side, response opaque (expected)
+    var _body = JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts});
+    fetch(relay, {
+      method  : 'POST',
+      headers : {'Content-Type':'text/plain;charset=utf-8'},
+      body    : _body,
+      mode    : 'no-cors',
+      redirect: 'follow'
     })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(d && d.ok){
-        console.log('[C24Cloud] ✅ push confirmed by Drive:', key);
-        if(onDone) onDone(true, 'get-ok');
-      } else {
-        console.warn('[C24Cloud] ⚠️ Drive returned error for:', key, d);
-        if(onDone) onDone(false, d);
-      }
+    .then(function(){
+      console.log('[C24Cloud] ✅ push sent (no-cors):', key);
+      // Update local cache timestamp so this device doesn't overwrite on next bootPull
+      try{ localStorage.setItem('__ts_'+key, String(ts)); }catch(e){}
+      if(onDone) onDone(true, 'no-cors');
     })
     .catch(function(e){
       console.warn('[C24Cloud] ❌ push failed:', key, e.message||e);
@@ -129,17 +120,24 @@ if(CARS24_CONFIG.driveWebAppUrl){
   function _bootPull(onDone){
     var relay = _relay();
     if(!relay){ if(onDone) onDone(false); return; }
-    console.log('[C24Cloud] Boot pull from Drive...');
-    fetch(relay+'?action=getConfig&t='+Date.now(), {
-      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
-    })
-    .then(function(r){
-      if(!r.ok) return Promise.reject('HTTP '+r.status);
-      return r.json();
-    })
-    .then(function(data){
+    console.log('[C24Cloud] Boot pull via JSONP...');
+
+    // JSONP — injects a <script> tag, bypasses CORS and redirect entirely
+    var cbName = '_c24cb_' + Date.now();
+    var script = document.createElement('script');
+    var timer = setTimeout(function(){
+      console.warn('[C24Cloud] bootPull timeout');
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+      if(onDone) onDone(false);
+    }, 10000);
+
+    window[cbName] = function(data){
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
       if(!data || data.error){
-        console.warn('[C24Cloud] bootPull relay error:', data&&data.error);
+        console.warn('[C24Cloud] bootPull error:', data&&data.error);
         if(onDone) onDone(false); return;
       }
       var keyCount = Object.keys(data).filter(function(k){ return !k.startsWith('__ts_'); }).length;
@@ -166,11 +164,10 @@ if(CARS24_CONFIG.driveWebAppUrl){
       });
       console.log('[C24Cloud] Boot pull complete — updated', updated.length, 'keys:', updated);
       if(onDone) onDone(true, updated);
-    })
-    .catch(function(e){
-      console.warn('[C24Cloud] Boot pull failed:', e);
-      if(onDone) onDone(false);
-    });
+    };
+
+    script.src = relay + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
   }
 
   // ── Expose globally ────────────────────────────────────────────────
@@ -212,20 +209,14 @@ if(CARS24_CONFIG.driveWebAppUrl){
     _rawSet('__ts_' + key, String(Date.now()));
     // no-cors: skips CORS preflight — Apps Script /exec rejects OPTIONS
     // Write still lands on the server; response is opaque (unreadable) but that's fine
-    var _eUrl = relay
-      + '?action=saveConfig'
-      + '&configKey=' + encodeURIComponent(key)
-      + '&configValue=' + encodeURIComponent(value)
-      + '&ts=' + Date.now();
-    fetch(_eUrl, {
-      method  : 'GET',
-      mode    : 'cors',
-      credentials: 'omit',
-      redirect: 'follow',
-      cache   : 'no-store'
+    fetch(relay, {
+      method  : 'POST',
+      headers : {'Content-Type':'text/plain;charset=utf-8'},
+      body    : payload,
+      mode    : 'no-cors',
+      redirect: 'follow'
     })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(d&&d.ok) console.log('[C24Early] ✅ push confirmed:', key); else console.warn('[C24Early] ⚠️ Drive error:', key, d); })
+    .then(function(){ console.log('[C24Early]', label||'push', 'sent →', key); })
     .catch(function(e){ console.warn('[C24Early] Push failed:', key, e.message); });
   }
 
