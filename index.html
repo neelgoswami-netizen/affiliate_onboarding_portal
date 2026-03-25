@@ -876,11 +876,8 @@ tbody tr:hover td{background:var(--al)}
   /* Prevent header actions from wrapping */
   .hacts { flex-wrap: nowrap; gap: 4px; }
 
-  /* ── Layout — no sidebar taking space ── */
+  /* ── Layout — handled by definitive block ── */
   .layout { flex-direction: row; }
-  .main {
-    padding: 14px 12px;
-  }
 
   /* ── KPI grids → 2 cols on mobile ── */
   .kg  { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
@@ -961,7 +958,6 @@ tbody tr:hover td{background:var(--al)}
   .kv { font-size: 17px !important; }
   .kl { font-size: 8.5px !important; }
 
-  .main { padding: 10px 10px; }
   .cc { padding: 10px 12px; }
   .fb { padding: 9px 10px; }
 
@@ -1232,52 +1228,111 @@ input[type=range]::-webkit-slider-thumb {
   .chat-messages { min-height:200px; max-height:40vh; }
 }
 
-/* ══ SCROLL & LAYOUT FIX ══════════════════════════════════════════════
-   Ensures .main scrolls on all screen sizes, web and mobile.
-   Only targets the portal layout — nothing else.
+/* ══ DEFINITIVE LAYOUT & SCROLL FIX ═══════════════════════════════
+   Single source of truth for portal layout.
+   Portal is position:fixed — flex chain handles all scroll.
    ══════════════════════════════════════════════════════════════════ */
+
+/* Portal: fixed full-screen container */
 #portal-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
   display: none;
   flex-direction: column;
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  height: 100vh;
-  overflow: hidden;
+  z-index: 99999;
 }
-#portal-fullscreen.open { display: flex; }
+#portal-fullscreen.open { display: flex !important; }
 
+/* App: fills portal, flex column */
 #app {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  width: 100%;
 }
 
+/* Layout row: sidebar + main side by side */
 .layout {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  display: flex !important;
+  flex-direction: row !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  width: 100%;
 }
 
-/* Sidebar scrolls internally */
-#admin-sidebar,
-#partner-sidebar {
-  flex-shrink: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+/* ── SIDEBAR: desktop — in normal flow, never overlaps ── */
+@media (min-width: 481px) {
+  #admin-sidebar,
+  #partner-sidebar {
+    position: relative !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    flex-shrink: 0 !important;
+    width: 222px !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1 !important;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Partner sidebar: only visible when role=partner (JS controls display) */
 }
 
-/* Main content area: this is where page scrolling happens */
+/* ── SIDEBAR: mobile — fixed off-canvas drawer ── */
+@media (max-width: 480px) {
+  #admin-sidebar,
+  #partner-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    max-width: 85vw !important;
+    z-index: 210 !important;
+    transform: translateX(-100%) !important;
+    -webkit-transform: translateX(-100%) !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: 56px !important;
+    will-change: transform;
+  }
+  #admin-sidebar.mob-open,
+  #partner-sidebar.mob-open {
+    transform: translateX(0) !important;
+    -webkit-transform: translateX(0) !important;
+  }
+  .main {
+    width: 100% !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── MAIN: the one and only scrolling container ── */
 .main {
-  flex: 1;
-  min-height: 0;
+  flex: 1 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
   overflow-y: auto !important;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y;
+  padding: 20px 24px;
+}
+@media (max-width: 768px) {
+  .main { padding: 14px 12px; }
+}
+@media (max-width: 480px) {
+  .main { padding: 10px 10px; }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -7165,7 +7220,7 @@ function _openPortal() {
   var pf = document.getElementById('portal-fullscreen');
   if(!pf){ console.error('portal-fullscreen not found'); return; }
   pf.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  /* body.overflow not set — portal is position:fixed, .main scrolls internally */
 
   // Rebuild month metadata — wrapped so any error doesn't block the portal opening
   try{ rebuildMonthMeta(); }catch(e){ console.warn('rebuildMonthMeta error:', e); }
@@ -8906,7 +8961,10 @@ function exportPayoutCSV(){
 // ── 6. INVOICES ───────────────────────────────────────────────────
 var _invMonthAdmin=MONTHS[MONTHS.length-1]||'Mar';
 function getInvoices(){return _storeOrDef('cars24_invoices',[]);}
-function saveInvoices(a){ window._c24Cloud.push('cars24_invoices', JSON.stringify(a)); }
+function saveInvoices(a){
+  /* Write to localStorage only — the early setItem interceptor handles cloud sync automatically */
+  try{ localStorage.setItem('cars24_invoices', JSON.stringify(a)); }catch(e){}
+}
 function buildPartnerInvoices(){
   var sel=document.getElementById('inv-month-sel');
   if(sel)sel.innerHTML=MONTHS.map(function(m){return'<option value="'+m+'">'+(MLABEL[m]||m)+'</option>';}).join('');
@@ -11266,12 +11324,10 @@ window.saveAnnouncements = function(a){
 };
 
 // ── 4. INVOICE STORE ── push to Drive so ALL devices see updates ──
-window.getInvoices  = function(){ return window.cars24_ls.get('cars24_invoices')||[]; };
+window.getInvoices  = function(){ try{ var s=localStorage.getItem('cars24_invoices'); return s?JSON.parse(s):[]; }catch(e){ return []; } };
 window.saveInvoices = function(a){
-  // Write to local cache immediately for instant UI
-  window.cars24_ls.set('cars24_invoices', a);
-  // Push to Drive so admin and partner see same data on all devices
-  window._c24Cloud.push('cars24_invoices', JSON.stringify(a));
+  /* localStorage write — early interceptor pushes to cloud automatically, no double push */
+  try{ localStorage.setItem('cars24_invoices', JSON.stringify(a)); }catch(e){}
 };
 
 // ── 4b. PAYMENT PROOF STORE ── push to Drive ──────────────────────
@@ -15183,7 +15239,7 @@ window.showPortal = function(role, user, partner) {
   var pf = document.getElementById('portal-fullscreen');
   if(!pf){ alert('Portal element not found. Please reload the page.'); return; }
   pf.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  /* body.overflow not set — portal is position:fixed, .main handles scroll internally */
   try{ window.rebuildMonthMeta(); }catch(e){}
   try{ window._initAllFeatures && window._initAllFeatures(); }catch(e){}
 
@@ -15217,7 +15273,13 @@ window.showPortal = function(role, user, partner) {
     }, 100);
   } else {
     if(ab) ab.style.display = 'none';
-    if(pb) pb.style.display = '';
+    /* Show partner sidebar — flex on desktop (in-flow), hidden on mobile until hamburger */
+    if(pb){
+      pb.style.display = window.innerWidth <= 480 ? 'none' : '';
+      if(window.innerWidth <= 480){
+        pb.classList.remove('mob-open');
+      }
+    }
     if(rb){ rb.textContent = 'Partner'; rb.className = 'role-badge partner'; }
     try{ window.loadPartnerSidebar && window.loadPartnerSidebar(); }catch(e){}
     document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
@@ -17517,11 +17579,10 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
   // Fix portal fullscreen container overflow
   var style = document.createElement('style');
   style.textContent = `
-    /* Sidebar scroll — overflow only, no position change */
+    /* Sidebar scroll — no max-height restriction */
     #admin-sidebar, #partner-sidebar {
       overflow-y: auto !important;
       overflow-x: hidden !important;
-      max-height: calc(100vh - 56px);
     }
 
     /* Logic builder table overflow */
@@ -18200,8 +18261,8 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
 
   // iOS fixed-modal scroll lock
   var _lsy=0,_lkd=false;
-  window._lockBodyScroll=function(){ if(_lkd)return; _lsy=window.scrollY; document.body.style.overflow='hidden'; _lkd=true; };
-  window._unlockBodyScroll=function(){ if(!_lkd)return; document.body.style.overflow=''; window.scrollTo(0,_lsy); _lkd=false; };
+  window._lockBodyScroll=function(){ if(_lkd)return; _lsy=window.scrollY; _lkd=true; /* body.overflow intentionally not set — portal is position:fixed */ };
+  window._unlockBodyScroll=function(){ if(!_lkd)return; _lkd=false; };
   var _osp=window.showPortal;
   window.showPortal=function(){ window._lockBodyScroll(); if(typeof _osp==='function') _osp.apply(this,arguments); };
 
@@ -18869,11 +18930,15 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     window._c24Cloud.push('cars24_admin_view_data', JSON.stringify(obj));
   };
 
-  // ── Patch saveInvoices — used by both partner submit and admin approve ───────────
-  window.saveInvoices = function(arr){ window._c24Cloud.push('cars24_invoices', JSON.stringify(arr)); };
-  window.saveProofs   = function(arr){ window._c24Cloud.push('cars24_payment_proofs', JSON.stringify(arr)); };
+  // ── Patch saveInvoices — localStorage write, early interceptor handles cloud sync ─
+  window.saveInvoices = function(arr){
+    try{ localStorage.setItem('cars24_invoices', JSON.stringify(arr)); }catch(e){}
+  };
+  window.saveProofs = function(arr){
+    try{ localStorage.setItem('cars24_payment_proofs', JSON.stringify(arr)); }catch(e){}
+  };
 
-  // ── Patch cars24_ls.set ──────────────────────────────────────────────────────────
+  // ── Patch cars24_ls.set — localStorage write, early interceptor handles cloud ────
   if(window.cars24_ls){
     window.cars24_ls.set = function(k, v){
       try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; }
