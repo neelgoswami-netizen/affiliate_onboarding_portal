@@ -77,8 +77,19 @@ if(CARS24_CONFIG.driveWebAppUrl){
       return;
     }
     var ts = Date.now();
-    // Optimistic local cache write (instant UI feel, corrected on confirm)
-    try{ localStorage.setItem(key, valStr); localStorage.setItem('__ts_'+key, String(ts)); }catch(e){}
+    // Optimistic local cache write — normalize value same way bootPull would
+    // to avoid double-quoted strings (e.g. '"admin@123"') breaking plain-string reads
+    try{
+      var _cacheVal = valStr;
+      try{
+        var _parsed = JSON.parse(valStr);
+        // If parsed result is a plain string, store it as-is (no quotes)
+        // If it's object/array, re-stringify (same as it came in)
+        _cacheVal = (typeof _parsed === 'string') ? _parsed : valStr;
+      }catch(e){ _cacheVal = valStr; }
+      localStorage.setItem(key, _cacheVal);
+      localStorage.setItem('__ts_'+key, String(ts));
+    }catch(e){}
 
     fetch(relay, {
       method:'POST',
