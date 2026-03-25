@@ -42,6 +42,109 @@ if(CARS24_CONFIG.driveWebAppUrl){
 //  the sync push automatically. No function needs to be individually
 //  patched — writing to localStorage IS the sync trigger.
 // ══════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+//  C24 CLOUD-FIRST ENGINE  (injected before early intercept)
+//
+//  DESIGN:
+//    • Every save calls _c24Cloud.push(key, val, onDone)
+//    • Push waits for relay OK before updating localStorage cache
+//    • localStorage is a READ CACHE only — never source of truth
+//    • On page load _c24Cloud.bootPull() fetches Drive first, then
+//      populates localStorage cache and in-memory globals
+//    • 30s poll still runs for background refresh
+//    • c24_session, theme, import_history stay local-only (per-device)
+// ══════════════════════════════════════════════════════════════════
+(function _installCloudFirstEngine(){
+  var LOCAL_ONLY_KEYS = ['c24_session','theme','cars24_import_history','cars24_audit_log','cars24_logic_rules'];
+
+  function _relay(){ return window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || ''; }
+
+  // ── Core push: POST to relay, wait for ok, THEN update local cache ─
+  function _push(key, value, onDone){
+    var relay = _relay();
+    if(!relay){
+      // No relay configured — fall back to local only
+      try{ localStorage.setItem(key, typeof value==='string'?value:JSON.stringify(value)); }catch(e){}
+      if(onDone) onDone(false, 'no_relay');
+      return;
+    }
+    var valStr = typeof value==='string' ? value : JSON.stringify(value);
+    // 5MB guard
+    if(valStr.length > 4500000){
+      console.warn('[C24Cloud] Push skipped — too large ('+Math.round(valStr.length/1024)+'KB):', key);
+      if(onDone) onDone(false, 'too_large');
+      return;
+    }
+    var ts = Date.now();
+    // Optimistic local cache write (instant UI feel, corrected on confirm)
+    try{ localStorage.setItem(key, valStr); localStorage.setItem('__ts_'+key, String(ts)); }catch(e){}
+
+    fetch(relay, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts}),
+      mode:'cors', credentials:'omit', redirect:'follow'
+    })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject('HTTP '+r.status); })
+    .then(function(d){
+      if(d && d.ok){
+        // Confirmed — update local cache timestamp with server ts
+        try{ localStorage.setItem('__ts_'+key, String(d.ts||ts)); }catch(e){}
+        console.log('[C24Cloud] ✅ push confirmed:', key);
+        if(onDone) onDone(true, null);
+      } else {
+        console.warn('[C24Cloud] ⚠ relay rejected push:', key, d);
+        if(onDone) onDone(false, d&&d.error||'rejected');
+      }
+    })
+    .catch(function(e){
+      console.warn('[C24Cloud] ❌ push failed:', key, e);
+      if(onDone) onDone(false, e);
+    });
+  }
+
+  // ── Boot pull: fetch all keys from Drive on page load ──────────────
+  function _bootPull(onDone){
+    var relay = _relay();
+    if(!relay){ if(onDone) onDone(false); return; }
+    console.log('[C24Cloud] Boot pull from Drive...');
+    fetch(relay+'?action=getConfig&t='+Date.now(), {
+      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
+    })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject('HTTP '+r.status); })
+    .then(function(data){
+      if(!data || data.error){ if(onDone) onDone(false); return; }
+      var updated = [];
+      Object.keys(data).forEach(function(key){
+        if(key.startsWith('__ts_')) return; // skip timestamp meta keys
+        if(LOCAL_ONLY_KEYS.indexOf(key) !== -1) return;
+        var remoteVal = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
+        var localTs  = parseInt(localStorage.getItem('__ts_'+key)||'0',10);
+        var remoteTs = typeof data['__ts_'+key]==='number' ? data['__ts_'+key] : 0;
+        // Always trust Drive on boot unless local is strictly newer
+        if(remoteTs >= localTs || localTs === 0){
+          try{
+            localStorage.setItem(key, remoteVal);
+            if(remoteTs) localStorage.setItem('__ts_'+key, String(remoteTs));
+            updated.push(key);
+          }catch(e){}
+        }
+      });
+      console.log('[C24Cloud] Boot pull complete — updated', updated.length, 'keys:', updated);
+      if(onDone) onDone(true, updated);
+    })
+    .catch(function(e){
+      console.warn('[C24Cloud] Boot pull failed:', e);
+      if(onDone) onDone(false);
+    });
+  }
+
+  // ── Expose globally ────────────────────────────────────────────────
+  window._c24Cloud = { push: _push, bootPull: _bootPull, localOnly: LOCAL_ONLY_KEYS };
+  console.log('[C24Cloud] Cloud-first engine ready');
+})();
+
 (function _installEarlyIntercept(){
   var SYNC_KEYS_EARLY = [
     'cars24_partner_creds','cars24_admin_pass','cars24_admin_accounts',
@@ -53,6 +156,8 @@ if(CARS24_CONFIG.driveWebAppUrl){
     'cars24_gsheet_cache_dod','cars24_gsheet_cache_vhr',
     'cars24_gsheet_cache_pdi','cars24_gsheet_cache_challan',
     'cars24_gsheet_cache_lac','cars24_dod_arrays',
+    'cars24_pdi_store','cars24_challan_store','cars24_lac_store',
+    'cars24_elite_store','cars24_vhr_store','cars24_audit_log',
   ];
 
   // Store original before any override
@@ -61,6 +166,35 @@ if(CARS24_CONFIG.driveWebAppUrl){
 
   var _debT = {};
   function _debounce(k, fn, ms){ clearTimeout(_debT[k]); _debT[k]=setTimeout(fn,ms||800); }
+
+  // ── FIX: Shared push helper with cors + retry + error logging + 5MB guard ──
+  function _c24Push(key, value, label){
+    var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || '';
+    if(!relay) return;
+    // ── 5MB size guard — Apps Script relay silently rejects larger payloads ──
+    var payload = JSON.stringify({ action:'saveConfig', configKey:key, configValue:value, ts: Date.now() });
+    if(payload.length > 4500000){
+      console.warn('[C24Early] Skipping push — key too large ('+Math.round(payload.length/1024)+'KB > 4500KB):', key);
+      return;
+    }
+    // Save timestamp alongside each key so pull can do last-write-wins
+    _rawSet('__ts_' + key, String(Date.now()));
+    fetch(relay, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: payload,
+      mode:'cors', credentials:'omit', redirect:'follow'
+    })
+    .then(function(r){
+      if(!r.ok){ console.warn('[C24Early] Push HTTP error', r.status, 'key:', key); return; }
+      return r.json();
+    })
+    .then(function(d){
+      if(d && !d.ok) console.warn('[C24Early] Push rejected by relay — key:', key, d);
+      else console.log('[C24Early]', label||'push', 'OK →', key);
+    })
+    .catch(function(e){ console.warn('[C24Early] Push failed — key:', key, e.message); });
+  }
 
   localStorage.setItem = function(key, value){
     _rawSet(key, value); // always write first
@@ -72,40 +206,25 @@ if(CARS24_CONFIG.driveWebAppUrl){
       if(window._c24_bc) window._c24_bc.postMessage({ key:key, value:value });
     }catch(e){}
 
-    // 2. Push to Drive relay — debounced
+    // 2. Push to Drive relay — debounced (cors, detectable errors)
     _debounce('push_'+key, function(){
-      var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || '';
-      if(!relay) return;
-      try{
-        fetch(relay, {
-          method:'POST',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ action:'saveConfig', configKey:key, configValue:value }),
-          mode:'no-cors', redirect:'follow'
-        }).catch(function(){});
-      }catch(e){}
+      _c24Push(key, value, 'debounced push');
     }, 800);
 
     // 3. Immediate force-push for critical keys
     var forcePushKeys = ['cars24_partner_creds','cars24_invoices','cars24_payment_proofs','cars24_announcements','cars24_target_store'];
     if(forcePushKeys.indexOf(key) !== -1){
       setTimeout(function(){
-        var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || '';
-        if(!relay) return;
         var v = localStorage.getItem(key); if(!v) return;
-        try{
-          fetch(relay, {
-            method:'POST',
-            headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify({ action:'saveConfig', configKey:key, configValue:v }),
-            mode:'no-cors', redirect:'follow'
-          }).catch(function(){});
-        }catch(e){}
+        _c24Push(key, v, 'force push');
       }, 200);
     }
   };
 
-  console.log('[C24Early] localStorage.setItem intercepted for', SYNC_KEYS_EARLY.length, 'keys');
+  // Expose push helper globally for c24SyncPushAll
+  window._c24Push = _c24Push;
+
+  console.log('[C24Early] localStorage.setItem intercepted for', SYNC_KEYS_EARLY.length, 'keys (sync fixes v2 applied)');
 })();
 
 // Initialise EmailJS
@@ -115,6 +234,26 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('[Cars24] EmailJS initialised OK');
   } catch(e) {
     console.error('[Cars24] EmailJS init failed:', e);
+  }
+
+  // ── BOOT PULL: load all data from Drive before app renders ────────
+  // This ensures every device starts from the same cloud state,
+  // not from whatever happened to be in their localStorage last.
+  if(window._c24Cloud && window.CARS24_DRIVE_URL){
+    window._c24Cloud.bootPull(function(ok, updatedKeys){
+      if(!ok){ console.warn('[C24Boot] Could not reach Drive relay — using local cache'); }
+      else { console.log('[C24Boot] Drive data loaded:', updatedKeys&&updatedKeys.length, 'keys fresh'); }
+      // Re-hydrate all in-memory globals from the now-fresh localStorage cache
+      try{
+        var _pc=localStorage.getItem('cars24_partner_creds'); if(_pc){ window.PARTNER_CREDS=JSON.parse(_pc); try{PARTNER_CREDS=window.PARTNER_CREDS;}catch(e){} }
+        var _pd=localStorage.getItem('cars24_partners_data'); if(_pd){ window.PARTNERS=JSON.parse(_pd); try{PARTNERS=window.PARTNERS;}catch(e){} }
+        var _ps=localStorage.getItem('cars24_partner_sheet_data'); if(_ps){ window.PARTNER_SHEET=JSON.parse(_ps); }
+        var _ts=localStorage.getItem('cars24_target_store'); if(_ts){ window._targetStoreCache=JSON.parse(_ts); }
+        var _aa=localStorage.getItem('cars24_admin_accounts'); if(_aa){ window._adminAccounts=JSON.parse(_aa); }
+      }catch(e){ console.warn('[C24Boot] Global re-hydration error:', e); }
+      // Restore session (local-only) and render portal if session exists
+      if(typeof _restoreSession==='function') try{ _restoreSession(); }catch(e){}
+    });
   }
 });
 
@@ -4597,7 +4736,9 @@ function loadPartners(){
   return [];  // empty by default — populated via GSheet sync or import
 }
 function savePartners(arr){
-  try{ localStorage.setItem('cars24_partners_data', JSON.stringify(arr)); }catch(e){}
+  window._c24Cloud.push('cars24_partners_data', JSON.stringify(arr), function(ok){
+    if(ok){ window.PARTNERS = arr; if(typeof rebuildMonthMeta==='function') rebuildMonthMeta(); }
+  });
 }
 var PARTNERS = loadPartners();  // global — always an array, never undefined
 
@@ -4607,12 +4748,9 @@ function loadPartnerSheet(){
   try{ var s=localStorage.getItem('cars24_partner_sheet_data'); return s?JSON.parse(s):{}; }catch(e){ return {}; }
 }
 function savePartnerSheet(obj){
-  try{
-    // Use window.localStorage.setItem so C24Sync intercept fires (push to Drive relay)
-    var s = JSON.stringify(obj);
-    localStorage.setItem('cars24_partner_sheet_data', s);
-    window.PARTNER_SHEET = obj;
-  }catch(e){}
+  window._c24Cloud.push('cars24_partner_sheet_data', JSON.stringify(obj), function(ok){
+    if(ok) window.PARTNER_SHEET = obj;
+  });
 }
 PARTNER_SHEET = loadPartnerSheet();
 
@@ -4638,7 +4776,10 @@ function getTargetStore(){
   try{ var s=localStorage.getItem('cars24_target_store'); return s?JSON.parse(s):{};  }catch(e){ return {}; }
 }
 function saveTargetStore(obj){
-  try{ localStorage.setItem('cars24_target_store', JSON.stringify(obj)); }catch(e){}
+  window._c24Cloud.push('cars24_target_store', JSON.stringify(obj), function(ok){
+    if(!ok) console.warn('[C24] saveTargetStore cloud push failed — local cache kept');
+    window._targetStoreCache = obj;
+  });
 }
 var _targetTab   = 'seller';
 var _targetMonth = '';
@@ -4677,33 +4818,18 @@ function getLatestCreds(){
 function saveCreds(arr){
   try{
     var serialised = JSON.stringify(arr);
-
-    // 1. Write → C24Sync intercept fires → BroadcastChannel + debounced push
-    localStorage.setItem('cars24_partner_creds', serialised);
-
-    // 2. Keep ALL in-memory references in sync
+    // 1. Optimistic in-memory update for instant UI feel
     var fresh = JSON.parse(serialised);
-    PARTNER_CREDS        = fresh;
-    window.PARTNER_CREDS = fresh;
-
-    // 3. Re-render credential table immediately on this device
-    if(typeof window.renderCredTable === 'function') setTimeout(window.renderCredTable, 50);
-
-    // 4. Immediate push to Drive relay (bypasses 800ms debounce)
-    setTimeout(function(){
-      try{
-        var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl)||'';
-        if(!relay) return;
-        fetch(relay, {
-          method:'POST',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({action:'saveConfig', configKey:'cars24_partner_creds', configValue:serialised}),
-          mode:'no-cors', redirect:'follow'
-        }).catch(function(){});
-      }catch(e){}
-    }, 100);
-
-    console.log('[saveCreds] saved', arr.length, 'creds, pushed to relay');
+    PARTNER_CREDS = fresh; window.PARTNER_CREDS = fresh;
+    // 2. Cloud-first push — relay is source of truth
+    window._c24Cloud.push('cars24_partner_creds', serialised, function(ok){
+      if(ok){
+        if(typeof window.renderCredTable==='function') setTimeout(window.renderCredTable, 50);
+        console.log('[saveCreds] ✅ cloud confirmed,', arr.length, 'creds');
+      } else {
+        console.warn('[saveCreds] ❌ cloud push failed — local cache kept, will retry on next poll');
+      }
+    });
   }catch(e){ console.warn('[saveCreds] error:', e); }
 }
 var PARTNER_CREDS = loadCreds();  // global — always an array
@@ -4717,7 +4843,7 @@ function loadAdminAccounts(){
   return [];
 }
 function saveAdminAccounts(arr){
-  try{ localStorage.setItem('cars24_admin_accounts', JSON.stringify(arr)); }catch(e){}
+  window._c24Cloud.push('cars24_admin_accounts', JSON.stringify(arr));
 }
 
 var MONTH_ORDER_BASE = []; // Fix 8: empty — admin adds months via import or GSheet sync
@@ -4758,7 +4884,7 @@ function loadMonthRegistry(){
   };
 }
 function saveMonthRegistry(reg){ reg = _dedupMonthReg(reg);
-  try{ localStorage.setItem('cars24_month_registry', JSON.stringify(reg)); }catch(e){}
+  window._c24Cloud.push('cars24_month_registry', JSON.stringify(reg));
 }
 
 // Register a new month (e.g. "Apr 2026") into the registry
@@ -6497,7 +6623,7 @@ function getAdminPassword(){
   return localStorage.getItem('cars24_admin_pass')||'admin@123';
 }
 function setAdminPassword(p){
-  localStorage.setItem('cars24_admin_pass',p);
+  window._c24Cloud.push('cars24_admin_pass', JSON.stringify(p));
 }
 function changeAdminPassword(){
   const cur=document.getElementById('admin-cur-pass').value;
@@ -6917,7 +7043,15 @@ function handleLogin(type) {
 // FEATURE MODULES v19 — All 9 Requirements
 // ══════════════════════════════════════════════════════════════════
 
-function _store(k,v){if(v===undefined){try{var s=localStorage.getItem(k);return s?JSON.parse(s):null;}catch(e){return null;}}try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function _store(k,v){
+  if(v===undefined){try{var s=localStorage.getItem(k);return s?JSON.parse(s):null;}catch(e){return null;}}
+  // Route writes through cloud engine if key is a sync key
+  if(window._c24Cloud && window._c24Cloud.localOnly.indexOf(k)===-1){
+    window._c24Cloud.push(k, JSON.stringify(v));
+  } else {
+    try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}
+  }
+}
 function _storeOrDef(k,def){var v=_store(k);return v!==null?v:def;}
 function _fmtDate(d){return d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 
@@ -6927,7 +7061,7 @@ var ANN_ICONS ={incentive:'🎁',creative:'🎨',notice:'📋',payment:'💸',ot
 var _annFilter='all', _pAnnFilter='all';
 
 function getAnnouncements(){return _storeOrDef('cars24_announcements',[]);}
-function saveAnnouncements(a){_store('cars24_announcements',a);}
+function saveAnnouncements(a){ window._c24Cloud.push('cars24_announcements', JSON.stringify(a)); }
 
 function filterAnnouncements(t,b){_annFilter=t;document.querySelectorAll('#ann-type-btns .rt').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');buildAnnouncementsAdmin();}
 function filterPartnerAnn(t,b){_pAnnFilter=t;document.querySelectorAll('#p-ann-type-btns .rt').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');buildAnnouncementsPartner();}
@@ -8477,7 +8611,7 @@ function _renderPartnerSC(){
 // ── 5. PAYOUT MANAGER (protected — never overwritten by import) ───
 var _payoutMonth=MONTHS[MONTHS.length-1]||'Mar';
 function getPayoutStore(){return _storeOrDef('cars24_payout_store',{});}
-function savePayoutStore(s){_store('cars24_payout_store',s);}
+function savePayoutStore(s){ window._c24Cloud.push('cars24_payout_store', JSON.stringify(s)); }
 function seedPayoutStore(){
   var store=getPayoutStore(), changed=false;
   MONTHS.forEach(function(m){PARTNERS.forEach(function(p){
@@ -8561,7 +8695,7 @@ function exportPayoutCSV(){
 // ── 6. INVOICES ───────────────────────────────────────────────────
 var _invMonthAdmin=MONTHS[MONTHS.length-1]||'Mar';
 function getInvoices(){return _storeOrDef('cars24_invoices',[]);}
-function saveInvoices(a){_store('cars24_invoices',a);}
+function saveInvoices(a){ window._c24Cloud.push('cars24_invoices', JSON.stringify(a)); }
 function buildPartnerInvoices(){
   var sel=document.getElementById('inv-month-sel');
   if(sel)sel.innerHTML=MONTHS.map(function(m){return'<option value="'+m+'">'+(MLABEL[m]||m)+'</option>';}).join('');
@@ -8693,7 +8827,7 @@ function approveInvoice(id, status){
 // ── 7. PAYMENT PROOFS ─────────────────────────────────────────────
 var _proofMonth=MONTHS[MONTHS.length-1]||'Mar';
 function getProofs(){return _storeOrDef('cars24_payment_proofs',[]);}
-function saveProofs(a){_store('cars24_payment_proofs',a);}
+function saveProofs(a){ window._c24Cloud.push('cars24_payment_proofs', JSON.stringify(a)); }
 function buildProofMonthBtns(){
   var wrap=document.getElementById('proof-month-btns'); if(!wrap)return;
   wrap.innerHTML='';
@@ -10897,7 +11031,16 @@ document.addEventListener('change', function(e){
 // ── 1. STORAGE HELPERS (ensure available globally) ─────────────
 window.cars24_ls = {
   get: function(k){ try{ var s=localStorage.getItem(k); return s?JSON.parse(s):null; }catch(e){ return null; }},
-  set: function(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; }},
+  set: function(k,v){
+    try{
+      if(window._c24Cloud && window._c24Cloud.localOnly.indexOf(k)===-1){
+        window._c24Cloud.push(k, JSON.stringify(v));
+      } else {
+        localStorage.setItem(k,JSON.stringify(v));
+      }
+      return true;
+    }catch(e){ return false; }
+  },
   del: function(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
 
@@ -10909,9 +11052,7 @@ window.saveImportHistory = function(arr){ window.cars24_ls.set('cars24_import_hi
 window.getAnnouncements  = function(){ return window.cars24_ls.get('cars24_announcements')||[]; };
 // Patch: keep window.saveAnnouncements in sync with local saveAnnouncements
 window.saveAnnouncements = function(a){
-  window.cars24_ls.set('cars24_announcements', a);
-  // Also update via local function path
-  try{ localStorage.setItem('cars24_announcements', JSON.stringify(a)); }catch(e){}
+  window._c24Cloud.push('cars24_announcements', JSON.stringify(a));
 };
 
 // ── 4. INVOICE STORE ───────────────────────────────────────────
@@ -11311,7 +11452,9 @@ function _auditLog(action, detail){
     log.push(entry);
     // Keep last 200 entries
     if(log.length > 200) log = log.slice(-200);
-    localStorage.setItem('cars24_audit_log', JSON.stringify(log));
+    // localStorage cache kept for instant local read; cloud push syncs to all devices
+    try{ localStorage.setItem('cars24_audit_log', JSON.stringify(log)); }catch(e){}
+    window._c24Cloud.push('cars24_audit_log', JSON.stringify(log));
   }catch(e){}
 }
 
@@ -11664,6 +11807,13 @@ function refreshGSheetData(){
         'cars24_gsheet_cache_pdi','cars24_gsheet_cache_challan',
         'cars24_gsheet_cache_lac',
     'cars24_dod_arrays',            // processed DOD arrays (fast restore)
+    // VAS data stores — now synced cross-device
+    'cars24_pdi_store',             // PDI orders per partner per month
+    'cars24_challan_store',         // Challan orders per partner per month
+    'cars24_lac_store',             // LAC orders per partner per month
+    'cars24_elite_store',           // Elite orders per partner per month
+    'cars24_vhr_store',             // VHR orders per partner per month
+    'cars24_audit_log',             // audit trail — synced so admin sees all device actions
   ];
       var pushed = 0;
       gsheetKeys.forEach(function(key){
@@ -11964,7 +12114,7 @@ function _integrateGSheetDOD(rows){
     if(n>0){
       try{
         var dodCache={dates:DOD_DATES.slice(),leads:DOD_D.leads.slice(),appts:DOD_D.appts.slice(),insps:DOD_D.insps.slice(),stocks:DOD_D.stocks.slice()};
-        localStorage.setItem('cars24_dod_arrays', JSON.stringify(dodCache));
+        window._c24Cloud.push('cars24_dod_arrays', JSON.stringify(dodCache));
       }catch(ce){}
     }
     console.log('[GSheet->DoD] '+n+' entries (format='+(isPivot?'pivot':'row-per-date')+'), total='+DOD_DATES.length+' days');
@@ -12491,13 +12641,13 @@ function _integrateGSheetElite(rows){
 
 // ─── STORE HELPERS for PDI / Challan / LAC / Elite ────────────────────────
 function getPdiStore(){    try{var s=localStorage.getItem('cars24_pdi_store');    return s?JSON.parse(s):{};} catch(e){return {};}}
-function savePdiStore(s){  try{localStorage.setItem('cars24_pdi_store',    JSON.stringify(s));}catch(e){}}
+function savePdiStore(s){  window._c24Cloud.push('cars24_pdi_store', JSON.stringify(s)); }
 function getChallanStore(){ try{var s=localStorage.getItem('cars24_challan_store'); return s?JSON.parse(s):{};} catch(e){return {};}}
-function saveChallanStore(s){ try{localStorage.setItem('cars24_challan_store', JSON.stringify(s));}catch(e){}}
+function saveChallanStore(s){ window._c24Cloud.push('cars24_challan_store', JSON.stringify(s)); }
 function getLacStore(){    try{var s=localStorage.getItem('cars24_lac_store');    return s?JSON.parse(s):{};} catch(e){return {};}}
-function saveLacStore(s){  try{localStorage.setItem('cars24_lac_store',    JSON.stringify(s));}catch(e){}}
+function saveLacStore(s){  window._c24Cloud.push('cars24_lac_store', JSON.stringify(s)); }
 function getEliteStore(){  try{var s=localStorage.getItem('cars24_elite_store');  return s?JSON.parse(s):{};} catch(e){return {};}}
-function saveEliteStore(s){ try{localStorage.setItem('cars24_elite_store', JSON.stringify(s));}catch(e){}}
+function saveEliteStore(s){ window._c24Cloud.push('cars24_elite_store', JSON.stringify(s)); }
 
 
 // ─── NUMERIC HELPER ───────────────────────────────────────────
@@ -12518,8 +12668,8 @@ function _cacheSheetData(type, rows){
     var limit = (type==='seller'||type==='admin'||type==='elite') ? 300 : 500;
     var key = 'cars24_gsheet_cache_'+type;
     var val = JSON.stringify(rows.slice(0, limit));
-    // Use intercepted localStorage.setItem so C24Sync push fires for cache keys in SYNC_KEYS
-    localStorage.setItem(key, val);
+    // Cloud-first: push to Drive relay so all devices get fresh GSheet data
+    window._c24Cloud.push(key, val);
   }catch(e){}
 }
 function _loadSheetCache(type){
@@ -12625,7 +12775,7 @@ function _refreshActiveViewAfterSync(){
 // ── VHR STORE & MULTI-REPORT FUNCTIONS
 // ════════════════════════════════════════════════════════════════
 function getVhrStore(){ try{ var s=localStorage.getItem('cars24_vhr_store'); return s?JSON.parse(s):{}; }catch(e){ return {}; } }
-function saveVhrStore(s){ try{ localStorage.setItem('cars24_vhr_store',JSON.stringify(s)); }catch(e){} }
+function saveVhrStore(s){ window._c24Cloud.push('cars24_vhr_store', JSON.stringify(s)); }
 
 // Seed VHR store from existing VAS_DATA if available
 function seedVhrStore(){
@@ -16847,7 +16997,7 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
     });
 
     if(typeof saveCreds==='function') saveCreds(creds);
-    else try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS = creds; }catch(e){}
+    else window._c24Cloud.push('cars24_partner_creds', JSON.stringify(creds), function(){ window.PARTNER_CREDS=creds; });
     if(typeof renderCredTable==='function') renderCredTable();
     if(typeof _auditLog==='function') _auditLog('Bulk credential upload', added+' added, '+skipped+' skipped');
 
@@ -17024,7 +17174,7 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
         var masterPw = 'admin@123';
         try{ masterPw = localStorage.getItem('cars24_admin_pass') || 'admin@123'; }catch(e){}
         if(pwCur !== masterPw){ _showMsg('Current password is incorrect.', false); return; }
-        try{ localStorage.setItem('cars24_admin_pass', pwNew); }catch(e){}
+        window._c24Cloud.push('cars24_admin_pass', JSON.stringify(pwNew));
         if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
       } else {
         // ── Secondary admin accounts stored in cars24_admin_accounts ──
@@ -17035,7 +17185,7 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
         if(acct.password !== pwCur){ _showMsg('Current password is incorrect.', false); return; }
         acct.password = pwNew;
         acct.lastPwChange = new Date().toISOString();
-        try{ localStorage.setItem('cars24_admin_accounts', JSON.stringify(accts)); }catch(e){}
+        window._c24Cloud.push('cars24_admin_accounts', JSON.stringify(accts));
         if(typeof _auditLog==='function') _auditLog('Admin password changed', 'Account: '+targetName);
       }
     } else {
@@ -17053,7 +17203,7 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
       creds[credIdx2].lastPwChange = new Date().toISOString();
       // saveCreds: writes to localStorage + triggers C24Sync push + re-renders admin table
       if(typeof saveCreds==='function') saveCreds(creds);
-      else try{ localStorage.setItem('cars24_partner_creds', JSON.stringify(creds)); window.PARTNER_CREDS=creds; }catch(e){}
+      else window._c24Cloud.push('cars24_partner_creds', JSON.stringify(creds), function(){ window.PARTNER_CREDS=creds; });
       if(typeof _auditLog==='function') _auditLog('Partner password changed', 'Partner: '+targetName);
     }
 
@@ -17974,7 +18124,13 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     'cars24_dod_arrays': {
       admin:   ['buildDodStats', 'buildDodChart'],
       partner: []
-    }
+    },
+    'cars24_pdi_store':     { admin: ['buildTargets','updateDashboard'], partner: ['buildPartnerTargets'] },
+    'cars24_challan_store': { admin: ['buildTargets','updateDashboard'], partner: ['buildPartnerTargets'] },
+    'cars24_lac_store':     { admin: ['buildTargets','updateDashboard'], partner: ['buildPartnerTargets'] },
+    'cars24_elite_store':   { admin: ['buildTargets','updateDashboard'], partner: ['buildPartnerTargets'] },
+    'cars24_vhr_store':     { admin: ['buildTargets','updateDashboard'], partner: ['buildPartnerTargets'] },
+    'cars24_audit_log':     { admin: ['renderAuditLog'], partner: [] }
   };
 
   // ─────────────────────────────────────────────────────────────────
@@ -18072,10 +18228,16 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   function _pushToRelay(key, value){
     if(!RELAY_URL) return;
     try{
+      var body = JSON.stringify({ action:'saveConfig', configKey:key, configValue:JSON.stringify(value) });
+      // ── 5MB size guard ──
+      if(body.length > 4500000){
+        console.warn('[C24Sync] Skipping push — key too large ('+Math.round(body.length/1024)+'KB > 4500KB):', key);
+        return;
+      }
       fetch(RELAY_URL, {
         method : 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body   : JSON.stringify({ action:'saveConfig', configKey:key, configValue:JSON.stringify(value) }),
+        body   : body,
         mode   : 'no-cors',
         redirect:'follow'
       }).catch(function(e){ console.warn('[C24Sync] Push error:', e.message); });
@@ -18098,11 +18260,24 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
         var remoteStr = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
         var localStr  = localStorage.getItem(key);
         var remoteCs  = _checksum(remoteStr);
+
+        // ── FIX: Last-write-wins timestamp guard ─────────────────────
+        // Only overwrite local data if Drive version is strictly newer.
+        // This prevents a slow-syncing device from clobbering fresh edits.
+        var localTs  = parseInt(localStorage.getItem('__ts_' + key) || '0', 10);
+        var remoteTs = typeof data['__ts_' + key] === 'number'
+                         ? data['__ts_' + key]
+                         : (typeof data[key + '__ts'] === 'number' ? data[key + '__ts'] : 0);
+        var driveIsNewer = (remoteTs > 0) ? (remoteTs >= localTs) : true; // if no ts, trust Drive
+
         if(remoteCs !== _lastChecksums[key]){
           _lastChecksums[key] = remoteCs;
-          if(remoteStr !== localStr){
+          if(remoteStr !== localStr && driveIsNewer){
             _origSetItem(key, remoteStr);
+            if(remoteTs > 0) _origSetItem('__ts_' + key, String(remoteTs));
             changedKeys.push(key);
+          } else if(!driveIsNewer){
+            console.log('[C24Sync] Kept local (newer) for key:', key, '| local ts:', localTs, '> remote ts:', remoteTs);
           }
         }
       }catch(e){}
@@ -18242,6 +18417,9 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     // ── Admin accounts + targets ─────────────────────────────────────
     try{ if(_has('cars24_admin_accounts')){ var aa=localStorage.getItem('cars24_admin_accounts'); if(aa) window._adminAccounts=JSON.parse(aa); }}catch(e){}
     try{ if(_has('cars24_target_store')){ var tgt=localStorage.getItem('cars24_target_store'); if(tgt) window._targetStoreCache=JSON.parse(tgt); }}catch(e){}
+    // ── VAS stores (now synced) ──────────────────────────────────────
+    var _vasKeys=['cars24_pdi_store','cars24_challan_store','cars24_lac_store','cars24_elite_store','cars24_vhr_store'];
+    _vasKeys.forEach(function(vk){ try{ if(_has(vk)){ var vv=localStorage.getItem(vk); /* store is read fresh by get*Store() functions on next access */ } }catch(e){} });
 
     // ── GSheet cache keys — re-integrate into memory on partner device ──
     // When admin syncs GSheet, raw cache rows are pushed to relay.
@@ -18406,25 +18584,21 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
   }
 
   // ── Patch saveTargetStore ────────────────────────────────────────────────────────
-  window.saveTargetStore = function(obj){ _syncWrite('cars24_target_store', obj); };
-
-  // ── Patch savePayoutStore ────────────────────────────────────────────────────────
-  window.savePayoutStore = function(obj){ _syncWrite('cars24_payout_store', obj); };
-
-  // ── Patch saveAnnouncements ──────────────────────────────────────────────────────
-  window.saveAnnouncements = function(arr){ _syncWrite('cars24_announcements', arr); };
+  // Cloud-first: these functions now route through _c24Cloud.push directly.
+  // _syncWrite kept as fallback only for any legacy callers not yet patched.
+  window.saveTargetStore  = function(obj){ window._c24Cloud.push('cars24_target_store', JSON.stringify(obj)); };
+  window.savePayoutStore  = function(obj){ window._c24Cloud.push('cars24_payout_store', JSON.stringify(obj)); };
+  window.saveAnnouncements= function(arr){ window._c24Cloud.push('cars24_announcements', JSON.stringify(arr)); };
 
   // ── Patch saveAdminViewStore ─────────────────────────────────────────────────────
   window.saveAdminViewStore = function(obj){
     if(typeof currentRole !== 'undefined' && currentRole === 'partner') return;
-    _syncWrite('cars24_admin_view_data', obj);
+    window._c24Cloud.push('cars24_admin_view_data', JSON.stringify(obj));
   };
 
   // ── Patch saveInvoices — used by both partner submit and admin approve ───────────
-  window.saveInvoices = function(arr){ _syncWrite('cars24_invoices', arr); };
-
-  // ── Patch saveProofs ─────────────────────────────────────────────────────────────
-  window.saveProofs = function(arr){ _syncWrite('cars24_payment_proofs', arr); };
+  window.saveInvoices = function(arr){ window._c24Cloud.push('cars24_invoices', JSON.stringify(arr)); };
+  window.saveProofs   = function(arr){ window._c24Cloud.push('cars24_payment_proofs', JSON.stringify(arr)); };
 
   // ── Patch cars24_ls.set ──────────────────────────────────────────────────────────
   if(window.cars24_ls){
@@ -18582,11 +18756,12 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
       }
     });
 
-    // Rolling poll every 5s for near-real-time sync
+    // Rolling poll every 30s — balances real-time feel vs Apps Script quota
+    // Free quota: 20,000 calls/day. At 30s: 2,880 calls/device/day (safe up to ~6 devices)
     setInterval(function(){
       if(document.visibilityState === 'hidden') return;
       _pullFromRelay(null);
-    }, 5000);
+    }, 30000);
   }
 
   // Patch showPortal to inject indicator + banner check
@@ -18631,12 +18806,18 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     console.log('(results appear in ~2s)');
     console.groupEnd();
   };
-  window.c24SyncPush  = function(key){ var v=localStorage.getItem(key); if(v) _pushToRelay(key, v); };
+  window.c24SyncPush  = function(key){
+    var v=localStorage.getItem(key);
+    if(v){ var pushFn=window._c24Push||_pushToRelay; pushFn(key,v,'manual push'); }
+  };
   window.c24SyncPushAll = function(){
+    var pushed=0;
     SYNC_KEYS.forEach(function(k){
-      var v=localStorage.getItem(k); if(v) _pushToRelay(k, v);
+      var v=localStorage.getItem(k);
+      if(v){ var pushFn=window._c24Push||_pushToRelay; pushFn(k,v,'pushAll'); pushed++; }
     });
-    if(typeof window.showImportToast==='function') window.showImportToast('☁️ Pushed all config to Drive relay');
+    console.log('[C24Sync] c24SyncPushAll: pushed',pushed,'keys to Drive');
+    if(typeof window.showImportToast==='function') window.showImportToast('☁️ Pushed '+pushed+' keys to Drive relay');
   };
 
   if(document.readyState==='loading'){
