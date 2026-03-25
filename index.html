@@ -95,18 +95,29 @@ if(CARS24_CONFIG.driveWebAppUrl){
     // on all POST requests regardless of .gs code. no-cors skips preflight entirely,
     // the write lands server-side, response is opaque (unreadable) but that's fine.
     // GET (bootPull/poll) uses cors+redirect:follow which DOES work for Apps Script GETs.
-    var _body = JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts});
-    fetch(relay, {
-      method  : 'POST',
-      headers : {'Content-Type':'text/plain;charset=utf-8'},
-      body    : _body,
-      mode    : 'no-cors',
-      redirect: 'follow'
+    // Use GET with encoded params — Apps Script CORS works on GET, not POST no-cors
+    // This makes push verifiable (we can read the response) unlike opaque no-cors POST
+    var _url = relay
+      + '?action=saveConfig'
+      + '&configKey=' + encodeURIComponent(key)
+      + '&configValue=' + encodeURIComponent(valStr)
+      + '&ts=' + ts;
+    fetch(_url, {
+      method  : 'GET',
+      mode    : 'cors',
+      credentials: 'omit',
+      redirect: 'follow',
+      cache   : 'no-store'
     })
-    .then(function(){
-      // Response is opaque with no-cors — assume success if no network error
-      console.log('[C24Cloud] ✅ push sent (no-cors):', key);
-      if(onDone) onDone(true, 'no-cors');
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && d.ok){
+        console.log('[C24Cloud] ✅ push confirmed by Drive:', key);
+        if(onDone) onDone(true, 'get-ok');
+      } else {
+        console.warn('[C24Cloud] ⚠️ Drive returned error for:', key, d);
+        if(onDone) onDone(false, d);
+      }
     })
     .catch(function(e){
       console.warn('[C24Cloud] ❌ push failed:', key, e.message||e);
@@ -136,12 +147,10 @@ if(CARS24_CONFIG.driveWebAppUrl){
         console.warn('[C24Cloud] bootPull: Drive config is EMPTY — no data synced yet.');
         console.warn('[C24Cloud] → Push data from the device that has correct data by running: c24SyncPushAll()');
       }
-      // Keys where Drive always wins regardless of local timestamp
-      // Ensures partner self-service password changes propagate to all devices
       var ALWAYS_TRUST_DRIVE = ['cars24_partner_creds'];
       var updated = [];
       Object.keys(data).forEach(function(key){
-        if(key.startsWith('__ts_')) return; // skip timestamp meta keys
+        if(key.startsWith('__ts_')) return;
         if(LOCAL_ONLY_KEYS.indexOf(key) !== -1) return;
         var remoteVal = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
         var localTs  = parseInt(localStorage.getItem('__ts_'+key)||'0',10);
@@ -203,14 +212,20 @@ if(CARS24_CONFIG.driveWebAppUrl){
     _rawSet('__ts_' + key, String(Date.now()));
     // no-cors: skips CORS preflight — Apps Script /exec rejects OPTIONS
     // Write still lands on the server; response is opaque (unreadable) but that's fine
-    fetch(relay, {
-      method  : 'POST',
-      headers : {'Content-Type':'text/plain;charset=utf-8'},
-      body    : payload,
-      mode    : 'no-cors',
-      redirect: 'follow'
+    var _eUrl = relay
+      + '?action=saveConfig'
+      + '&configKey=' + encodeURIComponent(key)
+      + '&configValue=' + encodeURIComponent(value)
+      + '&ts=' + Date.now();
+    fetch(_eUrl, {
+      method  : 'GET',
+      mode    : 'cors',
+      credentials: 'omit',
+      redirect: 'follow',
+      cache   : 'no-store'
     })
-    .then(function(){ console.log('[C24Early]', label||'push', 'sent →', key); })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(d&&d.ok) console.log('[C24Early] ✅ push confirmed:', key); else console.warn('[C24Early] ⚠️ Drive error:', key, d); })
     .catch(function(e){ console.warn('[C24Early] Push failed:', key, e.message); });
   }
 
