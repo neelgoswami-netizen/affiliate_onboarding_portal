@@ -871,46 +871,13 @@ tbody tr:hover td{background:var(--al)}
   .hbr { padding: 5px 10px; font-size: 11px; }
   .hb:not(.hbr):not(#mob-menu-btn) { font-size: 11px; padding: 4px 8px; gap: 3px; }
 
-  /* ── Show hamburger — ALWAYS on mobile ── */
-  #mob-menu-btn { display: flex !important; }
-
-  /* ── Sidebar — ALWAYS a slide-in drawer on mobile ── */
-  /* This ensures it's hidden by default, regardless of inline styles */
-  #admin-sidebar,
-  #partner-sidebar,
-  .sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 280px !important;
-    max-width: 85vw !important;
-    z-index: 210 !important;
-    transform: translateX(-100%) !important;
-    -webkit-transform: translateX(-100%) !important;
-    transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
-    -webkit-transition: -webkit-transform .28s cubic-bezier(.4,0,.2,1) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,.35) !important;
-    /* Sit below the header */
-    padding-top: 60px !important;
-  }
-  #admin-sidebar.mob-open,
-  #partner-sidebar.mob-open,
-  .sidebar.mob-open {
-    transform: translateX(0) !important;
-    -webkit-transform: translateX(0) !important;
-  }
+  /* ── Show hamburger — phones only (JS MOB_BP=480 matches) ── */
+  #mob-menu-btn { display: none !important; }
 
   /* ── Layout — no sidebar taking space ── */
   .layout { flex-direction: row; }
   .main {
     padding: 14px 12px;
-    width: 100% !important;
-    min-width: 0;
-    /* Take full width since sidebar is overlaid */
-    flex: 1;
   }
 
   /* ── KPI grids → 2 cols on mobile ── */
@@ -977,6 +944,7 @@ tbody tr:hover td{background:var(--al)}
   .hdr { padding: 0 10px; height: 50px; }
   .logo { height: 30px !important; }
   .htit { display: none; }
+  #mob-menu-btn { display: flex !important; }
 
   .kg  { grid-template-columns: repeat(2, 1fr) !important; }
   .kg4 { grid-template-columns: repeat(2, 1fr) !important; }
@@ -1187,6 +1155,55 @@ input[type=range]::-webkit-slider-thumb {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   min-height: 100dvh;
+}
+
+/* ══════════════════════════════════════════════════
+   SIDEBAR OVERLAP FIX — DESKTOP + MOBILE
+   ══════════════════════════════════════════════════ */
+
+/* ── Desktop (>=481px): sidebar stays in normal flex flow ── */
+@media (min-width: 481px) {
+  #admin-sidebar,
+  #partner-sidebar {
+    position: relative !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    z-index: 1 !important;
+    flex-shrink: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* ── Mobile (<=480px): sidebar is a fixed off-canvas drawer ── */
+@media (max-width: 480px) {
+  #admin-sidebar,
+  #partner-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    max-width: 85vw !important;
+    z-index: 210 !important;
+    transform: translateX(-100%) !important;
+    -webkit-transform: translateX(-100%) !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: 56px !important;
+    will-change: transform;
+  }
+  #admin-sidebar.mob-open,
+  #partner-sidebar.mob-open {
+    transform: translateX(0) !important;
+    -webkit-transform: translateX(0) !important;
+  }
+  .main {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
 }
 
 /* ══ CHAT SYSTEM ══════════════════════════════════════════════════════ */
@@ -7151,16 +7168,23 @@ function _openPortal() {
 // ── Override portal launchApp ──
 function launchApp() { _openPortal(); }
 
-// ── Override portal doLogout ──
+// ── Override portal doLogout — delegates to window.doLogout ──
 function doLogout() {
-  document.getElementById('portal-fullscreen').classList.remove('open');
-  document.body.style.overflow = '';
-  currentUser = null; currentRole = null; currentPartner = null;
-  try{ localStorage.removeItem('c24_session'); }catch(e){}
-  try { Object.values(CH).forEach(function(ch){ if(ch) ch.destroy(); }); } catch(e){}
-  CH = {};
-  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-
+  if(typeof window.doLogout === 'function' && window.doLogout !== doLogout){
+    window.doLogout();
+  } else {
+    // Fallback inline
+    try{ localStorage.removeItem('c24_session'); }catch(e){}
+    var pf=document.getElementById('portal-fullscreen');
+    if(pf) pf.classList.remove('open');
+    document.body.style.overflow='';
+    document.documentElement.style.overflow='';
+    window.currentUser=null; window.currentRole=null; window.currentPartner=null;
+    try{ Object.values(window.CH||{}).forEach(function(c){ if(c) c.destroy(); }); window.CH={}; }catch(e){}
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    var lo=document.getElementById('portal-login-overlay');
+    if(lo){ lo.style.display='flex'; var u=document.getElementById('pl-username'); if(u){ u.value=''; setTimeout(function(){ u.focus(); },150); } }
+  }
 }
 
 // ── Close portal login modal on backdrop click ──
@@ -15393,31 +15417,49 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 })();
 
-// ── 7. Logout also works cleanly ──────────────────────────────────────────────
-var _v33OrigLogout = window.doLogout;
+// ── 7. Logout — bulletproof single definition ─────────────────────────────
 window.doLogout = function(){
-  // Clear session
+  // 1. Clear session storage
   try{ localStorage.removeItem('c24_session'); }catch(e){}
-  // Close mobile sidebar if open
-  if(typeof window._closeMobSidebar === 'function') window._closeMobSidebar();
-  // Restore body scroll
-  document.body.style.overflow = '';
-  document.documentElement.style.overflow = '';
-  // Close portal
-  var pf = document.getElementById('portal-fullscreen');
-  if(pf) pf.classList.remove('open');
-  // Clear globals
-  window.currentUser = null; window.currentRole = null; window.currentPartner = null;
-  window._currentPartnerSheetRow = null;
-  try{ Object.values(window.CH||{}).forEach(function(c){ if(c) c.destroy(); }); window.CH={}; }catch(e){}
+
+  // 2. Close mobile sidebar
+  try{ if(typeof window._closeMobSidebar==='function') window._closeMobSidebar(); }catch(e){}
+
+  // 3. Destroy charts
+  try{ Object.values(window.CH||{}).forEach(function(c){ try{ if(c) c.destroy(); }catch(e){} }); window.CH={}; }catch(e){}
+
+  // 4. Clear all globals
+  window.currentUser=null; window.currentRole=null; window.currentPartner=null;
+  window._currentPartnerSheetRow=null; window._adminChatActive=null;
+
+  // 5. Remove all active view classes
   document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-  // Show login overlay
-  var lo = document.getElementById('portal-login-overlay');
-  if(lo){ lo.style.display='flex'; setTimeout(function(){ var u=document.getElementById('pl-username'); if(u) u.focus(); }, 100); }
-  // Call original if exists and different
-  if(typeof _v33OrigLogout === 'function' && _v33OrigLogout !== window.doLogout){
-    try{ _v33OrigLogout.apply(this, arguments); }catch(e){}
+
+  // 6. Hide portal fullscreen
+  var pf=document.getElementById('portal-fullscreen');
+  if(pf) pf.classList.remove('open');
+
+  // 7. CRITICAL: Restore ALL scroll locks
+  document.body.style.overflow='';
+  document.body.style.overflowY='';
+  document.documentElement.style.overflow='';
+  document.documentElement.style.overflowY='';
+
+  // 8. Show login overlay on top of landing page
+  var lo=document.getElementById('portal-login-overlay');
+  if(lo){
+    lo.style.display='flex';
+    // Clear previous login fields
+    var u=document.getElementById('pl-username');
+    var p=document.getElementById('pl-password');
+    var er=document.getElementById('portal-login-err');
+    if(u) u.value='';
+    if(p) p.value='';
+    if(er) er.style.display='none';
+    setTimeout(function(){ if(u) u.focus(); },150);
   }
+
+  console.log('[C24] Logout complete');
 };
 
 console.log('[Cars24 v33] Master fix patch applied — login ✓ session restore ✓ table visibility ✓');
@@ -15800,7 +15842,7 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
 
 (function _initMobileNav(){
 
-  var MOB_BP = 768; // px
+  var MOB_BP = 480; // px — sidebar drawer only on phones, not tablet/desktop windows
 
   function isMobile(){ return window.innerWidth <= MOB_BP; }
 
@@ -15816,6 +15858,7 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
 
   // Open sidebar drawer
   window._openMobSidebar = function(){
+    if(window.innerWidth > 480) return; // desktop — sidebar is always visible, no drawer needed
     var btn = document.getElementById('mob-menu-btn');
     var ov  = document.getElementById('mob-sidebar-overlay');
     // Find whichever sidebar is visible
@@ -15839,6 +15882,7 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
 
   // Close sidebar drawer
   window._closeMobSidebar = function(){
+    if(window.innerWidth > 480) return; // desktop — do nothing, sidebar stays in flow
     var btn = document.getElementById('mob-menu-btn');
     var ov  = document.getElementById('mob-sidebar-overlay');
     document.querySelectorAll('.sidebar').forEach(function(s){ s.classList.remove('mob-open'); });
@@ -16692,8 +16736,6 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
     #import-modal           { z-index: 100000 !important; }
     /* Fix partner sidebar not scrolling below header */
     #partner-sidebar, #admin-sidebar { overflow-y: auto; overflow-x: hidden; }
-    /* Fix view area overflow clipping partner views */
-    #portal-fullscreen .main-content { overflow: visible !important; }
     /* Projection cards fix — prevent content clipping */
     #proj-metric-cards .vc, #dash-proj-cards .vc { overflow: visible !important; min-width: 130px; }
     /* Logic builder table x-scroll */
@@ -17435,20 +17477,11 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
   // Fix portal fullscreen container overflow
   var style = document.createElement('style');
   style.textContent = `
-    /* Portal container must not clip modals */
-    #portal-fullscreen { overflow: visible !important; }
-
-    /* Sidebar must scroll on small screens */
+    /* Sidebar scroll — overflow only, no position change */
     #admin-sidebar, #partner-sidebar {
       overflow-y: auto !important;
       overflow-x: hidden !important;
-      max-height: calc(100vh - 60px);
-    }
-
-    /* Main content area horizontal scroll for wide tables */
-    #portal-fullscreen .main-content, .pmc {
-      overflow-x: auto;
-      overflow-y: auto;
+      max-height: calc(100vh - 56px);
     }
 
     /* Logic builder table overflow */
@@ -17461,10 +17494,9 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
       overflow: visible !important;
     }
 
-    /* Avoid modal being clipped by parent with overflow:hidden */
+    /* Modals — all use position:fixed so portal overflow:hidden is fine */
     body.no-scroll { overflow: hidden; }
 
-    /* Credential modal positioning fix */
     #cred-modal-overlay {
       position: fixed !important;
       z-index: 99999 !important;
@@ -17475,22 +17507,6 @@ console.log('[Cars24 v35] 8 fixes applied — expand ✓ data isolation ✓ DOD 
 
     /* Fix import modal z-index */
     #import-modal { z-index: 100000 !important; }
-
-    /* Tooltip overlap prevention */
-    [title]:hover::after {
-      z-index: 99998;
-      position: relative;
-    }
-
-    /* Fix partner-sidebar nav overlap with content on small screens */
-    @media(max-width: 900px){
-      #partner-sidebar, #admin-sidebar {
-        position: absolute;
-        z-index: 200;
-        height: 100%;
-        box-shadow: 4px 0 20px rgba(0,0,0,.3);
-      }
-    }
   `;
   document.head.appendChild(style);
   console.log('[v36] GUI overlap styles applied');
@@ -18144,8 +18160,8 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
 
   // iOS fixed-modal scroll lock
   var _lsy=0,_lkd=false;
-  window._lockBodyScroll=function(){ if(_lkd)return; _lsy=window.scrollY; document.body.style.cssText='position:fixed;top:-'+_lsy+'px;left:0;right:0'; _lkd=true; };
-  window._unlockBodyScroll=function(){ if(!_lkd)return; document.body.style.cssText=''; window.scrollTo(0,_lsy); _lkd=false; };
+  window._lockBodyScroll=function(){ if(_lkd)return; _lsy=window.scrollY; document.body.style.overflow='hidden'; _lkd=true; };
+  window._unlockBodyScroll=function(){ if(!_lkd)return; document.body.style.overflow=''; window.scrollTo(0,_lsy); _lkd=false; };
   var _osp=window.showPortal;
   window.showPortal=function(){ window._lockBodyScroll(); if(typeof _osp==='function') _osp.apply(this,arguments); };
 
