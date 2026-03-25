@@ -95,7 +95,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
     // on all POST requests regardless of .gs code. no-cors skips preflight entirely,
     // the write lands server-side, response is opaque (unreadable) but that's fine.
     // GET (bootPull/poll) uses cors+redirect:follow which DOES work for Apps Script GETs.
-    // no-cors POST — skips preflight, write lands server-side, response opaque (expected)
+    // no-cors POST — avoids CORS preflight, handles large payloads correctly
     var _body = JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts});
     fetch(relay, {
       method  : 'POST',
@@ -106,7 +106,6 @@ if(CARS24_CONFIG.driveWebAppUrl){
     })
     .then(function(){
       console.log('[C24Cloud] ✅ push sent (no-cors):', key);
-      // Update local cache timestamp so this device doesn't overwrite on next bootPull
       try{ localStorage.setItem('__ts_'+key, String(ts)); }catch(e){}
       if(onDone) onDone(true, 'no-cors');
     })
@@ -121,8 +120,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
     var relay = _relay();
     if(!relay){ if(onDone) onDone(false); return; }
     console.log('[C24Cloud] Boot pull via JSONP...');
-
-    // JSONP — injects a <script> tag, bypasses CORS and redirect entirely
+    // JSONP via <script> tag — bypasses CORS and redirect entirely
     var cbName = '_c24cb_' + Date.now();
     var script = document.createElement('script');
     var timer = setTimeout(function(){
@@ -131,7 +129,6 @@ if(CARS24_CONFIG.driveWebAppUrl){
       if(script.parentNode) script.parentNode.removeChild(script);
       if(onDone) onDone(false);
     }, 10000);
-
     window[cbName] = function(data){
       clearTimeout(timer);
       delete window[cbName];
@@ -165,7 +162,6 @@ if(CARS24_CONFIG.driveWebAppUrl){
       console.log('[C24Cloud] Boot pull complete — updated', updated.length, 'keys:', updated);
       if(onDone) onDone(true, updated);
     };
-
     script.src = relay + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
     document.head.appendChild(script);
   }
@@ -187,7 +183,8 @@ if(CARS24_CONFIG.driveWebAppUrl){
     'cars24_gsheet_cache_pdi','cars24_gsheet_cache_challan',
     'cars24_gsheet_cache_lac','cars24_dod_arrays',
     'cars24_pdi_store','cars24_challan_store','cars24_lac_store',
-    'cars24_elite_store','cars24_vhr_store','cars24_audit_log',
+    'cars24_elite_store','cars24_vhr_store',
+    // cars24_audit_log excluded — local only, too large for Drive sync
   ];
 
   // Store original before any override
@@ -209,6 +206,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
     _rawSet('__ts_' + key, String(Date.now()));
     // no-cors: skips CORS preflight — Apps Script /exec rejects OPTIONS
     // Write still lands on the server; response is opaque (unreadable) but that's fine
+    // no-cors POST — skips CORS preflight, handles large payloads, write lands server-side
     fetch(relay, {
       method  : 'POST',
       headers : {'Content-Type':'text/plain;charset=utf-8'},
@@ -216,7 +214,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
       mode    : 'no-cors',
       redirect: 'follow'
     })
-    .then(function(){ console.log('[C24Early]', label||'push', 'sent →', key); })
+    .then(function(){ console.log('[C24Early]', label||'push', 'sent (no-cors) →', key); })
     .catch(function(e){ console.warn('[C24Early] Push failed:', key, e.message); });
   }
 
@@ -11538,7 +11536,7 @@ function _auditLog(action, detail){
     if(log.length > 200) log = log.slice(-200);
     // localStorage cache kept for instant local read; cloud push syncs to all devices
     try{ localStorage.setItem('cars24_audit_log', JSON.stringify(log)); }catch(e){}
-    window._c24Cloud.push('cars24_audit_log', JSON.stringify(log));
+    // audit_log is local-only — not pushed to Drive (too large, not needed cross-device)
   }catch(e){}
 }
 
@@ -11897,7 +11895,6 @@ function refreshGSheetData(){
     'cars24_lac_store',             // LAC orders per partner per month
     'cars24_elite_store',           // Elite orders per partner per month
     'cars24_vhr_store',             // VHR orders per partner per month
-    'cars24_audit_log',             // audit trail — synced so admin sees all device actions
   ];
       var pushed = 0;
       gsheetKeys.forEach(function(key){
