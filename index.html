@@ -136,6 +136,10 @@ if(CARS24_CONFIG.driveWebAppUrl){
         console.warn('[C24Cloud] bootPull: Drive config is EMPTY — no data synced yet.');
         console.warn('[C24Cloud] → Push data from the device that has correct data by running: c24SyncPushAll()');
       }
+      // Keys where Drive always wins — partner self-service changes (e.g. password reset)
+      // must reach admin regardless of local timestamp
+      var ALWAYS_TRUST_DRIVE = ['cars24_partner_creds'];
+
       var updated = [];
       Object.keys(data).forEach(function(key){
         if(key.startsWith('__ts_')) return; // skip timestamp meta keys
@@ -143,8 +147,10 @@ if(CARS24_CONFIG.driveWebAppUrl){
         var remoteVal = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
         var localTs  = parseInt(localStorage.getItem('__ts_'+key)||'0',10);
         var remoteTs = typeof data['__ts_'+key]==='number' ? data['__ts_'+key] : 0;
-        // Always trust Drive on boot unless local is strictly newer
-        if(remoteTs >= localTs || localTs === 0){
+        // For credential keys — always trust Drive regardless of local timestamp
+        // This ensures partner self-service password changes propagate to admin devices
+        var alwaysTrust = ALWAYS_TRUST_DRIVE.indexOf(key) !== -1;
+        if(alwaysTrust || remoteTs >= localTs || localTs === 0){
           try{
             localStorage.setItem(key, remoteVal);
             if(remoteTs) localStorage.setItem('__ts_'+key, String(remoteTs));
@@ -5435,7 +5441,19 @@ function triggerView(id){
   if(id==='seller-channels'){initSellerChannels();}
   if(id==='buyer'){buildBuyerMonthBtns();renderBuyerTable();}
   if(id==='vas'){ seedVhrStore(); buildVasCurrent(); }
-  if(id==='credentials'){ if(typeof getLatestCreds==='function') getLatestCreds(); if(typeof window.renderCredTable==='function') window.renderCredTable(); else renderCredTable(); try{ renderAdminAccountsInCredView(); }catch(e){} }
+  if(id==='credentials'){
+    if(window._c24Cloud && window._c24Cloud.bootPull){
+      window._c24Cloud.bootPull(function(){
+        try{ var _pc=localStorage.getItem('cars24_partner_creds'); if(_pc){ var _fc=JSON.parse(_pc); window.PARTNER_CREDS=_fc; try{ PARTNER_CREDS=_fc; }catch(e){} } }catch(e){}
+        if(typeof window.renderCredTable==='function') window.renderCredTable(); else if(typeof renderCredTable==='function') renderCredTable();
+        try{ renderAdminAccountsInCredView(); }catch(e){}
+      });
+    } else {
+      if(typeof getLatestCreds==='function') getLatestCreds();
+      if(typeof window.renderCredTable==='function') window.renderCredTable(); else renderCredTable();
+      try{ renderAdminAccountsInCredView(); }catch(e){}
+    }
+  }
   if(id==='announcements')buildAnnouncementsAdmin();
   if(id==='payouts'){buildPayoutMonthBtns();renderPayoutTable();}
   if(id==='invoices'){buildInvMonthBtnsAdmin();renderInvoiceTableAdmin();}
