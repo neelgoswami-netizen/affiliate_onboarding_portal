@@ -114,19 +114,28 @@ if(CARS24_CONFIG.driveWebAppUrl){
     });
   }
 
-  // ── Boot pull: fetch all keys from Drive on page load ──────────────
+  // ── Boot pull: JSONP (bypasses Apps Script CORS block on GET) ──────
   function _bootPull(onDone){
     var relay = _relay();
     if(!relay){ if(onDone) onDone(false); return; }
-    console.log('[C24Cloud] Boot pull from Drive...');
-    fetch(relay+'?action=getConfig&t='+Date.now(), {
-      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
-    })
-    .then(function(r){
-      if(!r.ok) return Promise.reject('HTTP '+r.status);
-      return r.json();
-    })
-    .then(function(data){
+    console.log('[C24Cloud] Boot pull from Drive (JSONP)...');
+
+    var cbName = '_c24bootcb_' + Date.now();
+    var script = document.createElement('script');
+    var timer  = setTimeout(function(){
+      cleanup();
+      console.warn('[C24Cloud] bootPull timed out');
+      if(onDone) onDone(false);
+    }, 12000);
+
+    function cleanup(){
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data){
+      cleanup();
       if(!data || data.error){
         console.warn('[C24Cloud] bootPull relay error:', data&&data.error);
         if(onDone) onDone(false); return;
@@ -160,11 +169,15 @@ if(CARS24_CONFIG.driveWebAppUrl){
       });
       console.log('[C24Cloud] Boot pull complete — updated', updated.length, 'keys:', updated);
       if(onDone) onDone(true, updated);
-    })
-    .catch(function(e){
-      console.warn('[C24Cloud] Boot pull failed:', e);
+    };
+
+    script.onerror = function(){
+      cleanup();
+      console.warn('[C24Cloud] bootPull JSONP script load error');
       if(onDone) onDone(false);
-    });
+    };
+    script.src = relay + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
   }
 
   // ── Expose globally ────────────────────────────────────────────────
@@ -18437,35 +18450,49 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     if(onDone) onDone(true, changedKeys);
   }
 
-  // ── PULL: fetch GET with redirect follow (works on GitHub Pages) ─
+  // ── PULL: JSONP (bypasses Apps Script CORS block on GET) ─────────
   function _pullFromRelay(onDone){
     if(!RELAY_URL){ if(onDone) onDone(false,[]); return; }
     if(_pullInFlight){ return; }
     _pullInFlight = true;
     _updateSyncIndicator('syncing');
 
-    var url = RELAY_URL + '?action=getConfig&t=' + Date.now();
-
-    fetch(url, {
-      method     : 'GET',
-      mode       : 'cors',
-      credentials: 'omit',
-      redirect   : 'follow',
-      cache      : 'no-store'
-    })
-    .then(function(resp){
-      if(!resp.ok) throw new Error('HTTP ' + resp.status);
-      return resp.json();
-    })
-    .then(function(data){
-      _applyRemoteData(data, onDone);
-    })
-    .catch(function(err){
+    var cbName = '_c24synccb_' + Date.now();
+    var script = document.createElement('script');
+    var timer  = setTimeout(function(){
+      cleanup();
+      console.warn('[C24Sync] pull timed out');
       _pullInFlight = false;
-      console.warn('[C24Sync] fetch pull failed:', err.message);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
-    });
+    }, 12000);
+
+    function cleanup(){
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data){
+      cleanup();
+      _pullInFlight = false;
+      if(!data || data.error){
+        console.warn('[C24Sync] pull relay error:', data&&data.error);
+        _updateSyncIndicator('offline');
+        if(onDone) onDone(false, []); return;
+      }
+      _applyRemoteData(data, onDone);
+    };
+
+    script.onerror = function(){
+      cleanup();
+      _pullInFlight = false;
+      console.warn('[C24Sync] JSONP script load error');
+      _updateSyncIndicator('offline');
+      if(onDone) onDone(false, []);
+    };
+    script.src = RELAY_URL + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -18864,24 +18891,32 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     console.log('Pull in-flight:', _pullInFlight);
     if(!RELAY_URL){ console.warn('⚠️ driveWebAppUrl not set'); console.groupEnd(); return; }
 
-    // Test 1: fetch GET (the actual mechanism used)
-    console.log('--- Test 1: fetch GET ---');
-    fetch(RELAY_URL + '?action=ping&t=' + Date.now(), {
-      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
-    })
-    .then(function(r){ return r.json().then(function(d){ console.log('✅ fetch GET OK — status:', r.status, d); }); })
-    .catch(function(e){ console.warn('❌ fetch GET failed:', e.message); });
+    // Test 1: JSONP ping
+    console.log('--- Test 1: JSONP ping ---');
+    (function(){
+      var cb = '_diagPing_' + Date.now();
+      var s  = document.createElement('script');
+      var t  = setTimeout(function(){ delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s); console.warn('❌ JSONP ping timed out'); }, 8000);
+      window[cb] = function(d){ clearTimeout(t); delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s); console.log('✅ JSONP ping OK —', d); };
+      s.onerror  = function(){ clearTimeout(t); delete window[cb]; console.warn('❌ JSONP ping script error'); };
+      s.src = RELAY_URL + '?action=ping&cb=' + cb + '&t=' + Date.now();
+      document.head.appendChild(s);
+    })();
 
-    // Test 2: fetch getConfig
-    console.log('--- Test 2: fetch getConfig ---');
-    fetch(RELAY_URL + '?action=getConfig&t=' + Date.now(), {
-      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
-    })
-    .then(function(r){ return r.json().then(function(d){
-      if(d.error) console.warn('❌ getConfig error:', d.error);
-      else console.log('✅ getConfig OK —', Object.keys(d).length, 'keys:', Object.keys(d));
-    }); })
-    .catch(function(e){ console.warn('❌ getConfig failed:', e.message); });
+    // Test 2: JSONP getConfig
+    console.log('--- Test 2: JSONP getConfig ---');
+    (function(){
+      var cb = '_diagCfg_' + Date.now();
+      var s  = document.createElement('script');
+      var t  = setTimeout(function(){ delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s); console.warn('❌ JSONP getConfig timed out'); }, 8000);
+      window[cb] = function(d){ clearTimeout(t); delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s);
+        if(d.error) console.warn('❌ getConfig error:', d.error);
+        else console.log('✅ getConfig OK —', Object.keys(d).length, 'keys:', Object.keys(d));
+      };
+      s.onerror  = function(){ clearTimeout(t); delete window[cb]; console.warn('❌ JSONP getConfig script error'); };
+      s.src = RELAY_URL + '?action=getConfig&cb=' + cb + '&t=' + Date.now();
+      document.head.appendChild(s);
+    })();
 
     console.log('(results appear in ~2s)');
     console.groupEnd();
