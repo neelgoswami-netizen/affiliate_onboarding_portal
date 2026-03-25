@@ -162,7 +162,9 @@ if(CARS24_CONFIG.driveWebAppUrl){
       console.log('[C24Cloud] Boot pull complete — updated', updated.length, 'keys:', updated);
       if(onDone) onDone(true, updated);
     };
-    script.src = relay + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
+    // Use /dev URL for JSONP — avoids the /exec redirect that breaks script tags
+    var devUrl = relay.replace('/exec', '/dev');
+    script.src = devUrl + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
     document.head.appendChild(script);
   }
 
@@ -18449,35 +18451,49 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     if(onDone) onDone(true, changedKeys);
   }
 
-  // ── PULL: fetch GET with redirect follow (works on GitHub Pages) ─
+  // ── PULL: JSONP via script tag (bypasses Apps Script CORS redirect) ─
   function _pullFromRelay(onDone){
     if(!RELAY_URL){ if(onDone) onDone(false,[]); return; }
     if(_pullInFlight){ return; }
     _pullInFlight = true;
     _updateSyncIndicator('syncing');
 
-    var url = RELAY_URL + '?action=getConfig&t=' + Date.now();
-
-    fetch(url, {
-      method     : 'GET',
-      mode       : 'cors',
-      credentials: 'omit',
-      redirect   : 'follow',
-      cache      : 'no-store'
-    })
-    .then(function(resp){
-      if(!resp.ok) throw new Error('HTTP ' + resp.status);
-      return resp.json();
-    })
-    .then(function(data){
-      _applyRemoteData(data, onDone);
-    })
-    .catch(function(err){
+    var cbName = '_c24sync_cb_' + Date.now();
+    var script = document.createElement('script');
+    var timer = setTimeout(function(){
+      console.warn('[C24Sync] pull timeout');
       _pullInFlight = false;
-      console.warn('[C24Sync] fetch pull failed:', err.message);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
-    });
+    }, 30000);
+
+    window[cbName] = function(data){
+      clearTimeout(timer);
+      _pullInFlight = false;
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+      if(!data || data.error){
+        console.warn('[C24Sync] Relay error:', data && data.error);
+        _updateSyncIndicator('offline');
+        if(onDone) onDone(false, []);
+        return;
+      }
+      _applyRemoteData(data, onDone);
+    };
+
+    var _devUrl = RELAY_URL.replace('/exec', '/dev');
+    script.src = _devUrl + '?action=getConfig&cb=' + cbName + '&t=' + Date.now();
+    script.onerror = function(){
+      clearTimeout(timer);
+      _pullInFlight = false;
+      delete window[cbName];
+      console.warn('[C24Sync] fetch pull failed: script load error');
+      _updateSyncIndicator('offline');
+      if(onDone) onDone(false, []);
+    };
+    document.head.appendChild(script);
   }
 
   // ─────────────────────────────────────────────────────────────────
