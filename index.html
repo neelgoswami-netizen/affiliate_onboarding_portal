@@ -128,7 +128,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
       delete window[cbName];
       if(script.parentNode) script.parentNode.removeChild(script);
       if(onDone) onDone(false);
-    }, 10000);
+    }, 30000); // 30s — Apps Script cold-start can take 15-20s
     window[cbName] = function(data){
       clearTimeout(timer);
       delete window[cbName];
