@@ -178,7 +178,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
     'cars24_gsheet_cache_pdi','cars24_gsheet_cache_challan',
     'cars24_gsheet_cache_lac','cars24_dod_arrays',
     'cars24_pdi_store','cars24_challan_store','cars24_lac_store',
-    'cars24_elite_store','cars24_vhr_store',
+    'cars24_elite_store','cars24_vhr_store','cars24_chat_messages',
     // cars24_audit_log excluded — local only, too large for Drive sync
   ];
 
@@ -1189,78 +1189,36 @@ input[type=range]::-webkit-slider-thumb {
   min-height: 100dvh;
 }
 
-/* ── MOBILE SCROLL FIXES ── */
-/* Ensure portal and main area are always scrollable */
-#portal-fullscreen {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* ══ CHAT SYSTEM ══════════════════════════════════════════════════════ */
+.chat-wrap { display:flex; height:calc(100vh - 160px); min-height:400px; gap:0; border:1px solid var(--bd); border-radius:12px; overflow:hidden; background:var(--sf); }
+.chat-list { width:240px; flex-shrink:0; border-right:1px solid var(--bd); overflow-y:auto; background:var(--bg); }
+.chat-list-header { padding:14px 16px; font-weight:700; font-size:13px; border-bottom:1px solid var(--bd); color:var(--tx); }
+.chat-partner-item { padding:12px 16px; cursor:pointer; border-bottom:1px solid var(--bd); transition:background .15s; display:flex; align-items:center; gap:10px; }
+.chat-partner-item:hover, .chat-partner-item.active { background:rgba(79,70,229,.08); }
+.chat-partner-item .cpi-name { font-weight:600; font-size:13px; color:var(--tx); }
+.chat-partner-item .cpi-preview { font-size:11px; color:var(--t3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+.chat-partner-item .cpi-badge { background:#ef4444; color:#fff; border-radius:10px; font-size:10px; font-weight:700; padding:1px 6px; flex-shrink:0; }
+.chat-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+.chat-header { padding:12px 16px; border-bottom:1px solid var(--bd); font-weight:700; font-size:14px; color:var(--tx); background:var(--sf); }
+.chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; -webkit-overflow-scrolling:touch; }
+.chat-msg { max-width:72%; padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5; word-break:break-word; }
+.chat-msg.from-admin { background:rgba(79,70,229,.12); border:1px solid rgba(79,70,229,.2); align-self:flex-start; color:var(--tx); border-radius:12px 12px 12px 2px; }
+.chat-msg.from-partner { background:var(--ac); color:#fff; align-self:flex-end; border-radius:12px 12px 2px 12px; }
+.chat-msg .msg-meta { font-size:10px; opacity:.65; margin-top:4px; }
+.chat-input-wrap { padding:12px 16px; border-top:1px solid var(--bd); display:flex; gap:8px; background:var(--sf); }
+.chat-input { flex:1; padding:10px 14px; border:1.5px solid var(--bd); border-radius:8px; font-size:13px; background:var(--bg); color:var(--tx); outline:none; font-family:'DM Sans',sans-serif; resize:none; max-height:100px; min-height:40px; -webkit-overflow-scrolling:touch; }
+.chat-input:focus { border-color:var(--ac); }
+.chat-send-btn { padding:10px 18px; background:var(--ac); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; align-self:flex-end; white-space:nowrap; touch-action:manipulation; }
+.chat-empty { color:var(--t3); font-size:13px; text-align:center; margin:auto; }
+@media(max-width:768px){
+  .chat-wrap { height:calc(100vh - 130px); }
+  .chat-list { width:200px; }
+  .chat-partner-item .cpi-preview { max-width:120px; }
 }
-.layout {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-.main {
-  flex: 1;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-/* Partner view sections — ensure scroll */
-#partner-portal {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  height: 100%;
-}
-.view, [id^="view-p-"], [id^="view-"] {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-/* Fix for views cut off on small screens */
-@media (max-width: 768px) {
-  .main {
-    padding: 12px !important;
-    padding-bottom: max(80px, env(safe-area-inset-bottom)) !important;
-  }
-  /* Cards and content blocks full width */
-  .cc, .tc, .ph {
-    border-radius: 10px !important;
-    margin-bottom: 12px !important;
-  }
-  /* Partner overview hero — constrain height on mobile */
-  .p-hero {
-    min-height: unset !important;
-    padding: 20px 16px !important;
-  }
-  /* KPI grid — 2 columns on mobile */
-  .kg4 {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
-  }
-  /* Charts — full width, reasonable height */
-  canvas {
-    max-height: 260px !important;
-  }
-  /* Table wrapper — horizontal scroll */
-  .tw {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    max-height: 60vh !important;
-  }
-  /* Sidebar hidden by default on mobile — handled by JS toggle */
-  .sidebar {
-    position: fixed !important;
-    left: -240px !important;
-    top: 0 !important;
-    height: 100% !important;
-    z-index: 1000 !important;
-    transition: left .25s ease !important;
-  }
-  .sidebar.mob-open {
-    left: 0 !important;
-  }
+@media(max-width:480px){
+  .chat-wrap { flex-direction:column; height:auto; }
+  .chat-list { width:100%; max-height:140px; border-right:none; border-bottom:1px solid var(--bd); }
+  .chat-messages { min-height:200px; max-height:40vh; }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -3098,6 +3056,7 @@ function navScrollTo(id) {
         <div class="ni" onclick="showV('import-log',this)"><span class="nic">📜</span>Import Log</div>
         <div class="ni" onclick="showV('audit-log',this)"><span class="nic">🔍</span>Audit Log</div>
         <div class="ni" onclick="showV('credentials',this)"><span class="nic">🔑</span>Credentials & Email</div>
+        <div class="ni" onclick="showV('chat',this)" id="admin-chat-nav"><span class="nic">💬</span>Partner Messages <span id="admin-chat-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;">0</span></div>
       </div>
     </nav>
 
@@ -3136,6 +3095,7 @@ function navScrollTo(id) {
         <div class="ni" onclick="showPV('p-targets',this)"><span class="nic">🎯</span>My Targets</div>
         <div class="ni" onclick="showPV('p-reports',this)"><span class="nic">📤</span>Download Reports</div>
         <div class="ni" onclick="showPV('p-settings',this)"><span class="nic">🔑</span>Change Password</div>
+        <div class="ni" onclick="showPV('p-chat',this)" id="p-chat-nav"><span class="nic">💬</span>Messages <span id="p-chat-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;">0</span></div>
       </div>
     </nav>
 
@@ -4382,6 +4342,31 @@ function navScrollTo(id) {
         </div>
       </div>
 
+
+      <!-- CHAT VIEW — ADMIN -->
+      <div class="view" id="view-chat">
+        <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+          <div>
+            <div class="pt">💬 Partner Messages</div>
+            <div class="ps">2-way chat with affiliate partners</div>
+          </div>
+        </div>
+        <div class="chat-wrap">
+          <div class="chat-list">
+            <div class="chat-list-header">Partners</div>
+            <div id="admin-chat-partner-list"><div class="chat-empty" style="padding:20px;text-align:center;font-size:12px;color:var(--t3);">No partners yet</div></div>
+          </div>
+          <div class="chat-main">
+            <div class="chat-header" id="admin-chat-header">Select a partner to chat</div>
+            <div class="chat-messages" id="admin-chat-messages"><div class="chat-empty">Select a partner from the left</div></div>
+            <div class="chat-input-wrap" id="admin-chat-input-wrap" style="display:none;">
+              <textarea class="chat-input" id="admin-chat-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();adminChatSend();}"></textarea>
+              <button class="chat-send-btn" onclick="adminChatSend()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ════ PARTNER VIEWS ════ -->
 
       <!-- P-OVERVIEW -->
@@ -4666,6 +4651,25 @@ function navScrollTo(id) {
       </div>
 
       <!-- ════ PARTNER: CHANGE PASSWORD ════ -->
+
+      <!-- PARTNER CHAT VIEW -->
+      <div class="view" id="view-p-chat">
+        <div class="ph" style="margin-bottom:16px;">
+          <div class="pt">💬 Messages</div>
+          <div class="ps">Chat with Cars24 team</div>
+        </div>
+        <div class="chat-wrap" style="height:calc(100vh - 200px);">
+          <div class="chat-main">
+            <div class="chat-header">Cars24 Support</div>
+            <div class="chat-messages" id="partner-chat-messages"><div class="chat-empty">No messages yet. Start a conversation below.</div></div>
+            <div class="chat-input-wrap">
+              <textarea class="chat-input" id="partner-chat-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();partnerChatSend();}"></textarea>
+              <button class="chat-send-btn" onclick="partnerChatSend()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="view" id="view-p-settings">
         <div class="ph"><div class="pt">🔑 Change Password</div><div class="ps">Update your login password · New password takes effect immediately</div></div>
         <div class="cc" style="max-width:480px;">
@@ -6591,19 +6595,6 @@ function loadPartnerSidebar(){
 // PARTNER OVERVIEW
 // ════════════════════════════════════════════════
 function buildPartnerOverview(){
-  // Inject partner sheet data (leads, appts, insps, stocks, payout) into overview if available
-  try{
-    var ps = window.PARTNER_SHEET || {};
-    var pName = window.currentPartner ? (window.currentPartner.name||window.currentPartner.display||'') : '';
-    if(pName && ps){
-      // Match partner name against sheet keys
-      var sheetKey = Object.keys(ps).find(function(k){
-        return k.toLowerCase().trim() === pName.toLowerCase().trim();
-      });
-      if(sheetKey) window._currentPartnerSheetRow = ps[sheetKey];
-      else window._currentPartnerSheetRow = null;
-    }
-  }catch(e){ console.warn('[buildPartnerOverview] sheet inject error:', e); }
   // Always sync currentPartner from latest PARTNER_SHEET before rendering
   try{ if(typeof _syncCurrentPartner==='function') _syncCurrentPartner(); }catch(e){}
   // Refresh sidebar cards
@@ -15405,15 +15396,27 @@ document.addEventListener('DOMContentLoaded', function(){
 // ── 7. Logout also works cleanly ──────────────────────────────────────────────
 var _v33OrigLogout = window.doLogout;
 window.doLogout = function(){
+  // Clear session
   try{ localStorage.removeItem('c24_session'); }catch(e){}
-  if(typeof _v33OrigLogout === 'function') _v33OrigLogout.apply(this, arguments);
-  else {
-    var pf = document.getElementById('portal-fullscreen');
-    if(pf) pf.classList.remove('open');
-    document.body.style.overflow = '';
-    window.currentUser = null; window.currentRole = null; window.currentPartner = null;
-    try{ Object.values(window.CH||{}).forEach(function(c){ if(c) c.destroy(); }); window.CH={}; }catch(e){}
-    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  // Close mobile sidebar if open
+  if(typeof window._closeMobSidebar === 'function') window._closeMobSidebar();
+  // Restore body scroll
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
+  // Close portal
+  var pf = document.getElementById('portal-fullscreen');
+  if(pf) pf.classList.remove('open');
+  // Clear globals
+  window.currentUser = null; window.currentRole = null; window.currentPartner = null;
+  window._currentPartnerSheetRow = null;
+  try{ Object.values(window.CH||{}).forEach(function(c){ if(c) c.destroy(); }); window.CH={}; }catch(e){}
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  // Show login overlay
+  var lo = document.getElementById('portal-login-overlay');
+  if(lo){ lo.style.display='flex'; setTimeout(function(){ var u=document.getElementById('pl-username'); if(u) u.focus(); }, 100); }
+  // Call original if exists and different
+  if(typeof _v33OrigLogout === 'function' && _v33OrigLogout !== window.doLogout){
+    try{ _v33OrigLogout.apply(this, arguments); }catch(e){}
   }
 };
 
@@ -15818,7 +15821,16 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
     // Find whichever sidebar is visible
     var sb  = document.getElementById('admin-sidebar');
     var psb = document.getElementById('partner-sidebar');
-    var activeSb = (sb && sb.style.display !== 'none') ? sb : psb;
+    // Check both display style AND visibility — partner sidebar may use display:none
+    var sbVisible  = sb  && getComputedStyle(sb).display  !== 'none' && sb.style.display  !== 'none';
+    var psbVisible = psb && getComputedStyle(psb).display !== 'none' && psb.style.display !== 'none';
+    var activeSb = sbVisible ? sb : (psbVisible ? psb : null);
+    // Fallback: use whichever matches current role
+    if(!activeSb){
+      var role = window.currentRole || '';
+      activeSb = (role === 'partner') ? psb : sb;
+      if(activeSb) activeSb.style.display = '';
+    }
     if(activeSb) activeSb.classList.add('mob-open');
     if(ov) ov.classList.add('show');
     if(btn) btn.classList.add('open');
@@ -17581,10 +17593,6 @@ async function uploadFileToDrive(file, folder, fileName){
 // ── OVERRIDE: submitPartnerInvoice — add Drive upload ────────────
 window.submitPartnerInvoice = (function(_orig){
   return async function(){
-    // Guard against double-submission (e.g. double-tap on mobile)
-    if(window._invoiceSubmitting){ console.warn('[Invoice] Submission already in progress'); return; }
-    window._invoiceSubmitting = true;
-    setTimeout(function(){ window._invoiceSubmitting = false; }, 8000); // reset after 8s
     var sel      = document.getElementById('inv-month-sel');
     if(sel && sel.options.length===0 && window.MONTHS && window.MONTHS.length){
       sel.innerHTML = window.MONTHS.map(function(m){
@@ -17651,7 +17659,6 @@ window.submitPartnerInvoice = (function(_orig){
     var driveNote = driveUrl ? ' · <a href="'+driveUrl+'" target="_blank" style="color:#10b981;">View in Drive ↗</a>' : (file ? ' (saved locally — Drive not configured)' : '');
     showMsg(true,'✓ Invoice submitted for '+fullMo+'!'+driveNote.replace(/<[^>]+>/g,''));
     if(typeof window.buildPartnerInvoices==='function') window.buildPartnerInvoices();
-    window._invoiceSubmitting = false;
     if(typeof window.showImportToast==='function') window.showImportToast('🧾 Invoice submitted — '+invNo+' · '+fullMo+(driveUrl?' · Drive ✓':''));
     if(typeof window._auditLog==='function') window._auditLog('Invoice submitted', partner+' · '+invNo+' · '+fullMo+(driveUrl?' · Drive:'+driveUrl:''));
   };
@@ -19112,4 +19119,246 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
      }
      ══════════════════════════════════════════════════════════════════ -->
 
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  CARS24 PARTNER CHAT SYSTEM  — 2-way messaging (partner ↔ admin)
+//  Storage key: cars24_chat_messages  (synced via cloud)
+//  Structure: { partnerName: [ {id, from, text, ts, read} ] }
+// ══════════════════════════════════════════════════════════════════
+
+(function _installChatSystem(){
+
+  // ── Helpers ──────────────────────────────────────────────────────
+  function _loadChats(){
+    try{ var s=localStorage.getItem('cars24_chat_messages'); return s?JSON.parse(s):{}; }catch(e){ return {}; }
+  }
+  function _saveChats(data){
+    try{ localStorage.setItem('cars24_chat_messages', JSON.stringify(data)); }catch(e){}
+    if(window._c24Cloud && window._c24Cloud.push){
+      window._c24Cloud.push('cars24_chat_messages', JSON.stringify(data));
+    }
+  }
+  function _fmtTime(ts){
+    var d=new Date(ts);
+    var now=new Date();
+    var diff=now-d;
+    if(diff<60000) return 'Just now';
+    if(diff<3600000) return Math.floor(diff/60000)+'m ago';
+    if(diff<86400000) return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }
+  function _scrollBottom(id){
+    var el=document.getElementById(id);
+    if(el) setTimeout(function(){ el.scrollTop=el.scrollHeight; },50);
+  }
+  function _unreadCount(msgs, forRole){
+    // Count messages sent by the OTHER party that are unread
+    return msgs.filter(function(m){ return !m.read && m.from !== forRole; }).length;
+  }
+
+  // ── Admin: render partner list ────────────────────────────────────
+  window.adminChatRender = function(){
+    var list = document.getElementById('admin-chat-partner-list');
+    if(!list) return;
+    var chats = _loadChats();
+    var creds = window.PARTNER_CREDS || [];
+    if(!creds.length){ list.innerHTML='<div style="padding:16px;font-size:12px;color:var(--t3);">No partners configured yet.</div>'; return; }
+
+    list.innerHTML = creds.filter(function(c){ return c.status==='Active'; }).map(function(c){
+      var pName = c.display||c.username;
+      var msgs  = chats[pName]||[];
+      var unread= _unreadCount(msgs,'admin');
+      var last  = msgs.length ? msgs[msgs.length-1] : null;
+      var preview = last ? (last.text.slice(0,40)+(last.text.length>40?'…':'')) : 'No messages yet';
+      return '<div class="chat-partner-item" onclick="adminChatOpen(\''+encodeURIComponent(pName)+'\')" data-partner="'+encodeURIComponent(pName)+'">'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div class="cpi-name">'+pName+'</div>'
+        +'<div class="cpi-preview">'+preview+'</div>'
+        +'</div>'
+        +(unread?'<span class="cpi-badge">'+unread+'</span>':'')
+        +'</div>';
+    }).join('');
+
+    // Update admin badge
+    var totalUnread = Object.keys(chats).reduce(function(sum, pn){
+      return sum + _unreadCount(chats[pn]||[], 'admin');
+    },0);
+    var badge = document.getElementById('admin-chat-badge');
+    if(badge){ badge.style.display = totalUnread>0?'inline':'none'; badge.textContent=totalUnread; }
+  };
+
+  // ── Admin: open a partner's thread ───────────────────────────────
+  window._adminChatActive = null;
+  window.adminChatOpen = function(encodedName){
+    var pName = decodeURIComponent(encodedName);
+    window._adminChatActive = pName;
+
+    // Mark active
+    document.querySelectorAll('.chat-partner-item').forEach(function(el){
+      el.classList.toggle('active', el.dataset.partner === encodedName);
+    });
+
+    var header = document.getElementById('admin-chat-header');
+    if(header) header.textContent = '💬 '+pName;
+
+    var inputWrap = document.getElementById('admin-chat-input-wrap');
+    if(inputWrap) inputWrap.style.display='flex';
+
+    // Mark messages from partner as read
+    var chats = _loadChats();
+    var msgs  = chats[pName]||[];
+    msgs.forEach(function(m){ if(m.from==='partner') m.read=true; });
+    chats[pName]=msgs;
+    _saveChats(chats);
+
+    adminChatRenderMessages(pName);
+    _scrollBottom('admin-chat-messages');
+  };
+
+  window.adminChatRenderMessages = function(pName){
+    var el = document.getElementById('admin-chat-messages');
+    if(!el) return;
+    var chats = _loadChats();
+    var msgs  = (chats[pName]||[]);
+    if(!msgs.length){
+      el.innerHTML='<div class="chat-empty">No messages yet with '+pName+'</div>';
+      return;
+    }
+    el.innerHTML = msgs.map(function(m){
+      var cls = m.from==='admin' ? 'from-admin' : 'from-partner';
+      var who = m.from==='admin' ? 'You' : pName;
+      return '<div class="chat-msg '+cls+'">'
+        +escH(m.text)
+        +'<div class="msg-meta">'+who+' · '+_fmtTime(m.ts)+'</div>'
+        +'</div>';
+    }).join('');
+    _scrollBottom('admin-chat-messages');
+  };
+
+  window.adminChatSend = function(){
+    var input = document.getElementById('admin-chat-input');
+    var text  = input ? input.value.trim() : '';
+    if(!text || !window._adminChatActive) return;
+
+    var pName = window._adminChatActive;
+    var chats = _loadChats();
+    if(!chats[pName]) chats[pName]=[];
+    chats[pName].push({ id:Date.now(), from:'admin', text:text, ts:Date.now(), read:false });
+    _saveChats(chats);
+
+    if(input) input.value='';
+    adminChatRenderMessages(pName);
+    adminChatRender();
+    _scrollBottom('admin-chat-messages');
+  };
+
+  // ── Partner: render their thread with admin ───────────────────────
+  window.partnerChatRender = function(){
+    var pName = window.currentPartner ? (window.currentPartner.display||window.currentPartner.name||'') : '';
+    if(!pName) return;
+
+    var chats = _loadChats();
+    var msgs  = chats[pName]||[];
+
+    // Mark admin messages as read
+    var changed=false;
+    msgs.forEach(function(m){ if(m.from==='admin'&&!m.read){ m.read=true; changed=true; } });
+    if(changed){ chats[pName]=msgs; _saveChats(chats); }
+
+    var el = document.getElementById('partner-chat-messages');
+    if(!el) return;
+    if(!msgs.length){
+      el.innerHTML='<div class="chat-empty">No messages yet.<br>Send a message to the Cars24 team below.</div>';
+      return;
+    }
+    el.innerHTML = msgs.map(function(m){
+      var cls = m.from==='partner' ? 'from-partner' : 'from-admin';
+      var who = m.from==='partner' ? 'You' : 'Cars24 Team';
+      return '<div class="chat-msg '+cls+'">'
+        +escH(m.text)
+        +'<div class="msg-meta">'+who+' · '+_fmtTime(m.ts)+'</div>'
+        +'</div>';
+    }).join('');
+    _scrollBottom('partner-chat-messages');
+
+    // Update unread badge
+    var unread = _unreadCount(msgs,'partner');
+    var badge = document.getElementById('p-chat-badge');
+    if(badge){ badge.style.display=unread>0?'inline':'none'; badge.textContent=unread; }
+  };
+
+  window.partnerChatSend = function(){
+    var input = document.getElementById('partner-chat-input');
+    var text  = input ? input.value.trim() : '';
+    if(!text) return;
+
+    var pName = window.currentPartner ? (window.currentPartner.display||window.currentPartner.name||'') : '';
+    if(!pName){ alert('Please log in first.'); return; }
+
+    var chats = _loadChats();
+    if(!chats[pName]) chats[pName]=[];
+    chats[pName].push({ id:Date.now(), from:'partner', text:text, ts:Date.now(), read:false });
+    _saveChats(chats);
+
+    if(input) input.value='';
+    partnerChatRender();
+    _scrollBottom('partner-chat-messages');
+  };
+
+  // ── Hook into triggerView / showV / showPV ────────────────────────
+  var _origTriggerChat = window.triggerView;
+  window.triggerView = function(id){
+    if(typeof _origTriggerChat==='function') _origTriggerChat.apply(this,arguments);
+    if(id==='chat'){ setTimeout(function(){ adminChatRender(); if(window._adminChatActive) adminChatOpen(encodeURIComponent(window._adminChatActive)); },80); }
+  };
+
+  var _origShowPVChat = window.showPV;
+  window.showPV = function(id, el){
+    if(typeof _origShowPVChat==='function') _origShowPVChat.apply(this,arguments);
+    if(id==='p-chat'){ setTimeout(function(){ partnerChatRender(); },80); }
+  };
+
+  // ── Poll for new messages every 30s (both admin and partner) ──────
+  setInterval(function(){
+    var role = window.currentRole;
+    if(!role) return;
+    // Re-pull from cloud then update UI
+    if(window._c24Cloud && window._c24Cloud.bootPull){
+      // Light pull — just update badges without full bootPull
+      try{
+        var chats = _loadChats();
+        if(role==='admin'){
+          var totalUnread = Object.keys(chats).reduce(function(sum,pn){ return sum+_unreadCount(chats[pn]||[],'admin'); },0);
+          var badge=document.getElementById('admin-chat-badge');
+          if(badge){ badge.style.display=totalUnread>0?'inline':'none'; badge.textContent=totalUnread; }
+          // If chat view open, refresh
+          var chatView=document.getElementById('view-chat');
+          if(chatView&&chatView.classList.contains('active')) adminChatRender();
+        } else if(role==='partner'){
+          var pName=window.currentPartner?(window.currentPartner.display||window.currentPartner.name||''):'';
+          if(pName){
+            var msgs=chats[pName]||[];
+            var unread=_unreadCount(msgs,'partner');
+            var pb=document.getElementById('p-chat-badge');
+            if(pb){ pb.style.display=unread>0?'inline':'none'; pb.textContent=unread; }
+            // If chat view open, refresh
+            var pcView=document.getElementById('view-p-chat');
+            if(pcView&&pcView.classList.contains('active')) partnerChatRender();
+          }
+        }
+      }catch(e){}
+    }
+  }, 30000);
+
+  // Add cars24_chat_messages to sync keys
+  try{
+    if(window._c24Cloud && window._c24Cloud.localOnly){
+      // Not local-only — should sync
+    }
+  }catch(e){}
+
+  console.log('[C24Chat] 2-way chat system loaded');
+})();
+</script>
 </html>
