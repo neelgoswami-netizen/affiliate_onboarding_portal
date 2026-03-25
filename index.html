@@ -1188,6 +1188,80 @@ input[type=range]::-webkit-slider-thumb {
   min-height: -webkit-fill-available;
   min-height: 100dvh;
 }
+
+/* ── MOBILE SCROLL FIXES ── */
+/* Ensure portal and main area are always scrollable */
+#portal-fullscreen {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.layout {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.main {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+/* Partner view sections — ensure scroll */
+#partner-portal {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+}
+.view, [id^="view-p-"], [id^="view-"] {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Fix for views cut off on small screens */
+@media (max-width: 768px) {
+  .main {
+    padding: 12px !important;
+    padding-bottom: max(80px, env(safe-area-inset-bottom)) !important;
+  }
+  /* Cards and content blocks full width */
+  .cc, .tc, .ph {
+    border-radius: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  /* Partner overview hero — constrain height on mobile */
+  .p-hero {
+    min-height: unset !important;
+    padding: 20px 16px !important;
+  }
+  /* KPI grid — 2 columns on mobile */
+  .kg4 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  /* Charts — full width, reasonable height */
+  canvas {
+    max-height: 260px !important;
+  }
+  /* Table wrapper — horizontal scroll */
+  .tw {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-height: 60vh !important;
+  }
+  /* Sidebar hidden by default on mobile — handled by JS toggle */
+  .sidebar {
+    position: fixed !important;
+    left: -240px !important;
+    top: 0 !important;
+    height: 100% !important;
+    z-index: 1000 !important;
+    transition: left .25s ease !important;
+  }
+  .sidebar.mob-open {
+    left: 0 !important;
+  }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -6517,6 +6591,19 @@ function loadPartnerSidebar(){
 // PARTNER OVERVIEW
 // ════════════════════════════════════════════════
 function buildPartnerOverview(){
+  // Inject partner sheet data (leads, appts, insps, stocks, payout) into overview if available
+  try{
+    var ps = window.PARTNER_SHEET || {};
+    var pName = window.currentPartner ? (window.currentPartner.name||window.currentPartner.display||'') : '';
+    if(pName && ps){
+      // Match partner name against sheet keys
+      var sheetKey = Object.keys(ps).find(function(k){
+        return k.toLowerCase().trim() === pName.toLowerCase().trim();
+      });
+      if(sheetKey) window._currentPartnerSheetRow = ps[sheetKey];
+      else window._currentPartnerSheetRow = null;
+    }
+  }catch(e){ console.warn('[buildPartnerOverview] sheet inject error:', e); }
   // Always sync currentPartner from latest PARTNER_SHEET before rendering
   try{ if(typeof _syncCurrentPartner==='function') _syncCurrentPartner(); }catch(e){}
   // Refresh sidebar cards
@@ -17494,6 +17581,10 @@ async function uploadFileToDrive(file, folder, fileName){
 // ── OVERRIDE: submitPartnerInvoice — add Drive upload ────────────
 window.submitPartnerInvoice = (function(_orig){
   return async function(){
+    // Guard against double-submission (e.g. double-tap on mobile)
+    if(window._invoiceSubmitting){ console.warn('[Invoice] Submission already in progress'); return; }
+    window._invoiceSubmitting = true;
+    setTimeout(function(){ window._invoiceSubmitting = false; }, 8000); // reset after 8s
     var sel      = document.getElementById('inv-month-sel');
     if(sel && sel.options.length===0 && window.MONTHS && window.MONTHS.length){
       sel.innerHTML = window.MONTHS.map(function(m){
@@ -17560,6 +17651,7 @@ window.submitPartnerInvoice = (function(_orig){
     var driveNote = driveUrl ? ' · <a href="'+driveUrl+'" target="_blank" style="color:#10b981;">View in Drive ↗</a>' : (file ? ' (saved locally — Drive not configured)' : '');
     showMsg(true,'✓ Invoice submitted for '+fullMo+'!'+driveNote.replace(/<[^>]+>/g,''));
     if(typeof window.buildPartnerInvoices==='function') window.buildPartnerInvoices();
+    window._invoiceSubmitting = false;
     if(typeof window.showImportToast==='function') window.showImportToast('🧾 Invoice submitted — '+invNo+' · '+fullMo+(driveUrl?' · Drive ✓':''));
     if(typeof window._auditLog==='function') window._auditLog('Invoice submitted', partner+' · '+invNo+' · '+fullMo+(driveUrl?' · Drive:'+driveUrl:''));
   };
