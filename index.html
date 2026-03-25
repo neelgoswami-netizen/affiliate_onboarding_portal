@@ -641,7 +641,7 @@ input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px rgba(61,53
 .login-theme-btn{position:absolute;top:18px;right:18px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--t2)}
 
 /* ══ APP ══ */
-#app{display:flex;flex-direction:column;min-height:100vh}
+#app{display:flex;flex-direction:column;height:100%;overflow:hidden}
 
 /* HEADER */
 .hdr{background:var(--hd);height:56px;display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:200;flex-shrink:0;box-shadow:0 2px 16px rgba(79,70,229,.35)}
@@ -677,7 +677,7 @@ input[type=range]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px rgba(61,53
 .su-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
 
 /* MAIN */
-.main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 24px;min-width:0}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:20px 24px;min-width:0;height:100%}
 .ph{margin-bottom:14px}
 .pt{font-size:20px;font-weight:700;letter-spacing:-.4px}
 .ps{font-size:11px;color:var(--t3);margin-top:3px;font-family:'DM Mono',monospace}
@@ -15917,8 +15917,6 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
     setTimeout(function(){
       _patchNavItems();
       _syncHamburger();
-      // On mobile auto-close sidebar on first open
-      if(isMobile()) window._closeMobSidebar();
     }, 150);
   };
 
@@ -15953,8 +15951,8 @@ console.log('[Cars24 v34] 13 fixes applied — SyntaxError ✓ DOD filter ✓ Ad
     // Re-run when views change
     var _origShowV  = window.showV;
     var _origShowPV = window.showPV;
-    window.showV  = function(id, el){ if(typeof _origShowV  === 'function') _origShowV.apply(this, arguments);  setTimeout(_fixKpiGrids, 80); if(isMobile()) window._closeMobSidebar(); };
-    window.showPV = function(id, el){ if(typeof _origShowPV === 'function') _origShowPV.apply(this, arguments); setTimeout(_fixKpiGrids, 80); if(isMobile()) window._closeMobSidebar(); };
+    window.showV  = function(id, el){ if(typeof _origShowV  === 'function') _origShowV.apply(this, arguments);  setTimeout(_fixKpiGrids, 80); };
+    window.showPV = function(id, el){ if(typeof _origShowPV === 'function') _origShowPV.apply(this, arguments); setTimeout(_fixKpiGrids, 80); };
   });
 
   // Public landing page — collapse nav on mobile
@@ -19154,6 +19152,8 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     if(window._c24Cloud && window._c24Cloud.push){
       window._c24Cloud.push('cars24_chat_messages', JSON.stringify(data));
     }
+    // Broadcast to other tabs instantly
+    try{ if(window._chatBC) window._chatBC.postMessage('update'); }catch(e){}
   }
   function _fmtTime(ts){
     var d=new Date(ts);
@@ -19335,37 +19335,48 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     if(id==='p-chat'){ setTimeout(function(){ partnerChatRender(); },80); }
   };
 
-  // ── Poll for new messages every 30s (both admin and partner) ──────
-  setInterval(function(){
+  // ── Chat refresh helper ──────────────────────────────────────────
+  function _refreshChatUI(){
     var role = window.currentRole;
     if(!role) return;
-    // Re-pull from cloud then update UI
-    if(window._c24Cloud && window._c24Cloud.bootPull){
-      // Light pull — just update badges without full bootPull
-      try{
-        var chats = _loadChats();
-        if(role==='admin'){
-          var totalUnread = Object.keys(chats).reduce(function(sum,pn){ return sum+_unreadCount(chats[pn]||[],'admin'); },0);
-          var badge=document.getElementById('admin-chat-badge');
-          if(badge){ badge.style.display=totalUnread>0?'inline':'none'; badge.textContent=totalUnread; }
-          // If chat view open, refresh
-          var chatView=document.getElementById('view-chat');
-          if(chatView&&chatView.classList.contains('active')) adminChatRender();
-        } else if(role==='partner'){
-          var pName=window.currentPartner?(window.currentPartner.display||window.currentPartner.name||''):'';
-          if(pName){
-            var msgs=chats[pName]||[];
-            var unread=_unreadCount(msgs,'partner');
-            var pb=document.getElementById('p-chat-badge');
-            if(pb){ pb.style.display=unread>0?'inline':'none'; pb.textContent=unread; }
-            // If chat view open, refresh
-            var pcView=document.getElementById('view-p-chat');
-            if(pcView&&pcView.classList.contains('active')) partnerChatRender();
-          }
+    try{
+      var chats = _loadChats();
+      if(role==='admin'){
+        var totalUnread = Object.keys(chats).reduce(function(sum,pn){ return sum+_unreadCount(chats[pn]||[],'admin'); },0);
+        var badge=document.getElementById('admin-chat-badge');
+        if(badge){ badge.style.display=totalUnread>0?'inline':'none'; badge.textContent=totalUnread; }
+        var chatView=document.getElementById('view-chat');
+        if(chatView&&chatView.classList.contains('active')){
+          adminChatRender();
+          if(window._adminChatActive) adminChatRenderMessages(window._adminChatActive);
         }
-      }catch(e){}
-    }
-  }, 30000);
+      } else if(role==='partner'){
+        var pName=window.currentPartner?(window.currentPartner.display||window.currentPartner.name||''):'';
+        if(pName){
+          var msgs=chats[pName]||[];
+          var unread=_unreadCount(msgs,'partner');
+          var pb=document.getElementById('p-chat-badge');
+          if(pb){ pb.style.display=unread>0?'inline':'none'; pb.textContent=unread; }
+          var pcView=document.getElementById('view-p-chat');
+          if(pcView&&pcView.classList.contains('active')) partnerChatRender();
+        }
+      }
+    }catch(e){}
+  }
+
+  // ── Poll every 5s ─────────────────────────────────────────────────
+  setInterval(_refreshChatUI, 5000);
+
+  // ── BroadcastChannel: instant sync in same browser (admin + partner tabs) ──
+  try{
+    window._chatBC = new BroadcastChannel('c24_chat');
+    window._chatBC.onmessage = function(){ setTimeout(_refreshChatUI, 50); };
+  }catch(e){}
+
+  // ── localStorage storage event: cross-tab fallback ────────────────
+  window.addEventListener('storage', function(e){
+    if(e.key==='cars24_chat_messages') setTimeout(_refreshChatUI, 50);
+  });
 
   // Add cars24_chat_messages to sync keys
   try{
