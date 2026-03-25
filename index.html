@@ -91,26 +91,25 @@ if(CARS24_CONFIG.driveWebAppUrl){
       localStorage.setItem('__ts_'+key, String(ts));
     }catch(e){}
 
+    // POST always uses no-cors — Apps Script /exec blocks CORS preflight (OPTIONS)
+    // on all POST requests regardless of .gs code. no-cors skips preflight entirely,
+    // the write lands server-side, response is opaque (unreadable) but that's fine.
+    // GET (bootPull/poll) uses cors+redirect:follow which DOES work for Apps Script GETs.
+    var _body = JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts});
     fetch(relay, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts}),
-      mode:'cors', credentials:'omit', redirect:'follow'
+      method  : 'POST',
+      headers : {'Content-Type':'text/plain;charset=utf-8'},
+      body    : _body,
+      mode    : 'no-cors',
+      redirect: 'follow'
     })
-    .then(function(r){ return r.ok ? r.json() : Promise.reject('HTTP '+r.status); })
-    .then(function(d){
-      if(d && d.ok){
-        // Confirmed — update local cache timestamp with server ts
-        try{ localStorage.setItem('__ts_'+key, String(d.ts||ts)); }catch(e){}
-        console.log('[C24Cloud] ✅ push confirmed:', key);
-        if(onDone) onDone(true, null);
-      } else {
-        console.warn('[C24Cloud] ⚠ relay rejected push:', key, d);
-        if(onDone) onDone(false, d&&d.error||'rejected');
-      }
+    .then(function(){
+      // Response is opaque with no-cors — assume success if no network error
+      console.log('[C24Cloud] ✅ push sent (no-cors):', key);
+      if(onDone) onDone(true, 'no-cors');
     })
     .catch(function(e){
-      console.warn('[C24Cloud] ❌ push failed:', key, e);
+      console.warn('[C24Cloud] ❌ push failed:', key, e.message||e);
       if(onDone) onDone(false, e);
     });
   }
@@ -123,9 +122,20 @@ if(CARS24_CONFIG.driveWebAppUrl){
     fetch(relay+'?action=getConfig&t='+Date.now(), {
       method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
     })
-    .then(function(r){ return r.ok ? r.json() : Promise.reject('HTTP '+r.status); })
+    .then(function(r){
+      if(!r.ok) return Promise.reject('HTTP '+r.status);
+      return r.json();
+    })
     .then(function(data){
-      if(!data || data.error){ if(onDone) onDone(false); return; }
+      if(!data || data.error){
+        console.warn('[C24Cloud] bootPull relay error:', data&&data.error);
+        if(onDone) onDone(false); return;
+      }
+      var keyCount = Object.keys(data).filter(function(k){ return !k.startsWith('__ts_'); }).length;
+      if(keyCount === 0){
+        console.warn('[C24Cloud] bootPull: Drive config is EMPTY — no data synced yet.');
+        console.warn('[C24Cloud] → Push data from the device that has correct data by running: c24SyncPushAll()');
+      }
       var updated = [];
       Object.keys(data).forEach(function(key){
         if(key.startsWith('__ts_')) return; // skip timestamp meta keys
@@ -182,29 +192,23 @@ if(CARS24_CONFIG.driveWebAppUrl){
   function _c24Push(key, value, label){
     var relay = window.CARS24_DRIVE_URL || (window.CARS24_CONFIG&&window.CARS24_CONFIG.driveWebAppUrl) || '';
     if(!relay) return;
-    // ── 5MB size guard — Apps Script relay silently rejects larger payloads ──
     var payload = JSON.stringify({ action:'saveConfig', configKey:key, configValue:value, ts: Date.now() });
     if(payload.length > 4500000){
-      console.warn('[C24Early] Skipping push — key too large ('+Math.round(payload.length/1024)+'KB > 4500KB):', key);
+      console.warn('[C24Early] Skipping — too large:', key);
       return;
     }
-    // Save timestamp alongside each key so pull can do last-write-wins
     _rawSet('__ts_' + key, String(Date.now()));
+    // no-cors: skips CORS preflight — Apps Script /exec rejects OPTIONS
+    // Write still lands on the server; response is opaque (unreadable) but that's fine
     fetch(relay, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: payload,
-      mode:'cors', credentials:'omit', redirect:'follow'
+      method  : 'POST',
+      headers : {'Content-Type':'text/plain;charset=utf-8'},
+      body    : payload,
+      mode    : 'no-cors',
+      redirect: 'follow'
     })
-    .then(function(r){
-      if(!r.ok){ console.warn('[C24Early] Push HTTP error', r.status, 'key:', key); return; }
-      return r.json();
-    })
-    .then(function(d){
-      if(d && !d.ok) console.warn('[C24Early] Push rejected by relay — key:', key, d);
-      else console.log('[C24Early]', label||'push', 'OK →', key);
-    })
-    .catch(function(e){ console.warn('[C24Early] Push failed — key:', key, e.message); });
+    .then(function(){ console.log('[C24Early]', label||'push', 'sent →', key); })
+    .catch(function(e){ console.warn('[C24Early] Push failed:', key, e.message); });
   }
 
   localStorage.setItem = function(key, value){
@@ -254,15 +258,39 @@ document.addEventListener('DOMContentLoaded', function () {
     window._c24Cloud.bootPull(function(ok, updatedKeys){
       if(!ok){ console.warn('[C24Boot] Could not reach Drive relay — using local cache'); }
       else { console.log('[C24Boot] Drive data loaded:', updatedKeys&&updatedKeys.length, 'keys fresh'); }
-      // Re-hydrate all in-memory globals from the now-fresh localStorage cache
+
+      // ── Re-hydrate ALL in-memory globals from Drive-fresh localStorage cache ──
       try{
-        var _pc=localStorage.getItem('cars24_partner_creds'); if(_pc){ window.PARTNER_CREDS=JSON.parse(_pc); try{PARTNER_CREDS=window.PARTNER_CREDS;}catch(e){} }
-        var _pd=localStorage.getItem('cars24_partners_data'); if(_pd){ window.PARTNERS=JSON.parse(_pd); try{PARTNERS=window.PARTNERS;}catch(e){} }
-        var _ps=localStorage.getItem('cars24_partner_sheet_data'); if(_ps){ window.PARTNER_SHEET=JSON.parse(_ps); }
-        var _ts=localStorage.getItem('cars24_target_store'); if(_ts){ window._targetStoreCache=JSON.parse(_ts); }
-        var _aa=localStorage.getItem('cars24_admin_accounts'); if(_aa){ window._adminAccounts=JSON.parse(_aa); }
+        var _pc=localStorage.getItem('cars24_partner_creds');
+        if(_pc){
+          var _freshCreds=JSON.parse(_pc);
+          window.PARTNER_CREDS=_freshCreds;
+          try{ PARTNER_CREDS=_freshCreds; }catch(e){}
+        }
+        var _pd=localStorage.getItem('cars24_partners_data');
+        if(_pd){ var _fp=JSON.parse(_pd); window.PARTNERS=_fp; try{ PARTNERS=_fp; }catch(e){} }
+        var _ps=localStorage.getItem('cars24_partner_sheet_data');
+        if(_ps){ window.PARTNER_SHEET=JSON.parse(_ps); }
+        var _ts=localStorage.getItem('cars24_target_store');
+        if(_ts){ window._targetStoreCache=JSON.parse(_ts); }
+        var _aa=localStorage.getItem('cars24_admin_accounts');
+        if(_aa){ window._adminAccounts=JSON.parse(_aa); }
+        var _ap=localStorage.getItem('cars24_admin_pass');
+        if(_ap){ try{ window._adminPassCache = (typeof _ap==='string' && _ap[0]!=='"') ? _ap : JSON.parse(_ap); }catch(e){ window._adminPassCache=_ap; } }
       }catch(e){ console.warn('[C24Boot] Global re-hydration error:', e); }
-      // Restore session (local-only) and render portal if session exists
+
+      // ── If portal is already open (fast reload), re-render with fresh data ──
+      var _pf = document.getElementById('portal-fullscreen');
+      if(_pf && _pf.classList.contains('open') && updatedKeys && updatedKeys.length > 0){
+        console.log('[C24Boot] Portal open — re-rendering', updatedKeys.length, 'changed keys');
+        var _allRender = ['renderCredTable','renderInvoiceTableAdmin','renderProofTable',
+          'buildAnnouncementsAdmin','buildTargets','buildPartnerOverview',
+          'buildPartnerInvoices','buildPartnerPayments','buildPartnerTargets',
+          'updateDashboard','loadPartnerSidebar'];
+        _allRender.forEach(function(fn){ if(typeof window[fn]==='function') try{ window[fn](); }catch(e){} });
+      }
+
+      // ── Restore session — portal renders here, AFTER Drive data is loaded ──
       if(typeof _restoreSession==='function') try{ _restoreSession(); }catch(e){}
     });
   }
@@ -4811,16 +4839,18 @@ function loadCreds(){
   return window._PARTNER_CREDS_HARDCODED || [];
 }
 
-// SINGLE SOURCE OF TRUTH — always reads fresh from localStorage
-// Use this everywhere instead of the PARTNER_CREDS var
+// SINGLE SOURCE OF TRUTH — returns Drive-hydrated PARTNER_CREDS global
+// After bootPull, this global is always fresh from Drive.
+// Falls back to localStorage only if global is empty (e.g. very first load).
 function getLatestCreds(){
   try{
+    var mem = window.PARTNER_CREDS || PARTNER_CREDS;
+    if(mem && mem.length > 0) return mem;
+    // Fallback: read from localStorage cache
     var s = localStorage.getItem('cars24_partner_creds');
     if(s){
       var fresh = JSON.parse(s);
-      // Keep all references in sync
-      PARTNER_CREDS = fresh;
-      window.PARTNER_CREDS = fresh;
+      PARTNER_CREDS = fresh; window.PARTNER_CREDS = fresh;
       return fresh;
     }
   }catch(e){}
@@ -15115,7 +15145,9 @@ window.doPortalLogin = function() {
 // ── 3. Fix session restore on page reload ─────────────────────────────────────
 // Remove old DOMContentLoaded session restore listener and replace with a clean one
 // (the old one at line ~6193 calls showPortal before it's defined globally)
-document.addEventListener('DOMContentLoaded', function _v33SessionRestore(){
+// ── Session restore — called by bootPull callback, NOT by DOMContentLoaded directly ──
+// This guarantees Drive data is loaded before portal renders.
+function _restoreSession(){
   try{
     var saved = localStorage.getItem('c24_session');
     if(!saved) return;
@@ -15125,8 +15157,11 @@ document.addEventListener('DOMContentLoaded', function _v33SessionRestore(){
 
     var partner = null;
     if(sess.role === 'partner'){
+      // Always read fresh from localStorage — bootPull has already updated it from Drive
       var creds = [];
       try{ var _sc=localStorage.getItem('cars24_partner_creds'); creds=_sc?JSON.parse(_sc):(window.PARTNER_CREDS||[]); }catch(e){ creds=window.PARTNER_CREDS||[]; }
+      // Keep global in sync with freshly loaded data
+      if(creds.length){ try{ PARTNER_CREDS=creds; window.PARTNER_CREDS=creds; }catch(e){} }
       var cred = creds.find(function(c){ return c.display===sess.partnerName || c.username===sess.username; });
       if(!cred){ localStorage.removeItem('c24_session'); return; }
       var psData = {};
@@ -15136,12 +15171,18 @@ document.addEventListener('DOMContentLoaded', function _v33SessionRestore(){
       if(!partner){ partner={name:cred.display,status:'Active',leads:{},appts:{},insps:{},stocks:{},payout:{},ext:{}}; }
     }
 
-    // Delay slightly to let all scripts initialize
-    setTimeout(function(){
-      try{ window.showPortal(sess.role, sess.user, partner); }
-      catch(e){ console.warn('[v33 Session restore] Error:', e); localStorage.removeItem('c24_session'); }
-    }, 350);
-  }catch(e){ console.warn('[v33 Session restore]', e); }
+    try{ window.showPortal(sess.role, sess.user, partner); }
+    catch(e){ console.warn('[C24Boot] Session restore error:', e); localStorage.removeItem('c24_session'); }
+  }catch(e){ console.warn('[C24Boot] Session restore:', e); }
+}
+
+// Fallback: if no relay configured, run session restore directly on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function(){
+  if(!window.CARS24_DRIVE_URL){
+    setTimeout(_restoreSession, 350);
+  }
+  // If relay IS configured, bootPull (in CARS24_CONFIG block above) calls _restoreSession
+  // after Drive data is loaded — so we do NOT call it here to avoid double-render
 });
 
 // ── 4. Better GSheet sync feedback ───────────────────────────────────────────
