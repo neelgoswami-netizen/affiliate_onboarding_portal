@@ -1988,7 +1988,7 @@ input[type=range]::-webkit-slider-thumb {
   </div>
 </section>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ── Smooth Nav Scroll with header offset ──
 function navScrollTo(id) {
   const el = document.getElementById(id);
@@ -11091,25 +11091,35 @@ window.saveImportHistory = function(arr){ window.cars24_ls.set('cars24_import_hi
 
 // ── 3. ANNOUNCEMENTS (make globally accessible) ─────────────────
 window.getAnnouncements  = function(){ return window.cars24_ls.get('cars24_announcements')||[]; };
-// Patch: keep window.saveAnnouncements in sync with local saveAnnouncements
 window.saveAnnouncements = function(a){
   window._c24Cloud.push('cars24_announcements', JSON.stringify(a));
 };
 
-// ── 4. INVOICE STORE ───────────────────────────────────────────
+// ── 4. INVOICE STORE ── push to Drive so ALL devices see updates ──
 window.getInvoices  = function(){ return window.cars24_ls.get('cars24_invoices')||[]; };
-window.saveInvoices = function(a){ window.cars24_ls.set('cars24_invoices',a); };
+window.saveInvoices = function(a){
+  // Write to local cache immediately for instant UI
+  window.cars24_ls.set('cars24_invoices', a);
+  // Push to Drive so admin and partner see same data on all devices
+  window._c24Cloud.push('cars24_invoices', JSON.stringify(a));
+};
 
-// ── 4b. PAYMENT PROOF STORE ────────────────────────────────────
+// ── 4b. PAYMENT PROOF STORE ── push to Drive ──────────────────────
 window.getProofs  = function(){ return window.cars24_ls.get('cars24_payment_proofs')||[]; };
-window.saveProofs = function(a){ window.cars24_ls.set('cars24_payment_proofs',a); };
+window.saveProofs = function(a){
+  window.cars24_ls.set('cars24_payment_proofs', a);
+  window._c24Cloud.push('cars24_payment_proofs', JSON.stringify(a));
+};
 
 // ── 5. PARTNER STORE ───────────────────────────────────────────
 window.loadPartnersLS = function(){
   var s = window.cars24_ls.get('cars24_partners_data');
-  return s || [];  // Fix 7: no default — data from GSheet/import only
+  return s || [];
 };
-window.savePartnersLS = function(arr){ window.cars24_ls.set('cars24_partners_data', arr); };
+window.savePartnersLS = function(arr){
+  window.cars24_ls.set('cars24_partners_data', arr);
+  window._c24Cloud.push('cars24_partners_data', JSON.stringify(arr));
+};
 
 // ── 6. FIXED submitPartnerInvoice ─────────────────────────────
 window.submitPartnerInvoice = function(){
