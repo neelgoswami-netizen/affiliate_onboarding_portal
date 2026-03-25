@@ -95,7 +95,6 @@ if(CARS24_CONFIG.driveWebAppUrl){
     // on all POST requests regardless of .gs code. no-cors skips preflight entirely,
     // the write lands server-side, response is opaque (unreadable) but that's fine.
     // GET (bootPull/poll) uses cors+redirect:follow which DOES work for Apps Script GETs.
-    // no-cors POST — avoids CORS preflight, handles large payloads correctly
     var _body = JSON.stringify({action:'saveConfig', configKey:key, configValue:valStr, ts:ts});
     fetch(relay, {
       method  : 'POST',
@@ -105,8 +104,8 @@ if(CARS24_CONFIG.driveWebAppUrl){
       redirect: 'follow'
     })
     .then(function(){
+      // Response is opaque with no-cors — assume success if no network error
       console.log('[C24Cloud] ✅ push sent (no-cors):', key);
-      try{ localStorage.setItem('__ts_'+key, String(ts)); }catch(e){}
       if(onDone) onDone(true, 'no-cors');
     })
     .catch(function(e){
@@ -115,34 +114,41 @@ if(CARS24_CONFIG.driveWebAppUrl){
     });
   }
 
-  // ── Boot pull: fetch all keys from Sheet on page load ──────────────
+  // ── Boot pull: fetch all keys from Drive on page load ──────────────
   function _bootPull(onDone){
     var relay = _relay();
     if(!relay){ if(onDone) onDone(false); return; }
-    console.log('[C24Cloud] Boot pull via fetch (/dev)...');
-    var devUrl = relay.replace('/exec', '/dev');
-    fetch(devUrl + '?action=getConfig&t=' + Date.now(), {
-      method: 'GET', mode: 'cors', credentials: 'omit',
-      redirect: 'follow', cache: 'no-store'
+    console.log('[C24Cloud] Boot pull from Drive...');
+    fetch(relay+'?action=getConfig&t='+Date.now(), {
+      method:'GET', mode:'cors', credentials:'omit', redirect:'follow', cache:'no-store'
     })
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(r){
+      if(!r.ok) return Promise.reject('HTTP '+r.status);
+      return r.json();
+    })
     .then(function(data){
       if(!data || data.error){
-        console.warn('[C24Cloud] bootPull error:', data&&data.error);
+        console.warn('[C24Cloud] bootPull relay error:', data&&data.error);
         if(onDone) onDone(false); return;
       }
       var keyCount = Object.keys(data).filter(function(k){ return !k.startsWith('__ts_'); }).length;
       if(keyCount === 0){
-        console.warn('[C24Cloud] bootPull: Sheet config is EMPTY — run c24SyncPushAll()');
+        console.warn('[C24Cloud] bootPull: Drive config is EMPTY — no data synced yet.');
+        console.warn('[C24Cloud] → Push data from the device that has correct data by running: c24SyncPushAll()');
       }
+      // Keys where Drive always wins — partner self-service changes (e.g. password reset)
+      // must reach admin regardless of local timestamp
       var ALWAYS_TRUST_DRIVE = ['cars24_partner_creds'];
+
       var updated = [];
       Object.keys(data).forEach(function(key){
-        if(key.startsWith('__ts_')) return;
+        if(key.startsWith('__ts_')) return; // skip timestamp meta keys
         if(LOCAL_ONLY_KEYS.indexOf(key) !== -1) return;
         var remoteVal = typeof data[key]==='string' ? data[key] : JSON.stringify(data[key]);
         var localTs  = parseInt(localStorage.getItem('__ts_'+key)||'0',10);
         var remoteTs = typeof data['__ts_'+key]==='number' ? data['__ts_'+key] : 0;
+        // For credential keys — always trust Drive regardless of local timestamp
+        // This ensures partner self-service password changes propagate to admin devices
         var alwaysTrust = ALWAYS_TRUST_DRIVE.indexOf(key) !== -1;
         if(alwaysTrust || remoteTs >= localTs || localTs === 0){
           try{
@@ -156,7 +162,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
       if(onDone) onDone(true, updated);
     })
     .catch(function(e){
-      console.warn('[C24Cloud] Boot pull failed:', e.message);
+      console.warn('[C24Cloud] Boot pull failed:', e);
       if(onDone) onDone(false);
     });
   }
@@ -178,8 +184,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
     'cars24_gsheet_cache_pdi','cars24_gsheet_cache_challan',
     'cars24_gsheet_cache_lac','cars24_dod_arrays',
     'cars24_pdi_store','cars24_challan_store','cars24_lac_store',
-    'cars24_elite_store','cars24_vhr_store',
-    // cars24_audit_log excluded — local only, too large for Drive sync
+    'cars24_elite_store','cars24_vhr_store','cars24_audit_log',
   ];
 
   // Store original before any override
@@ -201,7 +206,6 @@ if(CARS24_CONFIG.driveWebAppUrl){
     _rawSet('__ts_' + key, String(Date.now()));
     // no-cors: skips CORS preflight — Apps Script /exec rejects OPTIONS
     // Write still lands on the server; response is opaque (unreadable) but that's fine
-    // no-cors POST — skips CORS preflight, handles large payloads, write lands server-side
     fetch(relay, {
       method  : 'POST',
       headers : {'Content-Type':'text/plain;charset=utf-8'},
@@ -209,7 +213,7 @@ if(CARS24_CONFIG.driveWebAppUrl){
       mode    : 'no-cors',
       redirect: 'follow'
     })
-    .then(function(){ console.log('[C24Early]', label||'push', 'sent (no-cors) →', key); })
+    .then(function(){ console.log('[C24Early]', label||'push', 'sent →', key); })
     .catch(function(e){ console.warn('[C24Early] Push failed:', key, e.message); });
   }
 
@@ -4234,16 +4238,8 @@ function navScrollTo(id) {
         </div>
         <!-- Table -->
         <div class="tc">
-          <div class="tch" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <div>
-              <div class="tct">Partner Login Credentials</div>
-              <span style="font-size:11px;color:var(--t3)">Click any row to edit inline · changes auto-save</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span id="cred-sync-lbl" style="display:none;font-size:11px;font-weight:600;"></span>
-              <button id="cred-refresh-btn" onclick="(function(){var btn=document.getElementById('cred-refresh-btn');var lbl=document.getElementById('cred-sync-lbl');if(btn){btn.disabled=true;btn.textContent='Syncing...';}var _ct=document.getElementById('cred-tbl');if(_ct)_ct.innerHTML='<tr><td colspan=&quot;9&quot; style=&quot;text-align:center;padding:28px;color:var(--t3);font-size:13px;&quot;>Syncing from Drive...</td></tr>';if(window._c24Cloud&&window._c24Cloud.bootPull){window._c24Cloud.bootPull(function(ok){try{var _pc=localStorage.getItem('cars24_partner_creds');if(_pc){var _fc=JSON.parse(_pc);window.PARTNER_CREDS=_fc;try{PARTNER_CREDS=_fc;}catch(e){}}}catch(e){}if(typeof window.renderCredTable==='function')window.renderCredTable();else if(typeof renderCredTable==='function')renderCredTable();try{renderAdminAccountsInCredView();}catch(e){}if(btn){btn.disabled=false;btn.textContent='Refresh';}if(lbl){lbl.textContent=ok?'Synced from Drive':'Drive unreachable - showing cache';lbl.style.color=ok?'#059669':'#d97706';lbl.style.display='inline';}setTimeout(function(){if(lbl)lbl.style.display='none';},5000);});}else{if(btn){btn.disabled=false;btn.textContent='Refresh';}}})();" style="padding:6px 16px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">Refresh</button>
-            </div>
-          </div>
+          <div class="tch">
+            <div class="tct">Partner Login Credentials</div>
             <span style="font-size:11px;color:var(--t3)">Click any row to edit inline · changes auto-save</span>
           </div>
           <div class="tw">
@@ -5446,15 +5442,11 @@ function triggerView(id){
   if(id==='buyer'){buildBuyerMonthBtns();renderBuyerTable();}
   if(id==='vas'){ seedVhrStore(); buildVasCurrent(); }
   if(id==='credentials'){
-    var _ct=document.getElementById('cred-tbl');
-    if(_ct) _ct.innerHTML='<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--t3);font-size:13px;">Syncing from Drive...</td></tr>';
-    if(window._c24Cloud&&window._c24Cloud.bootPull){
-      window._c24Cloud.bootPull(function(ok){
-        try{var _pc=localStorage.getItem('cars24_partner_creds');if(_pc){var _fc=JSON.parse(_pc);window.PARTNER_CREDS=_fc;try{PARTNER_CREDS=_fc;}catch(e){}}}catch(e){}
-        if(typeof window.renderCredTable==='function')window.renderCredTable();else if(typeof renderCredTable==='function')renderCredTable();
-        try{renderAdminAccountsInCredView();}catch(e){}
-        var lbl=document.getElementById('cred-sync-lbl');
-        if(lbl){lbl.textContent=ok?'Synced from Drive':'Drive unreachable - showing cached data';lbl.style.color=ok?'#059669':'#d97706';lbl.style.display='inline';setTimeout(function(){lbl.style.display='none';},5000);}
+    if(window._c24Cloud && window._c24Cloud.bootPull){
+      window._c24Cloud.bootPull(function(){
+        try{ var _pc=localStorage.getItem('cars24_partner_creds'); if(_pc){ var _fc=JSON.parse(_pc); window.PARTNER_CREDS=_fc; try{ PARTNER_CREDS=_fc; }catch(e){} } }catch(e){}
+        if(typeof window.renderCredTable==='function') window.renderCredTable(); else if(typeof renderCredTable==='function') renderCredTable();
+        try{ renderAdminAccountsInCredView(); }catch(e){}
       });
     } else {
       if(typeof getLatestCreds==='function') getLatestCreds();
@@ -11531,7 +11523,7 @@ function _auditLog(action, detail){
     if(log.length > 200) log = log.slice(-200);
     // localStorage cache kept for instant local read; cloud push syncs to all devices
     try{ localStorage.setItem('cars24_audit_log', JSON.stringify(log)); }catch(e){}
-    // audit_log is local-only — not pushed to Drive (too large, not needed cross-device)
+    window._c24Cloud.push('cars24_audit_log', JSON.stringify(log));
   }catch(e){}
 }
 
@@ -11890,6 +11882,7 @@ function refreshGSheetData(){
     'cars24_lac_store',             // LAC orders per partner per month
     'cars24_elite_store',           // Elite orders per partner per month
     'cars24_vhr_store',             // VHR orders per partner per month
+    'cars24_audit_log',             // audit trail — synced so admin sees all device actions
   ];
       var pushed = 0;
       gsheetKeys.forEach(function(key){
@@ -18444,63 +18437,32 @@ console.log('[Cars24] Drive upload + expand fix + partner isolation + admin data
     if(onDone) onDone(true, changedKeys);
   }
 
-  // ── PULL: JSONP via script tag (bypasses Apps Script CORS redirect) ─
+  // ── PULL: fetch GET with redirect follow (works on GitHub Pages) ─
   function _pullFromRelay(onDone){
     if(!RELAY_URL){ if(onDone) onDone(false,[]); return; }
     if(_pullInFlight){ return; }
     _pullInFlight = true;
     _updateSyncIndicator('syncing');
 
-    var cbName = '_c24sync_cb_' + Date.now();
-    var script = document.createElement('script');
-    var timer = setTimeout(function(){
-      console.warn('[C24Sync] pull timeout');
-      _pullInFlight = false;
-      delete window[cbName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-      _updateSyncIndicator('offline');
-      if(onDone) onDone(false, []);
-    }, 30000);
+    var url = RELAY_URL + '?action=getConfig&t=' + Date.now();
 
-    window[cbName] = function(data){
-      clearTimeout(timer);
-      _pullInFlight = false;
-      delete window[cbName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-      if(!data || data.error){
-        console.warn('[C24Sync] Relay error:', data && data.error);
-        _updateSyncIndicator('offline');
-        if(onDone) onDone(false, []);
-        return;
-      }
-      _applyRemoteData(data, onDone);
-    };
-
-    // Use fetch with /dev URL — no redirect, CORS works
-    var _devUrl = RELAY_URL.replace('/exec', '/dev');
-    fetch(_devUrl + '?action=getConfig&t=' + Date.now(), {
-      method: 'GET',
-      mode: 'cors',
+    fetch(url, {
+      method     : 'GET',
+      mode       : 'cors',
       credentials: 'omit',
-      redirect: 'follow',
-      cache: 'no-store'
+      redirect   : 'follow',
+      cache      : 'no-store'
     })
-    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      if(!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.json();
+    })
     .then(function(data){
-      clearTimeout(timer);
-      _pullInFlight = false;
-      if(!data || data.error){
-        console.warn('[C24Sync] Relay error:', data&&data.error);
-        _updateSyncIndicator('offline');
-        if(onDone) onDone(false, []);
-        return;
-      }
       _applyRemoteData(data, onDone);
     })
-    .catch(function(e){
-      clearTimeout(timer);
+    .catch(function(err){
       _pullInFlight = false;
-      console.warn('[C24Sync] fetch pull failed:', e.message);
+      console.warn('[C24Sync] fetch pull failed:', err.message);
       _updateSyncIndicator('offline');
       if(onDone) onDone(false, []);
     });
